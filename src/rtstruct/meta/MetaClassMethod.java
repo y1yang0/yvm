@@ -7,7 +7,7 @@ import ycloader.adt.u1;
 import ycloader.dataobject.ConstantPoolObject;
 import ycloader.dataobject.MethodObject;
 import yvm.adt.Resolvable;
-import yvm.adt.auxil.Tuple6;
+import yvm.adt.Tuple6;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,8 +15,8 @@ import java.util.Map;
 
 public class MetaClassMethod implements Resolvable<MethodObject> {
     private
-    Map<Integer,                    //method index at constant pool
-            Tuple6<                     //
+    Map<Integer,                            //method index at constant pool
+            Tuple6<                         //
                     String,                 //method name
                     String,                 //method descriptor
                     u1[],                   //method codes

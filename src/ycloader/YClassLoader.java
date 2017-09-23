@@ -12,7 +12,7 @@ import ycloader.exception.ClassInitializingException;
 import ycloader.exception.ClassLinkingException;
 import ycloader.exception.ClassLoadingException;
 import ycloader.security.FormatChecking;
-import yvm.adt.auxil.Tuple6;
+import yvm.adt.Tuple6;
 import yvm.exec.CodeExecutionEngine;
 
 import java.io.EOFException;

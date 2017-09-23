@@ -13,8 +13,10 @@ class LocalVarTable {
 }
 
 public class YStackFrame {
-    private LocalVarTable vars = null;
+    private int vars;
     private OperandStack operands = null;
     private DynamicLinking linker = null;
     private ReturnAddress retAddr = null;
+
+
 }

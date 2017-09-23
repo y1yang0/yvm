@@ -2,15 +2,11 @@ package rtstruct;
 
 import rtstruct.ystack.YStack;
 
-class ProgramCounter {
-
-}
-
 public class YThread {
-    private Thread thread = null;
-    private ProgramCounter pc = null;
-    private YStack stack = null;
-    private String threadName = null;
+    private Thread thread;
+    private int programCounter = -1;
+    private YStack stack;
+    private String threadName;
 
     public YThread(String threadName) {
         this.threadName = threadName;
@@ -22,4 +18,11 @@ public class YThread {
         thread.start();
     }
 
+    public void initiateStack() {
+        stack = new YStack();
+    }
+
+    public YStack getStack() {
+        return stack;
+    }
 }

@@ -6,7 +6,7 @@ import ycloader.YClassLoader;
 import ycloader.exception.ClassInitializingException;
 import ycloader.exception.ClassLinkingException;
 import ycloader.exception.ClassLoadingException;
-import yvm.adt.auxil.Tuple6;
+import yvm.adt.Tuple6;
 
 public final class Yvm {
     public static void main(String[] args) {
@@ -17,7 +17,6 @@ public final class Yvm {
                 Tuple6 bundle = loader.loadClass();
                 MetaClass meta = loader.linkClass(bundle);
                 loader.initializeClass(thread, meta);
-
             } catch (ClassLinkingException | ClassLoadingException | ClassInitializingException e) {
                 e.printStackTrace();
             }

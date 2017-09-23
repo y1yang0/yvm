@@ -6,7 +6,7 @@ import ycloader.dataobject.ConstantPoolObject;
 import ycloader.dataobject.FieldObject;
 import yvm.adt.DebugExtension;
 import yvm.adt.Resolvable;
-import yvm.adt.auxil.Tuple4;
+import yvm.adt.Tuple4;
 import yvm.constant.MetaClassConstant;
 
 import java.util.ArrayList;

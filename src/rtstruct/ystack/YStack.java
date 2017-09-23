@@ -1,5 +1,19 @@
 package rtstruct.ystack;
 
+import java.util.Stack;
+
 public class YStack {
-    private YStackFrame[] stackFrames = null;
+    private Stack<YStackFrame> stackFrames;
+
+    public YStack() {
+        stackFrames = new Stack<>();
+    }
+
+    public synchronized void pushFrame(YStackFrame frame) {
+        stackFrames.push(frame);
+    }
+
+    public synchronized YStackFrame popFrame() {
+        return stackFrames.pop();
+    }
 }

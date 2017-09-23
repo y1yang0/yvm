@@ -2,7 +2,7 @@ package rtstruct.meta;
 
 import ycloader.adt.attribute.Attribute;
 import ycloader.dataobject.ConstantPoolObject;
-import yvm.adt.auxil.Tuple4;
+import yvm.adt.Tuple4;
 
 import java.util.HashMap;
 import java.util.Map;
