@@ -4,6 +4,7 @@ import ycloader.adt.u1;
 import ycloader.exception.ClassInitializingException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.function.Supplier;
 
 
@@ -227,15 +228,19 @@ interface Mnemonic {
 
 }
 
-class Operand {
+interface Operand {
+
+}
+
+class GenericOperand implements Operand {
     private int[] operands;
 
-    private Operand() {
+    private GenericOperand() {
         operands = null;
     }
 
     static Operand new$(int... args) {
-        Operand op = new Operand();
+        GenericOperand op = new GenericOperand();
         op.operands = new int[args.length];
         for (int i = 0; i < args.length; i++) {
             op.operands[i] = args[i];
@@ -243,6 +248,26 @@ class Operand {
         return op;
     }
 
+}
+
+class LookupSwitchOperand implements Operand {
+    public HashMap<Integer, Integer> matchOffsetPairs;
+    private int defaultGoto;
+
+    public LookupSwitchOperand() {
+        matchOffsetPairs = new HashMap<>();
+    }
+
+    public void setDefaultGoto(int defaultGoto) {
+        this.defaultGoto = defaultGoto;
+    }
+
+    void addMatchOffsetPair(int match, int offset) {
+        matchOffsetPairs.put(match, offset);
+    }
+}
+
+class TableSwitchOperand implements Operand {
 }
 
 public class Opcode {
@@ -783,10 +808,20 @@ public class Opcode {
                     addOpcode(codeRef[i].getValue(), this::new_1_operand);
                     break;
                 case Mnemonic.tableswitch:
-                    addOpcode(codeRef[i].getValue(), this::new_2_operand);
+                    //3 bytes padding
+                    nextCode();
+                    nextCode();
+                    nextCode();
+
+                    addOpcode(codeRef[i].getValue(), this::new_tableswitch_operand);
                     break;
                 case Mnemonic.lookupswitch:
-                    addOpcode(codeRef[i].getValue(), this::new_2_operand);
+                    //3 bytes padding
+                    nextCode();
+                    nextCode();
+                    nextCode();
+
+                    addOpcode(codeRef[i].getValue(), this::new_lookupswitch_operand);
                     break;
                 case Mnemonic.ireturn:
                     addOpcode(codeRef[i].getValue(), this::new_0_operand);
@@ -920,27 +955,58 @@ public class Opcode {
         this.opcodes.add(new Tuple3<>(i, opcodeValue, cons.get()));
     }
 
+    private Operand new_lookupswitch_operand() {
+        LookupSwitchOperand operand = new LookupSwitchOperand();
+        int defaultGoto = bytes2int(
+                new byte[]{(byte) nextCode(), (byte) nextCode(), (byte) nextCode(), (byte) nextCode()});
+        operand.setDefaultGoto(defaultGoto);
+        int pairsNum = bytes2int(
+                new byte[]{(byte) nextCode(), (byte) nextCode(), (byte) nextCode(), (byte) nextCode()});
+        for (int i = 0; i < pairsNum; i++) {
+            int match = bytes2int(
+                    new byte[]{(byte) nextCode(), (byte) nextCode(), (byte) nextCode(), (byte) nextCode()});
+            int offset = bytes2int(
+                    new byte[]{(byte) nextCode(), (byte) nextCode(), (byte) nextCode(), (byte) nextCode()});
+            operand.addMatchOffsetPair(match, offset);
+        }
+        return operand;
+    }
+
+    private Operand new_tableswitch_operand() {
+        TableSwitchOperand operand = new TableSwitchOperand();
+        return operand;
+    }
+
     private Operand new_0_operand() {
-        return Operand.new$();
+        return GenericOperand.new$();
     }
 
     private Operand new_1_operand() {
-        return Operand.new$(nextCode());
+        return GenericOperand.new$(nextCode());
     }
 
     private Operand new_2_operand() {
-        return Operand.new$(nextCode(), nextCode());
+        return GenericOperand.new$(nextCode(), nextCode());
     }
 
     private Operand new_4_operand() {
-        return Operand.new$(nextCode(), nextCode(), nextCode(), nextCode());
+        return GenericOperand.new$(nextCode(), nextCode(), nextCode(), nextCode());
     }
 
     private Operand new_3_operand() {
-        return Operand.new$(nextCode(), nextCode(), nextCode());
+        return GenericOperand.new$(nextCode(), nextCode(), nextCode());
     }
 
     private int nextCode() {
         return codeRef[++i].getValue();
+    }
+
+    private int bytes2int(byte[] bs) {
+        int value;
+        value = (bs[0] & 0xFF)
+                | ((bs[1] & 0xFF) << 8)
+                | ((bs[2] & 0xFF) << 16)
+                | ((bs[3] & 0xFF) << 24);
+        return value;
     }
 }
