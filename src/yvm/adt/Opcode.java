@@ -251,14 +251,14 @@ class GenericOperand implements Operand {
 }
 
 class LookupSwitchOperand implements Operand {
-    public HashMap<Integer, Integer> matchOffsetPairs;
+    private HashMap<Integer, Integer> matchOffsetPairs;
     private int defaultGoto;
 
-    public LookupSwitchOperand() {
+    LookupSwitchOperand() {
         matchOffsetPairs = new HashMap<>();
     }
 
-    public void setDefaultGoto(int defaultGoto) {
+    void setDefaultGoto(int defaultGoto) {
         this.defaultGoto = defaultGoto;
     }
 
@@ -268,6 +268,20 @@ class LookupSwitchOperand implements Operand {
 }
 
 class TableSwitchOperand implements Operand {
+    private int defaultGoto;
+    private HashMap<Integer, Integer> jumpOffsets;
+
+    TableSwitchOperand() {
+        jumpOffsets = new HashMap<>();
+    }
+
+    void setDefaultGoto(int defaultGoto) {
+        this.defaultGoto = defaultGoto;
+    }
+
+    void addJumpOffset(int match, int offset) {
+        this.jumpOffsets.put(match, offset);
+    }
 }
 
 public class Opcode {
@@ -974,6 +988,18 @@ public class Opcode {
 
     private Operand new_tableswitch_operand() {
         TableSwitchOperand operand = new TableSwitchOperand();
+        int defaultGoto = bytes2int(
+                new byte[]{(byte) nextCode(), (byte) nextCode(), (byte) nextCode(), (byte) nextCode()});
+        operand.setDefaultGoto(defaultGoto);
+        int low = bytes2int(
+                new byte[]{(byte) nextCode(), (byte) nextCode(), (byte) nextCode(), (byte) nextCode()});
+        int high = bytes2int(
+                new byte[]{(byte) nextCode(), (byte) nextCode(), (byte) nextCode(), (byte) nextCode()});
+        for (int i = 0; i < high - low + 1; i++) {
+            int offset = bytes2int(
+                    new byte[]{(byte) nextCode(), (byte) nextCode(), (byte) nextCode(), (byte) nextCode()});
+            operand.addJumpOffset(low + i, offset);
+        }
         return operand;
     }
 
