@@ -6,6 +6,7 @@ import rtstruct.meta.MetaClassMethod;
 import ycloader.adt.attribute.Attribute;
 import ycloader.adt.u1;
 import ycloader.exception.ClassInitializingException;
+import yvm.adt.Opcode;
 import yvm.adt.Tuple6;
 
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ public class CodeExecutionEngine {
     private YThread thread;
     private boolean ignited;
     private MetaClassMethod method;
+    private Opcode opcodes;
 
     public CodeExecutionEngine(YThread thread) {
         this.thread = thread;
@@ -42,6 +44,10 @@ public class CodeExecutionEngine {
 
         int maxLocals = clinit.get4Placeholder().maxLocals;
         int maxStack = clinit.get4Placeholder().maxStack;
+
+        opcodes = new Opcode(clinit.get3Placeholder());
+        opcodes.codes2Opcodes();
+        opcodes.debug();
 
         //todo:execute clint method to initialize current class;
     }
