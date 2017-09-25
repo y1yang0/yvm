@@ -1,22 +1,34 @@
 package rtstruct.ystack;
 
+import java.util.Stack;
+
 class DynamicLinking {
 }
 
 class ReturnAddress {
 }
 
-class OperandStack {
+class OperandStack extends Stack {
 }
 
-class LocalVarTable {
+class LocalVarTable extends Stack {
 }
 
 public class YStackFrame {
-    private int vars;
-    private OperandStack operands = null;
-    private DynamicLinking linker = null;
-    private ReturnAddress retAddr = null;
+    private LocalVarTable vars;
+    private OperandStack operands;
+    private DynamicLinking linker;
+    private ReturnAddress retAddr;
 
+    public YStackFrame() {
+        vars = new LocalVarTable();
+        operands = new OperandStack();
+        linker = new DynamicLinking();
+        retAddr = new ReturnAddress();
+    }
 
+    public void allocateSize(int maxStack, int maxLocal) {
+        vars.setSize(maxLocal);
+        operands.setSize(maxStack);
+    }
 }
