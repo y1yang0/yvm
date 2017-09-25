@@ -54,6 +54,7 @@ public class YClassLoader {
             u2 constantPoolCount = read2Bytes();
             ConstantPoolObject poolObj = new ConstantPoolObject(reader, constantPoolCount);
             poolObj.stuffing();
+            System.out.println(poolObj);
 
             u2 accessFlag = read2Bytes();
             u2 thisClass = read2Bytes();

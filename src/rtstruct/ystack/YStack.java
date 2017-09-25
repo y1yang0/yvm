@@ -16,4 +16,8 @@ public class YStack {
     public synchronized YStackFrame popFrame() {
         return stackFrames.pop();
     }
+
+    public synchronized YStackFrame currentFrame() {
+        return stackFrames.peek();
+    }
 }

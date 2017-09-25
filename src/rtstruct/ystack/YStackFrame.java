@@ -31,4 +31,12 @@ public class YStackFrame {
         vars.setSize(maxLocal);
         operands.setSize(maxStack);
     }
+
+    public Object pop$operand() {
+        return operands.pop();
+    }
+
+    public <T> void push$operand(T item) {
+        operands.push(item);
+    }
 }
