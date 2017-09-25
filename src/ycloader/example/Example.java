@@ -11,6 +11,16 @@ interface IB {
 }
 
 public class Example implements IA, IB {
+    static {
+        double[] xx = new double[14];
+        for (int i = 0; i < xx.length; i++) {
+            System.out.println(xx[i]);
+            xx[i] = xx[i] * (3 << 2);
+        }
+    }
+
+    private double[] xx;
+    private int[] arr = new int[7];
     public static final int CONST_INT = 1024;
     public static int aaa = 16;
     public static int bbb = 17;

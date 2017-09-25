@@ -145,6 +145,8 @@ public class YClassLoader {
         resolvedMethod.resolve(method, cp);
         meta.setMethods(resolvedMethod);
         //resolvedMethod.debug();
+
+
         return meta;
     }
 

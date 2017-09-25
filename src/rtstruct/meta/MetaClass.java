@@ -8,17 +8,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class MetaClass {
-    private String qualifiedClassName;
-    private Class classLoader;
-    private String superClassName;
-    private MetaClassInterface interfaces;
     private int accessFlag;
     private boolean isClass;
+    private String qualifiedClassName;
+    private String superClassName;
+    private Class classLoader;
+    private Map<Integer, Tuple4<String, String, Integer, Attribute[]>> staticVars;
+    private Class classReference;
+    private MetaClassInterface interfaces;
     private ConstantPoolObject constantPool;
     private MetaClassField fields;
     private MetaClassMethod methods;
-    private Map<Integer, Tuple4<String, String, Integer, Attribute[]>> staticVars;
-    private Class classReference;
+
 
     public MetaClass() {
         staticVars = new HashMap<>();
@@ -56,15 +57,36 @@ public class MetaClass {
         staticVars.put(index, staticVar);
     }
 
+    public void setMethods(MetaClassMethod methods) {
+        this.methods = methods;
+    }
+
     public Map<Integer, Tuple4<String, String, Integer, Attribute[]>> getStaticVariable() {
         return staticVars;
     }
+
 
     public MetaClassMethod getMethods() {
         return methods;
     }
 
-    public void setMethods(MetaClassMethod methods) {
-        this.methods = methods;
+    public ConstantPoolObject getConstantPool() {
+        return constantPool;
+    }
+
+    @Override
+    public int hashCode() {
+        return qualifiedClassName.length();
+    }
+
+    @Override
+    public boolean equals(Object x) {
+        if (x instanceof MetaClass) {
+            if (qualifiedClassName.equals(((MetaClass) x).qualifiedClassName)
+                    && classLoader == ((MetaClass) x).classLoader) {
+                return true;
+            }
+        }
+        return false;
     }
 }

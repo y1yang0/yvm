@@ -1,5 +1,7 @@
 package yvm;
 
+import rtstruct.YHeap;
+import rtstruct.YMethodScope;
 import rtstruct.YThread;
 import rtstruct.meta.MetaClass;
 import ycloader.YClassLoader;
@@ -9,8 +11,22 @@ import ycloader.exception.ClassLoadingException;
 import yvm.adt.Tuple6;
 
 public final class Yvm {
+    private YHeap heap;
+    private YMethodScope methodScope;
+
+    public Yvm() {
+        heap = new YHeap();
+        methodScope = new YMethodScope();
+    }
+
     public static void main(String[] args) {
+        Yvm vm = new Yvm();
+        vm.start();
+    }
+
+    public void start() {
         YThread thread = new YThread("test");
+        thread.allocateVMHeap(heap);
         thread.runTask(() -> {
             try {
                 YClassLoader loader = new YClassLoader("java/io/File");
@@ -21,5 +37,9 @@ public final class Yvm {
                 e.printStackTrace();
             }
         });
+    }
+
+    public synchronized YHeap getVMHeap() {
+        return heap;
     }
 }
