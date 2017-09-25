@@ -36,7 +36,7 @@ public class YThread {
     }
 
     /**
-     * get program counter if passing nothing
+     * get0 program counter if passing nothing
      *
      * @return
      */

@@ -126,6 +126,60 @@ public final class CodeExecutionEngine {
                     arrayRef[index] = value;
                 }
                 break;
+
+                //Push null
+                case Mnemonic.aconst_null: {
+                    stack.currentFrame().push$operand(null);
+                }
+                break;
+
+                //Load reference from local variable
+                case Mnemonic.aload: {
+                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    Object objectRef = stack.currentFrame().getLocalVariable(index);
+                    stack.currentFrame().push$operand(objectRef);
+                }
+                break;
+
+                //Load reference from local variable with index 0
+                case Mnemonic.aload_0: {
+                    Object objectRef = stack.currentFrame().getLocalVariable(0);
+                    stack.currentFrame().push$operand(objectRef);
+                }
+                break;
+
+                //Load reference from local variable with index 1
+                case Mnemonic.aload_1: {
+                    Object objectRef = stack.currentFrame().getLocalVariable(1);
+                    stack.currentFrame().push$operand(objectRef);
+                }
+                break;
+
+                //Load reference from local variable with index 2
+                case Mnemonic.aload_2: {
+                    Object objectRef = stack.currentFrame().getLocalVariable(2);
+                    stack.currentFrame().push$operand(objectRef);
+                }
+                break;
+
+                //Load reference from local variable with index 3
+                case Mnemonic.aload_3: {
+                    Object objectRef = stack.currentFrame().getLocalVariable(3);
+                    stack.currentFrame().push$operand(objectRef);
+                }
+                break;
+
+                //Create new array of reference
+                case Mnemonic.anewarray: {
+                    //The count represents the number of components of the array to
+                    //be created.
+                    int count = (int) stack.currentFrame().pop$operand();
+                    byte indexByte1 = (byte) ((Operand) cd.get3Placeholder()).get0();
+                    byte indexByte2 = (byte) ((Operand) cd.get3Placeholder()).get1();
+                    int index = (indexByte1 << 8) | indexByte2;
+                    //todo:create an array of component type denoted by index of constant pool
+                }
+                break;
                 default:
                     throw new ClassInitializingException("unknown opcode in execution sequence");
             }

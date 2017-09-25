@@ -42,7 +42,7 @@ public class YClassLoader {
     public Tuple6<ConstantPoolObject, InterfacesObject, FieldObject, MethodObject, ClassFileAttributeObject, u2[]> loadClass() throws ClassLoadingException {
         try {
             if (!reader.openDataInputStream()) {
-                throw new IOException("Failed to get class file data");
+                throw new IOException("Failed to get0 class file data");
             }
 
             if (!FormatChecking.MagicNumber.with(read4Bytes())) {

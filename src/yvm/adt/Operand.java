@@ -4,10 +4,13 @@ import java.util.HashMap;
 
 import static yvm.auxil.Common.rawArrayToString;
 
-public interface Operand {
+public interface Operand<_FstPlaceHolderType, _SndPlaceHolderType> {
+    _FstPlaceHolderType get0();
+
+    _SndPlaceHolderType get1();
 }
 
-class GenericOperand implements Operand {
+class GenericOperand implements Operand<Integer, Integer> {
     private int[] operands;
 
     private GenericOperand() {
@@ -25,9 +28,19 @@ class GenericOperand implements Operand {
     public String toString() {
         return rawArrayToString(operands, ',');
     }
+
+    @Override
+    public Integer get0() {
+        return operands[0];
+    }
+
+    @Override
+    public Integer get1() {
+        return operands[1];
+    }
 }
 
-class LookupSwitchOperand implements Operand {
+class LookupSwitchOperand implements Operand<Integer, HashMap<Integer, Integer>> {
     private HashMap<Integer, Integer> matchOffsetPairs;
     private int defaultGoto;
 
@@ -56,9 +69,19 @@ class LookupSwitchOperand implements Operand {
         sb.append("}");
         return sb.toString();
     }
+
+    @Override
+    public Integer get0() {
+        return defaultGoto;
+    }
+
+    @Override
+    public HashMap<Integer, Integer> get1() {
+        return matchOffsetPairs;
+    }
 }
 
-class TableSwitchOperand implements Operand {
+class TableSwitchOperand implements Operand<Integer, HashMap<Integer, Integer>> {
     private int defaultGoto;
     private HashMap<Integer, Integer> jumpOffsets;
 
@@ -86,5 +109,15 @@ class TableSwitchOperand implements Operand {
         );
         sb.append("}");
         return sb.toString();
+    }
+
+    @Override
+    public Integer get0() {
+        return defaultGoto;
+    }
+
+    @Override
+    public HashMap<Integer, Integer> get1() {
+        return jumpOffsets;
     }
 }
