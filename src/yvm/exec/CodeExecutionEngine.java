@@ -53,7 +53,7 @@ public final class CodeExecutionEngine {
         Opcode op = new Opcode(clinit.get3Placeholder());
         op.codes2Opcodes();
         op.debug();
-        codeExecution(op);
+        //codeExecution(op);
     }
 
     private void codeExecution(Opcode op) throws ClassInitializingException {

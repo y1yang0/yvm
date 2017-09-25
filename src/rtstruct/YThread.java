@@ -8,7 +8,7 @@ public class YThread {
     private YStack stack;
     private String threadName;
 
-    private YHeap heapRef;
+
 
     public YThread(String threadName) {
         this.threadName = threadName;
@@ -19,10 +19,6 @@ public class YThread {
         thread = new Thread(task);
         thread.setName(threadName);
         thread.start();
-    }
-
-    public void allocateVMHeap(YHeap heap) {
-        heapRef = heap;
     }
 
     /**
@@ -51,5 +47,15 @@ public class YThread {
      */
     public void pc(int pc) {
         this.programCounter = pc;
+    }
+
+
+    /**
+     * Associate reference block
+     */
+    private YHeap heapRef;
+
+    public void associateVMHeap(YHeap heap) {
+        heapRef = heap;
     }
 }

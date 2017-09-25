@@ -5,6 +5,8 @@ import ycloader.adt.u2;
 import ycloader.adt.u4;
 
 import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.jar.JarEntry;
@@ -16,10 +18,12 @@ public class ClassFileReader {
     private DataInputStream in;
     private String javaClass;
     private String[] rtJarsList;
+    private String[] classPathList;
 
     ClassFileReader(String javaClass) {
         this.javaClass = javaClass;
-        rtJarsList = new String[]{"F:\\jdk1.8.0_131\\jre\\lib\\rt.jar"};
+        rtJarsList = new String[]{"F:/jdk1.8.0_131/jre/lib/rt.jar"};
+        classPathList = new String[]{"C:/Users/Cthulhu/Desktop/YVM/out/production/YVM/"};
     }
 
     boolean openDataInputStream() {
@@ -35,6 +39,14 @@ public class ClassFileReader {
                         in = new DataInputStream(j.getInputStream(e));
                         return true;
                     }
+                }
+            }
+            //2. search in class path
+            for (String path : classPathList) {
+                File f = new File(path + parsedFileName);
+                if (f.exists()) {
+                    in = new DataInputStream(new FileInputStream(f));
+                    return true;
                 }
             }
 

@@ -26,13 +26,18 @@ public final class Yvm {
 
     public void start() {
         YThread thread = new YThread("test");
-        thread.allocateVMHeap(heap);
+        thread.associateVMHeap(heap);
+
         thread.runTask(() -> {
             try {
-                YClassLoader loader = new YClassLoader("java/io/File");
+                YClassLoader loader = new YClassLoader("ycloader/example/Example");
+                loader.associateThread(thread);
+
                 Tuple6 bundle = loader.loadClass();
                 MetaClass meta = loader.linkClass(bundle);
-                loader.initializeClass(thread, meta);
+                methodScope.addMetaClass(meta);
+
+                loader.initializeClass(meta);
             } catch (ClassLinkingException | ClassLoadingException | ClassInitializingException e) {
                 e.printStackTrace();
             }

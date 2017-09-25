@@ -34,6 +34,7 @@ import java.io.IOException;
 public class YClassLoader {
     private ClassFileReader reader;
 
+
     public YClassLoader(String javaClass) {
         reader = new ClassFileReader(javaClass);
     }
@@ -98,11 +99,10 @@ public class YClassLoader {
         return m;
     }
 
-    public void initializeClass(YThread requestThread, MetaClass meta) throws ClassInitializingException {
-        CodeExecutionEngine engine = new CodeExecutionEngine(requestThread);
-        engine.ignite(meta);
-        engine.executeCLinit();
-    }
+    /**
+     * Associate reference block
+     */
+    private YThread threadRef;
 
     private void verify(Tuple6<ConstantPoolObject, InterfacesObject, FieldObject, MethodObject, ClassFileAttributeObject, u2[]> bundle) throws ClassLinkingException {
         if (!FormatChecking.ProperLengthOfAttribute.with(bundle.get3Placeholder(), bundle.get4Placeholder(), bundle.get5Placeholder())) {
@@ -146,7 +146,6 @@ public class YClassLoader {
         meta.setMethods(resolvedMethod);
         //resolvedMethod.debug();
 
-
         return meta;
     }
 
@@ -156,5 +155,15 @@ public class YClassLoader {
 
     private u4 read4Bytes() throws IOException {
         return reader.read4Bytes();
+    }
+
+    public void initializeClass(MetaClass meta) throws ClassInitializingException {
+        CodeExecutionEngine engine = new CodeExecutionEngine(threadRef);
+        engine.ignite(meta);
+        engine.executeCLinit();
+    }
+
+    public void associateThread(YThread thread) {
+        threadRef = thread;
     }
 }
