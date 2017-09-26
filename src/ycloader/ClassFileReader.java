@@ -22,8 +22,8 @@ public class ClassFileReader {
 
     ClassFileReader(String javaClass) {
         this.javaClass = javaClass;
-        rtJarsList = new String[]{"F:/jdk1.8.0_131/jre/lib/rt.jar"};
-        classPathList = new String[]{"C:/Users/Cthulhu/Desktop/YVM/out/production/YVM/"};
+        rtJarsList = new String[]{"E:/Program Files/Java/jdk1.8.0_101/jre/lib/rt.jar"};
+        classPathList = new String[]{"C:/Users/asus/Desktop/yvm/out/production/yvm/"};
     }
 
     boolean openDataInputStream() {

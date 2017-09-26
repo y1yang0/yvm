@@ -178,7 +178,7 @@ public final class CodeExecutionEngine {
                     byte indexByte2 = (byte) ((Operand) cd.get3Placeholder()).get1();
                     int index = (indexByte1 << 8) | indexByte2;
                     //todo:create an array of component type denoted by index of constant pool
-                    System.out.println(metaClass.getConstantPool().at(index));
+                    //System.out.println(metaClass.getConstantPool().at(index));
                 }
                 break;
                 default:

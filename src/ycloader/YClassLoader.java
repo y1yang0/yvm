@@ -1,10 +1,7 @@
 package ycloader;
 
 import rtstruct.YThread;
-import rtstruct.meta.MetaClass;
-import rtstruct.meta.MetaClassField;
-import rtstruct.meta.MetaClassInterface;
-import rtstruct.meta.MetaClassMethod;
+import rtstruct.meta.*;
 import ycloader.adt.u2;
 import ycloader.adt.u4;
 import ycloader.dataobject.*;
@@ -33,7 +30,10 @@ import java.io.IOException;
 
 public class YClassLoader {
     private ClassFileReader reader;
-
+    /**
+     * Associate reference block
+     */
+    private YThread threadRef;
 
     public YClassLoader(String javaClass) {
         reader = new ClassFileReader(javaClass);
@@ -43,7 +43,7 @@ public class YClassLoader {
     public Tuple6<ConstantPoolObject, InterfacesObject, FieldObject, MethodObject, ClassFileAttributeObject, u2[]> loadClass() throws ClassLoadingException {
         try {
             if (!reader.openDataInputStream()) {
-                throw new IOException("Failed to get0 class file data");
+                throw new IOException("Failed to get class file data");
             }
 
             if (!FormatChecking.MagicNumber.with(read4Bytes())) {
@@ -55,7 +55,6 @@ public class YClassLoader {
             u2 constantPoolCount = read2Bytes();
             ConstantPoolObject poolObj = new ConstantPoolObject(reader, constantPoolCount);
             poolObj.stuffing();
-            System.out.println(poolObj);
 
             u2 accessFlag = read2Bytes();
             u2 thisClass = read2Bytes();
@@ -99,11 +98,6 @@ public class YClassLoader {
         return m;
     }
 
-    /**
-     * Associate reference block
-     */
-    private YThread threadRef;
-
     private void verify(Tuple6<ConstantPoolObject, InterfacesObject, FieldObject, MethodObject, ClassFileAttributeObject, u2[]> bundle) throws ClassLinkingException {
         if (!FormatChecking.ProperLengthOfAttribute.with(bundle.get3Placeholder(), bundle.get4Placeholder(), bundle.get5Placeholder())) {
             throw new ClassLinkingException("attributes in .class file doesn't have proper length");
@@ -117,7 +111,7 @@ public class YClassLoader {
         }
     }
 
-    private MetaClass resolve(Tuple6<ConstantPoolObject, InterfacesObject, FieldObject, MethodObject, ClassFileAttributeObject, u2[]> bundle) {
+    private MetaClass resolve(Tuple6<ConstantPoolObject, InterfacesObject, FieldObject, MethodObject, ClassFileAttributeObject, u2[]> bundle) throws ClassLinkingException {
         ConstantPoolObject cp = bundle.get1Placeholder();
         InterfacesObject inter = bundle.get2Placeholder();
         FieldObject field = bundle.get3Placeholder();
@@ -130,7 +124,6 @@ public class YClassLoader {
 
         meta.setSuperClassName(cp.getClassName(bundle.get6Placeholder()[2].getValue()));
         meta.setAccessFlag(bundle.get6Placeholder()[0].getValue());
-        meta.setConstantPool(cp);
 
         MetaClassInterface resolvedInterface = new MetaClassInterface();
         resolvedInterface.resolve(inter, cp);
@@ -146,6 +139,10 @@ public class YClassLoader {
         meta.setMethods(resolvedMethod);
         //resolvedMethod.debug();
 
+        MetaClassConstantPool resolvedConstantPool = new MetaClassConstantPool();
+        resolvedConstantPool.resolve(cp);
+        meta.setConstantPool(resolvedConstantPool);
+        resolvedConstantPool.debug();
         return meta;
     }
 

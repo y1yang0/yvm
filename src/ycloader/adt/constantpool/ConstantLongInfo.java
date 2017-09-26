@@ -9,8 +9,8 @@ import java.io.IOException;
 
 public class ConstantLongInfo extends AbstractConstantPool {
     public static final u1 tag = new u1(ConstantPoolTags.CONSTANT_Long);
-    private u4 highBytes;
-    private u4 lowBytes;
+    public u4 highBytes;
+    public u4 lowBytes;
 
     public ConstantLongInfo(ClassFileReader reader) {
         super(reader);

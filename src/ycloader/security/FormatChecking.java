@@ -59,7 +59,7 @@ public class FormatChecking {
     public static class ConstantPoolConstraint {
         //ClassFileAttributeObject attrs for supporting CONSTANT_InvokeDynamicInfo checking;
         public static boolean with(ConstantPoolObject cp, ClassFileAttributeObject attrs) {
-            for (AbstractConstantPool obj : cp.getConstantPoolObjects()) {
+            for (AbstractConstantPool obj : cp.getAbstractConstantPool()) {
                 if (obj instanceof ConstantClassInfo) {
                     int temp = ((ConstantClassInfo) obj).nameIndex.getValue();
                     if (cp.at(temp) == null || cp.at(temp).getClass() != ConstantUtf8Info.class) {

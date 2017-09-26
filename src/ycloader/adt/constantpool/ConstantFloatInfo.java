@@ -10,7 +10,7 @@ import java.io.IOException;
 
 public class ConstantFloatInfo extends AbstractConstantPool {
     public static final u1 tag = new u1(ConstantPoolTags.CONSTANT_Float);
-    private u4 bytes;
+    public u4 bytes;
 
     public ConstantFloatInfo(ClassFileReader reader) {
         super(reader);

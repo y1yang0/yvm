@@ -9,8 +9,8 @@ import java.io.IOException;
 
 public class ConstantDoubleInfo extends AbstractConstantPool {
     public static final u1 tag = new u1(ConstantPoolTags.CONSTANT_Double);
-    private u4 highBytes;
-    private u4 lowBytes;
+    public u4 highBytes;
+    public u4 lowBytes;
 
     public ConstantDoubleInfo(ClassFileReader reader) {
         super(reader);

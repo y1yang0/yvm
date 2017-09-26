@@ -23,7 +23,7 @@ public class ConstantPoolObject extends BytesReaderProxy implements Stuffable {
         this.poolLength = poolLength;
     }
 
-    public ArrayList<AbstractConstantPool> getConstantPoolObjects() {
+    public ArrayList<AbstractConstantPool> getAbstractConstantPool() {
         return pool;
     }
 
