@@ -2,7 +2,7 @@ package yvm.adt;
 
 import java.util.HashMap;
 
-import static yvm.auxil.Common.rawArrayToString;
+import static yvm.auxil.Convert.rawArrayToString;
 
 public interface Operand<_FstPlaceHolderType, _SndPlaceHolderType> {
     _FstPlaceHolderType get0();

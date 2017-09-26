@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class MetaClass {
+    public MetaClassField fields;
     private int accessFlag;
     private boolean isClass;
     private String qualifiedClassName;
@@ -16,7 +17,6 @@ public class MetaClass {
     private Class classReference;
     private MetaClassInterface interfaces;
     private MetaClassConstantPool constantPool;
-    private MetaClassField fields;
     private MetaClassMethod methods;
 
 
@@ -28,16 +28,8 @@ public class MetaClass {
         this.accessFlag = accessFlag;
     }
 
-    public void setQualifiedClassName(String name) {
-        this.qualifiedClassName = name;
-    }
-
     public void setSuperClassName(String name) {
         this.superClassName = name;
-    }
-
-    public void setClassLoader(Class classLoaderClass) {
-        this.classLoader = classLoaderClass;
     }
 
     public void setInterfaces(MetaClassInterface interfaces) {
@@ -70,6 +62,22 @@ public class MetaClass {
 
     public void setConstantPool(MetaClassConstantPool constantPool) {
         this.constantPool = constantPool;
+    }
+
+    public String getQualifiedClassName() {
+        return qualifiedClassName;
+    }
+
+    public void setQualifiedClassName(String name) {
+        this.qualifiedClassName = name;
+    }
+
+    public Class getClassLoader() {
+        return classLoader;
+    }
+
+    public void setClassLoader(Class classLoaderClass) {
+        this.classLoader = classLoaderClass;
     }
 
     @Override

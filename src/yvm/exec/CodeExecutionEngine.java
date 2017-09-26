@@ -1,6 +1,6 @@
 package yvm.exec;
 
-import rtstruct.YThread;
+import rtstruct.*;
 import rtstruct.meta.MetaClass;
 import rtstruct.meta.MetaClassMethod;
 import rtstruct.ystack.YStack;
@@ -9,16 +9,19 @@ import ycloader.adt.attribute.Attribute;
 import ycloader.adt.u1;
 import ycloader.exception.ClassInitializingException;
 import yvm.adt.*;
+import yvm.auxil.Peel;
 
 import java.util.ArrayList;
 
 import static java.util.Objects.isNull;
-import static yvm.auxil.Common.*;
+import static yvm.auxil.Predicate.*;
 
 public final class CodeExecutionEngine {
     private YThread thread;
     private boolean ignited;
-    private MetaClass metaClass;
+    private MetaClass metaClassRef;
+    private YMethodScope methodScopeRef;
+    private YHeap heapRef;
 
     public CodeExecutionEngine(YThread thread) {
         this.thread = thread;
@@ -26,8 +29,16 @@ public final class CodeExecutionEngine {
     }
 
     public void ignite(MetaClass metaClassInfo) {
-        this.metaClass = metaClassInfo;
+        this.metaClassRef = metaClassInfo;
         ignited = true;
+    }
+
+    public void associateMethodScope(YMethodScope methodScope) {
+        methodScopeRef = methodScope;
+    }
+
+    public void associateHeap(YHeap heap) {
+        heapRef = heap;
     }
 
     public void executeCLinit() throws ClassInitializingException {
@@ -37,7 +48,7 @@ public final class CodeExecutionEngine {
 
         Tuple6<String, String, u1[], MetaClassMethod.StackRequirement,
                 MetaClassMethod.ExceptionTable[], ArrayList<Attribute>>
-                clinit = metaClass.getMethods().findMethod("<clinit>");
+                clinit = metaClassRef.getMethods().findMethod("<clinit>");
 
         if (isNull(clinit) || strNotEqual(clinit.get1Placeholder(), "<clinit>")) {
             throw new ClassInitializingException("can not find synthetic <clinit> method");
@@ -177,8 +188,39 @@ public final class CodeExecutionEngine {
                     byte indexByte1 = (byte) ((Operand) cd.get3Placeholder()).get0();
                     byte indexByte2 = (byte) ((Operand) cd.get3Placeholder()).get1();
                     int index = (indexByte1 << 8) | indexByte2;
-                    //todo:create an array of component type denoted by index of constant pool
-                    //System.out.println(metaClass.getConstantPool().at(index));
+                    String res = metaClassRef.getConstantPool().findInClasses(index);
+
+                    if (count < 0) {
+                        throw new NegativeArraySizeException("array size required a positive integer");
+                    }
+                    if (!isNull(res)) {
+                        if (methodScopeRef.existClass(res)) {
+                            MetaClass meta = methodScopeRef.getMetaClass(res, metaClassRef.getClassLoader());
+                            YObject object = new YObject(meta);
+                            object.init();
+
+                            YArray array = new YArray<>(count, object);
+                            array.init();
+
+                            stack.currentFrame().push$operand(array);
+                        } else {
+                            String arrayComponentType = Peel.getArrayComponent(res);
+                            int arrayDimension = Peel.getArrayDimension(res);
+                            if (methodScopeRef.existClass(arrayComponentType)) {
+                                MetaClass meta = methodScopeRef.getMetaClass(res, metaClassRef.getClassLoader());
+                                YObject object = new YObject(meta);
+                                object.init();
+
+                                YArray inner = new YArray<>(arrayDimension, object);
+                                inner.init();
+
+                                YArray outer = new YArray<>(count, inner);
+                                outer.init();
+
+                                stack.currentFrame().push$operand(outer);
+                            }
+                        }
+                    }
                 }
                 break;
                 default:

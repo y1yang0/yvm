@@ -195,6 +195,10 @@ public class MetaClassConstantPool implements DebugExtension {
         }
     }
 
+    public String findInClasses(int index) {
+        return classes.get(index);
+    }
+
     @Override
     public void debug() {
         System.out.println("#################################Constant Pool#################################");

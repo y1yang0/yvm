@@ -31,6 +31,10 @@ public class MetaClassField implements Resolvable<FieldObject>, DebugExtension {
         this.meta = meta;
     }
 
+    public Map getFields() {
+        return fields;
+    }
+
     @Override
     public void resolve(FieldObject r, ConstantPoolObject cp) {
         ArrayList<FieldInfo> fs = r.getRawData();
