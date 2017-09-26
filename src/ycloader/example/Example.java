@@ -12,10 +12,12 @@ interface IB {
 
 public class Example implements IA, IB {
     static {
+        Object[] pp = new Object[14];
         double[] xx = new double[14];
         for (int i = 0; i < xx.length; i++) {
+            xx[i] = 0.0000000000007 * xx[i] * (3 << 2);
             System.out.println(xx[i]);
-            xx[i] = xx[i] * (3 << 2);
+            System.out.println(pp[i]);
         }
     }
 

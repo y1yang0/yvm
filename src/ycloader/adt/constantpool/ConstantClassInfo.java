@@ -20,4 +20,9 @@ public class ConstantClassInfo extends AbstractConstantPool {
     public void stuffing() throws IOException {
         nameIndex = read2Bytes();
     }
+
+    @Override
+    public String toString() {
+        return "Class " + nameIndex.getValue();
+    }
 }
