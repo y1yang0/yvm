@@ -70,17 +70,17 @@ public final class CodeExecutionEngine {
     private void codeExecution(Opcode op) throws ClassInitializingException {
         YStack stack = thread.stack();
         class Aux {
-            public Object pop() {
+            private Object pop() {
                 return stack.currentFrame().pop$operand();
             }
 
-            public void push(Object object) {
+            private void push(Object object) {
                 stack.currentFrame().push$operand(object);
             }
         }
 
         Aux aux = new Aux();
-
+        //program counter//opcode value//operand of related opcode
         ArrayList<Tuple3<Integer, Integer, Operand>>
                 opcodes = op.getOpcodes();
         for (int i = 0; i < opcodes.size(); i++) {
@@ -92,7 +92,7 @@ public final class CodeExecutionEngine {
                 //Load reference from array
                 case Mnemonic.aaload: {
                     int index = (int) aux.pop();
-                    Object[] arrayRef = (Object[]) aux.pop();
+                    YArray arrayRef = (YArray) aux.pop();
 
                     if (isNull(arrayRef)) {
                         throw new NullPointerException("reference of an array is null");
@@ -100,7 +100,7 @@ public final class CodeExecutionEngine {
                     if (!inRange(arrayRef, index)) {
                         throw new ArrayIndexOutOfBoundsException("array index " + index + " out of bounds");
                     }
-                    aux.push(arrayRef[index]);
+                    aux.push(arrayRef.get(index));
                 }
                 break;
 
@@ -108,7 +108,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.aastore: {
                     Object value = aux.pop();
                     int index = (int) aux.pop();
-                    Object[] arrayRef = (Object[]) aux.pop();
+                    YArray arrayRef = (YArray) aux.pop();
 
                     if (isClass(value.getClass())) {
                         if (!isSameClass(arrayRef.getClass().getComponentType(), value.getClass())
@@ -145,7 +145,8 @@ public final class CodeExecutionEngine {
                         }
                     }
 
-                    arrayRef[index] = value;
+
+                    arrayRef.set(index, value);
                 }
                 break;
 
@@ -323,7 +324,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.bipush: {
-                    aux.push((int) ((Operand) cd.get3Placeholder()).get0());
+                    aux.push(((Operand) cd.get3Placeholder()).get0());
                 }
                 break;
 
@@ -375,7 +376,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.daload: {
                     int index = (int) aux.pop();
                     YArray array = (YArray) aux.pop();
-                    aux.push((double) array.get(index));
+                    aux.push(array.get(index));
                 }
                 break;
 
@@ -387,7 +388,8 @@ public final class CodeExecutionEngine {
                 }
                 break;
 
-                case Mnemonic.dcmpg: {
+                case Mnemonic.dcmpg:
+                case Mnemonic.dcmpl: {
                     double value2 = (double) aux.pop();
                     double value1 = (double) aux.pop();
                     float value1$ = (float) value1;
@@ -402,10 +404,61 @@ public final class CodeExecutionEngine {
                 }
                 break;
 
-                case Mnemonic.dcmpl: {
-
+                case Mnemonic.dconst_0: {
+                    aux.push(0.0);
                 }
                 break;
+
+                case Mnemonic.dconst_1: {
+                    aux.push(1.0);
+                }
+                break;
+
+                case Mnemonic.ddiv: {
+                    double value2 = (double) aux.pop();
+                    double value1 = (double) aux.pop();
+                    aux.push(value1 / value2);
+                }
+                break;
+
+                case Mnemonic.dload: {
+                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    double value = (double) stack.currentFrame().getLocalVariable(index);
+                    aux.push(value);
+                }
+                break;
+
+                case Mnemonic.dload_0: {
+                    double value = (double) stack.currentFrame().getLocalVariable(0);
+                    aux.push(value);
+                }
+                break;
+
+                case Mnemonic.dload_1: {
+                    double value = (double) stack.currentFrame().getLocalVariable(1);
+                    aux.push(value);
+                }
+                break;
+
+                case Mnemonic.dload_2: {
+                    double value = (double) stack.currentFrame().getLocalVariable(2);
+                    aux.push(value);
+                }
+                break;
+
+                case Mnemonic.dload_3: {
+                    double value = (double) stack.currentFrame().getLocalVariable(3);
+                    aux.push(value);
+                }
+                break;
+
+                case Mnemonic.dmul: {
+                    double value2 = (double) aux.pop();
+                    double value1 = (double) aux.pop();
+                    aux.push(value1 * value2);
+                }
+
+
                 default:
                     throw new ClassInitializingException("unknown opcode in execution sequence");
             }

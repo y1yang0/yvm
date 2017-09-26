@@ -1,5 +1,7 @@
 package yvm.auxil;
 
+import rtstruct.YArray;
+
 public class Predicate {
     public static <_T> boolean isNull(_T obj) {
         return obj == null;
@@ -13,8 +15,8 @@ public class Predicate {
         return !a.equals(b);
     }
 
-    public static boolean inRange(Object[] arr, int index) {
-        return index >= 0 && arr.length > index;
+    public static boolean inRange(YArray arr, int index) {
+        return index >= 0 && arr.getDimension() > index;
     }
 
     public static boolean isClass(Class x) {
