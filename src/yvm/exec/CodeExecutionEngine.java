@@ -68,10 +68,21 @@ public final class CodeExecutionEngine {
     }
 
     private void codeExecution(Opcode op) throws ClassInitializingException {
+        YStack stack = thread.stack();
+        class Aux {
+            public Object pop() {
+                return stack.currentFrame().pop$operand();
+            }
+
+            public void push(Object object) {
+                stack.currentFrame().push$operand(object);
+            }
+        }
+
+        Aux aux = new Aux();
+
         ArrayList<Tuple3<Integer, Integer, Operand>>
                 opcodes = op.getOpcodes();
-        YStack stack = thread.stack();
-
         for (int i = 0; i < opcodes.size(); i++) {
             Tuple3 cd = opcodes.get(i);
             int programCount = (Integer) cd.get1Placeholder();
@@ -80,8 +91,8 @@ public final class CodeExecutionEngine {
 
                 //Load reference from array
                 case Mnemonic.aaload: {
-                    int index = (int) stack.currentFrame().pop$operand();
-                    Object[] arrayRef = (Object[]) stack.currentFrame().pop$operand();
+                    int index = (int) aux.pop();
+                    Object[] arrayRef = (Object[]) aux.pop();
 
                     if (isNull(arrayRef)) {
                         throw new NullPointerException("reference of an array is null");
@@ -89,15 +100,15 @@ public final class CodeExecutionEngine {
                     if (!inRange(arrayRef, index)) {
                         throw new ArrayIndexOutOfBoundsException("array index " + index + " out of bounds");
                     }
-                    stack.currentFrame().push$operand(arrayRef[index]);
+                    aux.push(arrayRef[index]);
                 }
                 break;
 
                 //Store into reference array
                 case Mnemonic.aastore: {
-                    Object value = stack.currentFrame().pop$operand();
-                    int index = (int) stack.currentFrame().pop$operand();
-                    Object[] arrayRef = (Object[]) stack.currentFrame().pop$operand();
+                    Object value = aux.pop();
+                    int index = (int) aux.pop();
+                    Object[] arrayRef = (Object[]) aux.pop();
 
                     if (isClass(value.getClass())) {
                         if (!isSameClass(arrayRef.getClass().getComponentType(), value.getClass())
@@ -140,7 +151,7 @@ public final class CodeExecutionEngine {
 
                 //Push null
                 case Mnemonic.aconst_null: {
-                    stack.currentFrame().push$operand(null);
+                    aux.push(null);
                 }
                 break;
 
@@ -148,35 +159,35 @@ public final class CodeExecutionEngine {
                 case Mnemonic.aload: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
                     Object objectRef = stack.currentFrame().getLocalVariable(index);
-                    stack.currentFrame().push$operand(objectRef);
+                    aux.push(objectRef);
                 }
                 break;
 
                 //Load reference from local variable with index 0
                 case Mnemonic.aload_0: {
                     Object objectRef = stack.currentFrame().getLocalVariable(0);
-                    stack.currentFrame().push$operand(objectRef);
+                    aux.push(objectRef);
                 }
                 break;
 
                 //Load reference from local variable with index 1
                 case Mnemonic.aload_1: {
                     Object objectRef = stack.currentFrame().getLocalVariable(1);
-                    stack.currentFrame().push$operand(objectRef);
+                    aux.push(objectRef);
                 }
                 break;
 
                 //Load reference from local variable with index 2
                 case Mnemonic.aload_2: {
                     Object objectRef = stack.currentFrame().getLocalVariable(2);
-                    stack.currentFrame().push$operand(objectRef);
+                    aux.push(objectRef);
                 }
                 break;
 
                 //Load reference from local variable with index 3
                 case Mnemonic.aload_3: {
                     Object objectRef = stack.currentFrame().getLocalVariable(3);
-                    stack.currentFrame().push$operand(objectRef);
+                    aux.push(objectRef);
                 }
                 break;
 
@@ -184,7 +195,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.anewarray: {
                     //The count represents the number of components of the array to
                     //be created.
-                    int count = (int) stack.currentFrame().pop$operand();
+                    int count = (int) aux.pop();
                     byte indexByte1 = (byte) ((Operand) cd.get3Placeholder()).get0();
                     byte indexByte2 = (byte) ((Operand) cd.get3Placeholder()).get1();
                     int index = (indexByte1 << 8) | indexByte2;
@@ -202,7 +213,7 @@ public final class CodeExecutionEngine {
                             YArray array = new YArray<>(count, object);
                             array.init();
 
-                            stack.currentFrame().push$operand(array);
+                            aux.push(array);
                         } else {
                             String arrayComponentType = Peel.getArrayComponent(res);
                             int arrayDimension = Peel.getArrayDimension(res);
@@ -217,14 +228,186 @@ public final class CodeExecutionEngine {
                                 YArray outer = new YArray<>(count, inner);
                                 outer.init();
 
-                                stack.currentFrame().push$operand(outer);
+                                aux.push(outer);
                             }
                         }
                     }
                 }
                 break;
+
+                case Mnemonic.areturn: {
+                    //todo:areturn
+                }
+                break;
+
+                //Get length of array
+                case Mnemonic.arraylength: {
+                    YArray arrayRef = (YArray) aux.pop();
+                    if (isNull(arrayRef)) {
+                        throw new NullPointerException("array reference is null");
+                    }
+                    aux.push(arrayRef.getDimension());
+                }
+                break;
+
+                //Store reference into local variable
+                case Mnemonic.astore: {
+                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    Object top = aux.pop();
+
+                    stack.currentFrame().setLocalVariable(index, top);
+                }
+                break;
+
+                //Store reference into local variable
+                case Mnemonic.astore_0: {
+                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    Object top = aux.pop();
+
+                    stack.currentFrame().setLocalVariable(0, top);
+                }
+                break;
+
+                //Store reference into local variable
+                case Mnemonic.astore_1: {
+                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    Object top = aux.pop();
+
+                    stack.currentFrame().setLocalVariable(1, top);
+                }
+                break;
+
+                //Store reference into local variable
+                case Mnemonic.astore_2: {
+                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    Object top = aux.pop();
+
+                    stack.currentFrame().setLocalVariable(2, top);
+                }
+                break;
+
+                //Store reference into local variable
+                case Mnemonic.astore_3: {
+                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    Object top = aux.pop();
+
+                    stack.currentFrame().setLocalVariable(3, top);
+                }
+                break;
+
+                case Mnemonic.athrow: {
+                    //todo:athrow
+                }
+                break;
+
+                //Load byte or boolean from array
+                case Mnemonic.baload: {
+                    int index = (int) aux.pop();
+                    YArray arrayRef = (YArray) aux.pop();
+                    if (isNull(arrayRef)) {
+                        throw new NullPointerException("array reference is null");
+                    }
+                    if (index > arrayRef.getDimension()) {
+                        throw new ArrayIndexOutOfBoundsException("array index out of bounds");
+                    }
+                    aux.push(arrayRef.get(index));
+                }
+                break;
+
+                case Mnemonic.bastore: {
+                    int value = (int) aux.pop();
+                    int index = (int) aux.pop();
+                    YArray array = (YArray) aux.pop();
+                    array.set(index, value);
+                }
+                break;
+
+                case Mnemonic.bipush: {
+                    aux.push((int) ((Operand) cd.get3Placeholder()).get0());
+                }
+                break;
+
+                case Mnemonic.caload: {
+                    int index = (int) aux.pop();
+                    YArray array = (YArray) aux.pop();
+                    aux.push(array.get(index));
+                }
+                break;
+
+                case Mnemonic.castore: {
+                    int value = (int) aux.pop();
+                    int index = (int) aux.pop();
+                    YArray array = (YArray) aux.pop();
+                    array.set(index, value);
+                }
+                break;
+
+                case Mnemonic.checkcast: {
+                    //todo:checkcast
+                }
+                break;
+
+                case Mnemonic.d2f: {
+                    double value = (double) aux.pop();
+                    aux.push((float) value);
+                }
+                break;
+
+                case Mnemonic.d2i: {
+                    double value = (double) aux.pop();
+                    aux.push((int) value);
+                }
+                break;
+
+                case Mnemonic.d2l: {
+                    double value = (double) aux.pop();
+                    aux.push((long) value);
+                }
+                break;
+
+                case Mnemonic.dadd: {
+                    double value2 = (double) aux.pop();
+                    double value1 = (double) aux.pop();
+                    aux.push(value1 + value2);
+                }
+                break;
+
+                case Mnemonic.daload: {
+                    int index = (int) aux.pop();
+                    YArray array = (YArray) aux.pop();
+                    aux.push((double) array.get(index));
+                }
+                break;
+
+                case Mnemonic.dastore: {
+                    double value = (double) aux.pop();
+                    int index = (int) aux.pop();
+                    YArray array = (YArray) aux.pop();
+                    array.set(index, value);
+                }
+                break;
+
+                case Mnemonic.dcmpg: {
+                    double value2 = (double) aux.pop();
+                    double value1 = (double) aux.pop();
+                    float value1$ = (float) value1;
+                    float value2$ = (float) value2;
+                    if (value1$ > value2$) {
+                        aux.push(0);
+                    } else if (value1$ < value2$) {
+                        aux.push(-1);
+                    } else if ((Math.abs(value1$ - value2$) > 0)) {
+                        aux.push(0);
+                    }
+                }
+                break;
+
+                case Mnemonic.dcmpl: {
+
+                }
+                break;
                 default:
-                    //throw new ClassInitializingException("unknown opcode in execution sequence");
+                    throw new ClassInitializingException("unknown opcode in execution sequence");
             }
         }
     }

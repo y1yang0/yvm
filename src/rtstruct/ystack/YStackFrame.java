@@ -44,4 +44,8 @@ public class YStackFrame {
     public Object getLocalVariable(int index) {
         return vars.get(index);
     }
+
+    public void setLocalVariable(int index, Object value) {
+        vars.set(index, value);
+    }
 }
