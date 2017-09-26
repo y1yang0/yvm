@@ -145,7 +145,7 @@ public class MetaClassConstantPool implements DebugExtension {
                 int m = (e == 0) ?
                         (bits & 0x7fffff) << 1 :
                         (bits & 0x7fffff) | 0x800000;
-                float floatV = (float) (s * m * Math.pow(2, Math.E - 150));
+                float floatV = (float) (s * m * Math.pow(2, e - 150));
                 floats.put(index, floatV);
             } else if (x instanceof ConstantLongInfo) {
                 int high = (int) ((ConstantLongInfo) x).highBytes.getValue();
@@ -161,7 +161,7 @@ public class MetaClassConstantPool implements DebugExtension {
                 long m = (e == 0) ?
                         (bits & 0xfffffffffffffL) << 1 :
                         (bits & 0xfffffffffffffL) | 0x10000000000000L;
-                double doubleV = s * m * Math.pow(2.0, Math.E - 1075);
+                double doubleV = s * m * Math.pow(2.0, e - 1075);
                 doubles.put(index, doubleV);
             } else if (x instanceof ConstantNameAndTypeInfo) {
                 int nameIndex = ((ConstantNameAndTypeInfo) x).nameIndex.getValue();
