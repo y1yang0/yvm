@@ -690,7 +690,8 @@ public class Opcode {
         return opcodes;
     }
 
-    public void debug() {
+    public void debug(String thisClassName) {
+        System.out.println("#" + thisClassName + " Opcodes#");
         opcodes.forEach((Elem) -> {
             Field[] fields = Mnemonic.class.getDeclaredFields();
             for (Field f : fields) {

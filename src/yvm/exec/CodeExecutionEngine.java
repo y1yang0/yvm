@@ -63,10 +63,11 @@ public final class CodeExecutionEngine {
 
         Opcode op = new Opcode(clinit.get3Placeholder());
         op.codes2Opcodes();
-        op.debug();
+        op.debug(metaClassRef.getQualifiedClassName() + " clinit");
         //codeExecution(op);
     }
 
+    @SuppressWarnings("unused")
     private void codeExecution(Opcode op) throws ClassInitializingException {
         YStack stack = thread.stack();
         class Aux {

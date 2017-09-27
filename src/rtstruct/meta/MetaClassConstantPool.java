@@ -3,14 +3,13 @@ package rtstruct.meta;
 import ycloader.adt.constantpool.*;
 import ycloader.dataobject.ConstantPoolObject;
 import ycloader.exception.ClassLinkingException;
-import yvm.adt.DebugExtension;
 import yvm.adt.Tuple2;
 import yvm.adt.Tuple3;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class MetaClassConstantPool implements DebugExtension {
+public class MetaClassConstantPool {
     private HashMap<                    //
             Integer,                    //cp index
             String>                     //class name
@@ -199,9 +198,8 @@ public class MetaClassConstantPool implements DebugExtension {
         return classes.get(index);
     }
 
-    @Override
-    public void debug() {
-        System.out.println("#################################Constant Pool#################################");
+    public void debug(String thisClassName) {
+        System.out.println("########################" + thisClassName + " Constant Pool#################################");
         System.out.println("#Class#");
         classes.forEach((Index, Str) -> {
             System.out.println("#" + Index + "\t" + Str + "#");

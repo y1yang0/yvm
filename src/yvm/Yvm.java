@@ -33,14 +33,13 @@ public final class Yvm {
             methodScope.addMetaClass(meta);
             if (!meta.superClassName.isEmpty() && !methodScope.existClass(meta.superClassName)) {
                 loadInheritChain(thread, loader, meta.superClassName);
-                loader.initializeClass(meta);
             } else {
                 //if there were loaded by the different class loader, then loading it again by this loader
                 if (!meta.superClassName.isEmpty() && Predicate.isNull(methodScope.getMetaClass(meta.superClassName, loader.getClass()))) {
                     loadInheritChain(thread, loader, meta.superClassName);
-                    loader.initializeClass(meta);
                 }
             }
+            loader.initializeClass(meta);
         } else {
             //if exist, check if they were loaded by the same class loader
             if (!leaves.isEmpty() && Predicate.isNull(methodScope.getMetaClass(leaves, loader.getClass()))) {
@@ -51,14 +50,13 @@ public final class Yvm {
 
                 if (!meta.superClassName.isEmpty() && !methodScope.existClass(meta.superClassName)) {
                     loadInheritChain(thread, loader, meta.superClassName);
-                    loader.initializeClass(meta);
                 } else {
                     //if there were loaded by the different class loader, then loading it again by this loader
                     if (!meta.superClassName.isEmpty() && Predicate.isNull(methodScope.getMetaClass(meta.superClassName, loader.getClass()))) {
                         loadInheritChain(thread, loader, meta.superClassName);
-                        loader.initializeClass(meta);
                     }
                 }
+                loader.initializeClass(meta);
             }
         }
     }
