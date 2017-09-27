@@ -1,7 +1,6 @@
 package yvm;
 
-import rtstruct.YHeap;
-import rtstruct.YMethodScope;
+import rtstruct.RuntimeVM;
 import rtstruct.YThread;
 import rtstruct.meta.MetaClass;
 import ycloader.YClassLoader;
@@ -11,12 +10,10 @@ import ycloader.exception.ClassLoadingException;
 import yvm.adt.Tuple6;
 
 public final class Yvm {
-    private YHeap heap;
-    private YMethodScope methodScope;
+    private RuntimeVM runtimeVM;
 
     public Yvm() {
-        heap = new YHeap();
-        methodScope = new YMethodScope();
+        runtimeVM = new RuntimeVM();
     }
 
     public static void main(String[] args) {
@@ -27,34 +24,25 @@ public final class Yvm {
 
     public void start() {
         YThread classLoadingThread = new YThread("classLoadingThread");
-        classLoadingThread.associateVMHeap(heap);
+        classLoadingThread.associateRuntimeVMData(runtimeVM);
 
         classLoadingThread.runTask(() -> {
             try {
                 YClassLoader loader = new YClassLoader();
                 loader.associateThread(classLoadingThread);
 
-                Tuple6 bundle = loader.loadClass("ycloader/example/Example");
+                Tuple6 bundle = loader.loadClass("java/io/ObjectStreamClass");
                 MetaClass meta = loader.linkClass(bundle);
-                methodScope.addMetaClass(meta);
+                runtimeVM.methodScope().addMetaClass(meta);
                 //todo:linking related class and adding to method scope, there related class could be found at meta which got before
 
-                loader.loadInheritanceChain(methodScope, classLoadingThread, loader, meta.superClassName);
+                loader.loadInheritanceChain(meta.superClassName);
 
-                loader.initializeClass(methodScope, meta);
+                loader.initializeClass(meta);
             } catch (ClassLinkingException | ClassLoadingException | ClassInitializingException e) {
                 e.printStackTrace();
             }
         });
     }
 
-    @SuppressWarnings("unused")
-    public synchronized YHeap getVMHeap() {
-        return heap;
-    }
-
-    @SuppressWarnings("unused")
-    public synchronized YMethodScope getMethodScope() {
-        return methodScope;
-    }
 }

@@ -7,8 +7,7 @@ public class YThread {
     private int programCounter = Integer.MIN_VALUE;
     private YStack stack;
     private String threadName;
-
-
+    private RuntimeVM runtimeVMRef;
 
     public YThread(String threadName) {
         this.threadName = threadName;
@@ -19,6 +18,10 @@ public class YThread {
         thread = new Thread(task);
         thread.setName(threadName);
         thread.start();
+    }
+
+    public void associateRuntimeVMData(RuntimeVM runtimeVM) {
+        this.runtimeVMRef = runtimeVM;
     }
 
     /**
@@ -49,13 +52,11 @@ public class YThread {
         this.programCounter = pc;
     }
 
-
     /**
-     * Associate reference block
+     * get runtime virtual machine data scope
+     * @return
      */
-    private YHeap heapRef;
-
-    public void associateVMHeap(YHeap heap) {
-        heapRef = heap;
+    public RuntimeVM runtimeVM() {
+        return runtimeVMRef;
     }
 }

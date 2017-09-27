@@ -7,15 +7,15 @@ import rtstruct.YThread;
 import rtstruct.meta.MetaClass;
 import rtstruct.meta.MetaClassConstantPool;
 import rtstruct.meta.MetaClassMethod;
+import rtstruct.rtexception.VMExecutionException;
 import rtstruct.ystack.YStack;
 import rtstruct.ystack.YStackFrame;
 import ycloader.YClassLoader;
 import ycloader.adt.attribute.Attribute;
 import ycloader.adt.u1;
 import ycloader.exception.ClassInitializingException;
-import ycloader.exception.ClassLinkingException;
-import ycloader.exception.ClassLoadingException;
 import yvm.adt.*;
+import yvm.auxil.Continuation;
 import yvm.auxil.Peel;
 import yvm.auxil.Predicate;
 
@@ -44,9 +44,9 @@ public final class CodeExecutionEngine {
     }
 
 
-    public void executeCLinit() throws ClassInitializingException {
+    public void executeCLinit() {
         if (!ignited) {
-            throw new ClassInitializingException("code execution engine is not ready");
+            throw new VMExecutionException("code execution engine is not ready");
         }
 
         Tuple6<String, String, u1[], MetaClassMethod.StackRequirement,
@@ -65,15 +65,19 @@ public final class CodeExecutionEngine {
         thread.stack().pushFrame(frame);
 
         Opcode op = new Opcode(clinit.get3Placeholder());
-        op.codes2Opcodes();
+        try {
+            op.codes2Opcodes();
+        } catch (ClassInitializingException ignored) {
+            throw new VMExecutionException("failed to convert binary code to opcodes in executing <clinit> method");
+        }
         op.debug(metaClassRef.getQualifiedClassName() + " clinit");
         //codeExecution(op);
     }
 
-    @SuppressWarnings("unused")
-    private void codeExecution(Opcode op) throws ClassInitializingException, ClassLinkingException, ClassLoadingException {
+    @SuppressWarnings({"unchecked","unused"})
+    private void codeExecution(Opcode op){
         YStack stack = thread.stack();
-        class Delegate {
+        class ConvenientDelegate {
             private Object peek() {
                 return stack.currentFrame().peekOperand();
             }
@@ -89,12 +93,23 @@ public final class CodeExecutionEngine {
             private Object getLocalVar(int index){
                 return stack.currentFrame().getLocalVariable(index);
             }
+            private int popInt(){return (int) stack.currentFrame().popOperand();}
+            private double popDouble(){return (double) stack.currentFrame().popOperand();}
+            private long popLong(){return (long) stack.currentFrame().popOperand();}
+            private float popFloat(){return (float) stack.currentFrame().popOperand();}
         }
+        ConvenientDelegate dg = new ConvenientDelegate();
 
-        Delegate dg = new Delegate();
-        //program counter//opcode value//operand of related opcode
-        ArrayList<Tuple3<Integer, Integer, Operand>>
+        ArrayList<                                      //get opcode list from argument "op" of Opcode
+                Tuple3<                                 //
+                        Integer,                        //program counter
+                        Integer,                        //opcode numeric value
+                        Operand>>                       //operand of this opcode
                 opcodes = op.getOpcodes();
+
+
+        //opcode execution
+
         for (int i = 0; i < opcodes.size(); i++) {
             Tuple3 cd = opcodes.get(i);
             int programCount = (Integer) cd.get1Placeholder();
@@ -103,12 +118,11 @@ public final class CodeExecutionEngine {
 
                 //Load reference from array
                 case Mnemonic.aaload: {
-                    int index = (int) dg.pop();
+                    int index = dg.popInt();
                     YArray arrayRef = (YArray) dg.pop();
 
-                    if (isNull(arrayRef)) {
-                        throw new NullPointerException("reference of an array is null");
-                    }
+                    Continuation.ifNullThrowNullptrException(arrayRef);
+
                     if (!inRange(arrayRef, index)) {
                         throw new ArrayIndexOutOfBoundsException("array index " + index + " out of bounds");
                     }
@@ -119,7 +133,7 @@ public final class CodeExecutionEngine {
                 //Store into reference array
                 case Mnemonic.aastore: {
                     Object value = dg.pop();
-                    int index = (int) dg.pop();
+                    int index = dg.popInt();
                     YArray arrayRef = (YArray) dg.pop();
 
                     if (isClass(value.getClass())) {
@@ -208,7 +222,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.anewarray: {
                     //The count represents the number of components of the array to
                     //be created.
-                    int count = (int) dg.pop();
+                    int count = dg.popInt();
                     byte indexByte1 = (byte) ((Operand) cd.get3Placeholder()).get0();
                     byte indexByte2 = (byte) ((Operand) cd.get3Placeholder()).get1();
                     int index = (indexByte1 << 8) | indexByte2;
@@ -256,9 +270,7 @@ public final class CodeExecutionEngine {
                 //Get length of array
                 case Mnemonic.arraylength: {
                     YArray arrayRef = (YArray) dg.pop();
-                    if (isNull(arrayRef)) {
-                        throw new NullPointerException("array reference is null");
-                    }
+                    Continuation.ifNullThrowNullptrException(arrayRef);
                     dg.push(arrayRef.getDimension());
                 }
                 break;
@@ -315,21 +327,21 @@ public final class CodeExecutionEngine {
 
                 //Load byte or boolean from array
                 case Mnemonic.baload: {
-                    int index = (int) dg.pop();
-                    YArray arrayRef = (YArray) dg.pop();
-                    if (isNull(arrayRef)) {
-                        throw new NullPointerException("array reference is null");
-                    }
-                    if (index > arrayRef.getDimension()) {
+                    int index = dg.popInt();
+                    YArray array = (YArray) dg.pop();
+
+                    Continuation.ifNullThrowNullptrException(array);
+
+                    if (index > array.getDimension()) {
                         throw new ArrayIndexOutOfBoundsException("array index out of bounds");
                     }
-                    dg.push(arrayRef.get(index));
+                    dg.push(array.get(index));
                 }
                 break;
 
                 case Mnemonic.bastore: {
-                    int value = (int) dg.pop();
-                    int index = (int) dg.pop();
+                    int value = dg.popInt();
+                    int index = dg.popInt();
                     YArray array = (YArray) dg.pop();
                     array.set(index, value);
                 }
@@ -341,15 +353,15 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.caload: {
-                    int index = (int) dg.pop();
+                    int index = dg.popInt();
                     YArray array = (YArray) dg.pop();
                     dg.push(array.get(index));
                 }
                 break;
 
                 case Mnemonic.castore: {
-                    int value = (int) dg.pop();
-                    int index = (int) dg.pop();
+                    int value = dg.popInt();
+                    int index = dg.popInt();
                     YArray array = (YArray) dg.pop();
                     array.set(index, value);
                 }
@@ -361,40 +373,40 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.d2f: {
-                    double value = (double) dg.pop();
+                    double value = dg.popDouble();
                     dg.push((float) value);
                 }
                 break;
 
                 case Mnemonic.d2i: {
-                    double value = (double) dg.pop();
+                    double value = dg.popDouble();
                     dg.push((int) value);
                 }
                 break;
 
                 case Mnemonic.d2l: {
-                    double value = (double) dg.pop();
+                    double value = dg.popDouble();
                     dg.push((long) value);
                 }
                 break;
 
                 case Mnemonic.dadd: {
-                    double value2 = (double) dg.pop();
-                    double value1 = (double) dg.pop();
+                    double value2 = dg.popDouble();
+                    double value1 = dg.popDouble();
                     dg.push(value1 + value2);
                 }
                 break;
 
                 case Mnemonic.daload: {
-                    int index = (int) dg.pop();
+                    int index = dg.popInt();
                     YArray array = (YArray) dg.pop();
                     dg.push(array.get(index));
                 }
                 break;
 
                 case Mnemonic.dastore: {
-                    double value = (double) dg.pop();
-                    int index = (int) dg.pop();
+                    double value = dg.popDouble();
+                    int index = dg.popInt();
                     YArray array = (YArray) dg.pop();
                     array.set(index, value);
                 }
@@ -402,8 +414,8 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.dcmpg:
                 case Mnemonic.dcmpl: {
-                    double value2 = (double) dg.pop();
-                    double value1 = (double) dg.pop();
+                    double value2 = dg.popDouble();
+                    double value1 = dg.popDouble();
                     float value1$ = (float) value1;
                     float value2$ = (float) value2;
                     if (value1$ > value2$) {
@@ -427,8 +439,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.ddiv: {
-                    double value2 = (double) dg.pop();
-                    double value1 = (double) dg.pop();
+                    double value2 = dg.popDouble();
+                    double value1 = dg.popDouble();
                     dg.push(value1 / value2);
                 }
                 break;
@@ -465,20 +477,20 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.dmul: {
-                    double value2 = (double) dg.pop();
-                    double value1 = (double) dg.pop();
+                    double value2 = dg.popDouble();
+                    double value1 = dg.popDouble();
                     dg.push(value1 * value2);
                 }
 
                 case Mnemonic.dneg:{
-                    double value = (double) dg.pop();
+                    double value = dg.popDouble();
                     dg.push(-value);
                 }
                 break;
 
                 case Mnemonic.drem:{
-                    double value2 = (double) dg.pop();
-                    double value1 = (double) dg.pop();
+                    double value2 = dg.popDouble();
+                    double value1 = dg.popDouble();
                     dg.push(value1 % value2);
                 }
                 break;
@@ -489,39 +501,39 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.dstore:{
-                    double value = (double) dg.pop();
+                    double value = dg.popDouble();
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
                     dg.setLocalVar(index,value);
                 }
                 break;
 
                 case Mnemonic.dstore_0:{
-                    double value = (double) dg.pop();
+                    double value = dg.popDouble();
                     dg.setLocalVar(0,value);
                 }
                 break;
 
                 case Mnemonic.dstore_1:{
-                    double value = (double) dg.pop();
+                    double value = dg.popDouble();
                     dg.setLocalVar(1,value);
                 }
                 break;
 
                 case Mnemonic.dstore_2:{
-                    double value = (double) dg.pop();
+                    double value = dg.popDouble();
                     dg.setLocalVar(2,value);
                 }
                 break;
 
                 case Mnemonic.dstore_3:{
-                    double value = (double) dg.pop();
+                    double value = dg.popDouble();
                     dg.setLocalVar(3,value);
                 }
                 break;
 
                 case Mnemonic.dsub:{
-                    double value2 = (double) dg.pop();
-                    double value1 = (double) dg.pop();
+                    double value2 = dg.popDouble();
+                    double value1 = dg.popDouble();
                     dg.push(value1 - value2);
                 }
                 break;
@@ -649,32 +661,32 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.f2d:{
-                    float value = (float) dg.pop();
+                    float value = dg.popFloat();
                     dg.push((double)value);
                 }
                 break;
 
                 case Mnemonic.f2i:{
-                    float value = (float) dg.pop();
+                    float value = dg.popFloat();
                     dg.push((int)value);
                 }
                 break;
 
                 case Mnemonic.f2l:{
-                    float value = (float) dg.pop();
+                    float value = dg.popFloat();
                     dg.push((long)value);
                 }
                 break;
 
                 case Mnemonic.fadd:{
-                    float value2 = (float) dg.pop();
-                    float value1 = (float) dg.pop();
+                    float value2 = dg.popFloat();
+                    float value1 = dg.popFloat();
                     dg.push(value1 + value2);
                 }
                 break;
 
                 case Mnemonic.faload:{
-                    int index = (int) dg.pop();
+                    int index = dg.popInt();
                     YArray array = (YArray) dg.pop();
                     dg.push(array.get(index));
                 }
@@ -682,7 +694,7 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.fastore:{
                     float  value = (float)dg.pop();
-                    int index = (int) dg.pop();
+                    int index = dg.popInt();
                     YArray array = (YArray) dg.pop();
                     array.set(index,value);
                 }
@@ -690,8 +702,8 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.fcmpg:
                 case Mnemonic.fcmpl:{
-                    float value2 = (float) dg.pop();
-                    float value1  = (float) dg.pop();
+                    float value2 = dg.popFloat();
+                    float value1  = dg.popFloat();
                     if(value1 > value2){
                         dg.push(1);
                     }else if(value1 < value2){
@@ -718,8 +730,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.fdiv:{
-                    float value2 = (float) dg.pop();
-                    float value1  = (float) dg.pop();
+                    float value2 = dg.popFloat();
+                    float value1  = dg.popFloat();
                     dg.push(value1/value2);
                 }
                 break;
@@ -751,21 +763,21 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.fmul:{
-                    float value2 = (float) dg.pop();
-                    float value1 = (float) dg.pop();
+                    float value2 = dg.popFloat();
+                    float value1 = dg.popFloat();
                     dg.push(value1*value2);
                 }
                 break;
 
                 case Mnemonic.fneg:{
-                    float value = (float) dg.pop();
+                    float value = dg.popFloat();
                     dg.push(-value);
                 }
                 break;
 
                 case Mnemonic.frem:{
-                    float value2 = (float) dg.pop();
-                    float value1 = (float) dg.pop();
+                    float value2 = dg.popFloat();
+                    float value1 = dg.popFloat();
                     dg.push(value1-(value1/value2));
                 }
                 break;
@@ -777,38 +789,38 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.fstore:{
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    float value = (float) dg.pop();
+                    float value = dg.popFloat();
                     dg.setLocalVar(index, value);
                 }
                 break;
 
                 case Mnemonic.fstore_0: {
-                    float value = (float) dg.pop();
+                    float value = dg.popFloat();
                     dg.setLocalVar(0, value);
                 }
                 break;
 
                 case Mnemonic.fstore_1: {
-                    float value = (float) dg.pop();
+                    float value = dg.popFloat();
                     dg.setLocalVar(1, value);
                 }
                 break;
 
                 case Mnemonic.fstore_2: {
-                    float value = (float) dg.pop();
+                    float value = dg.popFloat();
                     dg.setLocalVar(2, value);
                 }
                 break;
 
                 case Mnemonic.fstore_3: {
-                    float value = (float) dg.pop();
+                    float value = dg.popFloat();
                     dg.setLocalVar(3, value);
                 }
                 break;
 
                 case Mnemonic.fsub: {
-                    float value2 = (float) dg.pop();
-                    float value1 = (float) dg.pop();
+                    float value2 = dg.popFloat();
+                    float value1 = dg.popFloat();
                     dg.push(value1 - value2);
                 }
                 break;
@@ -830,7 +842,7 @@ public final class CodeExecutionEngine {
                     Tuple3 newOp = opcodes.get(branchOffset);
                     int currentI = opcodes.indexOf(newOp);
                     if (currentI == -1) {
-                        throw new ClassInitializingException("incorrect address to go");
+                        throw new VMExecutionException("incorrect address to go");
                     }
                     i = currentI;
                 }
@@ -851,78 +863,78 @@ public final class CodeExecutionEngine {
                     Tuple3 newOp = opcodes.get(branchOffset);
                     int currentI = opcodes.indexOf(newOp);
                     if (currentI == -1) {
-                        throw new ClassInitializingException("incorrect address to go");
+                        throw new VMExecutionException("incorrect address to go");
                     }
                     i = currentI;
                 }
                 break;
 
                 case Mnemonic.i2b: {
-                    int value = (int) dg.pop();
+                    int value = dg.popInt();
                     byte value$ = (byte) value;
                     dg.push((int) value$);
                 }
                 break;
 
                 case Mnemonic.i2c: {
-                    int value = (int) dg.pop();
+                    int value = dg.popInt();
                     char value$ = (char) value;
                     dg.push((int) value$);
                 }
                 break;
 
                 case Mnemonic.i2d: {
-                    int value = (int) dg.pop();
+                    int value = dg.popInt();
                     double value$ = (double) value;
                     dg.push(value$);
                 }
                 break;
 
                 case Mnemonic.i2f: {
-                    int value = (int) dg.pop();
+                    int value = dg.popInt();
                     float value$ = (float) value;
                     dg.push(value$);
                 }
                 break;
 
                 case Mnemonic.i2l: {
-                    int value = (int) dg.pop();
+                    int value = dg.popInt();
                     long value$ = (long) value;
                     dg.push(value$);
                 }
                 break;
 
                 case Mnemonic.i2s: {
-                    int value = (int) dg.pop();
+                    int value = dg.popInt();
                     short value$ = (short) value;
                     dg.push((int) value$);
                 }
                 break;
 
                 case Mnemonic.iadd: {
-                    int value2 = (int) dg.pop();
-                    int value1 = (int) dg.pop();
+                    int value2 = dg.popInt();
+                    int value1 = dg.popInt();
                     dg.push(value1 + value2);
                 }
                 break;
 
                 case Mnemonic.iaload: {
-                    int index = (int) dg.pop();
+                    int index = dg.popInt();
                     YArray array = (YArray) dg.pop();
                     dg.push(array.get(index));
                 }
                 break;
 
                 case Mnemonic.iand: {
-                    int value2 = (int) dg.pop();
-                    int value1 = (int) dg.pop();
+                    int value2 = dg.popInt();
+                    int value1 = dg.popInt();
                     dg.push(value1 & value2);
                 }
                 break;
 
                 case Mnemonic.iastore: {
-                    int value = (int) dg.pop();
-                    int index = (int) dg.pop();
+                    int value = dg.popInt();
+                    int index = dg.popInt();
                     YArray array = (YArray) dg.pop();
                     array.set(index, value);
                 }
@@ -964,8 +976,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.idiv: {
-                    int value2 = (int) dg.pop();
-                    int value1 = (int) dg.pop();
+                    int value2 = dg.popInt();
+                    int value1 = dg.popInt();
                     if (value1 == 0) {
                         throw new ArithmeticException("the division is 0");
                     }
@@ -983,7 +995,7 @@ public final class CodeExecutionEngine {
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
-                            throw new ClassInitializingException("incorrect address to go");
+                            throw new VMExecutionException("incorrect address to go");
                         }
                         i = currentI;
                     }
@@ -1000,7 +1012,7 @@ public final class CodeExecutionEngine {
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
-                            throw new ClassInitializingException("incorrect address to go");
+                            throw new VMExecutionException("incorrect address to go");
                         }
                         i = currentI;
                     }
@@ -1008,8 +1020,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.if_icmpeq: {
-                    int value2 = (int) dg.pop();
-                    int value1 = (int) dg.pop();
+                    int value2 = dg.popInt();
+                    int value1 = dg.popInt();
                     if (value1 == value2) {
                         int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
                         int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
@@ -1017,7 +1029,7 @@ public final class CodeExecutionEngine {
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
-                            throw new ClassInitializingException("incorrect address to go");
+                            throw new VMExecutionException("incorrect address to go");
                         }
                         i = currentI;
                     }
@@ -1025,8 +1037,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.if_icmpne: {
-                    int value2 = (int) dg.pop();
-                    int value1 = (int) dg.pop();
+                    int value2 = dg.popInt();
+                    int value1 = dg.popInt();
                     if (value1 != value2) {
                         int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
                         int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
@@ -1034,7 +1046,7 @@ public final class CodeExecutionEngine {
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
-                            throw new ClassInitializingException("incorrect address to go");
+                            throw new VMExecutionException("incorrect address to go");
                         }
                         i = currentI;
                     }
@@ -1042,8 +1054,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.if_icmplt: {
-                    int value2 = (int) dg.pop();
-                    int value1 = (int) dg.pop();
+                    int value2 = dg.popInt();
+                    int value1 = dg.popInt();
                     if (value1 < value2) {
                         int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
                         int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
@@ -1051,7 +1063,7 @@ public final class CodeExecutionEngine {
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
-                            throw new ClassInitializingException("incorrect address to go");
+                            throw new VMExecutionException("incorrect address to go");
                         }
                         i = currentI;
                     }
@@ -1059,8 +1071,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.if_icmpge: {
-                    int value2 = (int) dg.pop();
-                    int value1 = (int) dg.pop();
+                    int value2 = dg.popInt();
+                    int value1 = dg.popInt();
                     if (value1 >= value2) {
                         int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
                         int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
@@ -1068,7 +1080,7 @@ public final class CodeExecutionEngine {
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
-                            throw new ClassInitializingException("incorrect address to go");
+                            throw new VMExecutionException("incorrect address to go");
                         }
                         i = currentI;
                     }
@@ -1076,8 +1088,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.if_icmpgt: {
-                    int value2 = (int) dg.pop();
-                    int value1 = (int) dg.pop();
+                    int value2 = dg.popInt();
+                    int value1 = dg.popInt();
                     if (value1 > value2) {
                         int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
                         int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
@@ -1085,7 +1097,7 @@ public final class CodeExecutionEngine {
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
-                            throw new ClassInitializingException("incorrect address to go");
+                            throw new VMExecutionException("incorrect address to go");
                         }
                         i = currentI;
                     }
@@ -1093,8 +1105,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.if_icmple: {
-                    int value2 = (int) dg.pop();
-                    int value1 = (int) dg.pop();
+                    int value2 = dg.popInt();
+                    int value1 = dg.popInt();
                     if (value1 <= value2) {
                         int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
                         int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
@@ -1102,7 +1114,7 @@ public final class CodeExecutionEngine {
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
-                            throw new ClassInitializingException("incorrect address to go");
+                            throw new VMExecutionException("incorrect address to go");
                         }
                         i = currentI;
                     }
@@ -1110,7 +1122,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.ifeq: {
-                    int value = (int) dg.pop();
+                    int value = dg.popInt();
                     if (value == 0) {
                         int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
                         int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
@@ -1118,7 +1130,7 @@ public final class CodeExecutionEngine {
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
-                            throw new ClassInitializingException("incorrect address to go");
+                            throw new VMExecutionException("incorrect address to go");
                         }
                         i = currentI;
                     }
@@ -1126,7 +1138,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.ifne: {
-                    int value = (int) dg.pop();
+                    int value = dg.popInt();
                     if (value != 0) {
                         int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
                         int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
@@ -1134,7 +1146,7 @@ public final class CodeExecutionEngine {
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
-                            throw new ClassInitializingException("incorrect address to go");
+                            throw new VMExecutionException("incorrect address to go");
                         }
                         i = currentI;
                     }
@@ -1142,7 +1154,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.iflt: {
-                    int value = (int) dg.pop();
+                    int value = dg.popInt();
                     if (value < 0) {
                         int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
                         int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
@@ -1150,7 +1162,7 @@ public final class CodeExecutionEngine {
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
-                            throw new ClassInitializingException("incorrect address to go");
+                            throw new VMExecutionException("incorrect address to go");
                         }
                         i = currentI;
                     }
@@ -1158,7 +1170,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.ifge: {
-                    int value = (int) dg.pop();
+                    int value = dg.popInt();
                     if (value >= 0) {
                         int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
                         int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
@@ -1166,7 +1178,7 @@ public final class CodeExecutionEngine {
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
-                            throw new ClassInitializingException("incorrect address to go");
+                            throw new VMExecutionException("incorrect address to go");
                         }
                         i = currentI;
                     }
@@ -1174,7 +1186,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.ifgt: {
-                    int value = (int) dg.pop();
+                    int value = dg.popInt();
                     if (value > 0) {
                         int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
                         int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
@@ -1182,7 +1194,7 @@ public final class CodeExecutionEngine {
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
-                            throw new ClassInitializingException("incorrect address to go");
+                            throw new VMExecutionException("incorrect address to go");
                         }
                         i = currentI;
                     }
@@ -1190,7 +1202,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.ifle: {
-                    int value = (int) dg.pop();
+                    int value = dg.popInt();
                     if (value <= 0) {
                         int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
                         int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
@@ -1198,7 +1210,7 @@ public final class CodeExecutionEngine {
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
-                            throw new ClassInitializingException("incorrect address to go");
+                            throw new VMExecutionException("incorrect address to go");
                         }
                         i = currentI;
                     }
@@ -1214,7 +1226,7 @@ public final class CodeExecutionEngine {
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
-                            throw new ClassInitializingException("incorrect address to go");
+                            throw new VMExecutionException("incorrect address to go");
                         }
                         i = currentI;
                     }
@@ -1230,7 +1242,7 @@ public final class CodeExecutionEngine {
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
-                            throw new ClassInitializingException("incorrect address to go");
+                            throw new VMExecutionException("incorrect address to go");
                         }
                         i = currentI;
                     }
@@ -1276,14 +1288,14 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.imul: {
-                    int value2 = (int) dg.pop();
-                    int value1 = (int) dg.pop();
+                    int value2 = dg.popInt();
+                    int value1 = dg.popInt();
                     dg.push(value1 * value2);
                 }
                 break;
 
                 case Mnemonic.ineg: {
-                    int value = (int) dg.pop();
+                    int value = dg.popInt();
                     dg.push((~value) + 1);
                 }
                 break;
@@ -1319,15 +1331,15 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.ior: {
-                    int value2 = (int) dg.pop();
-                    int value1 = (int) dg.pop();
+                    int value2 = dg.popInt();
+                    int value1 = dg.popInt();
                     dg.push(value1 | value2);
                 }
                 break;
 
                 case Mnemonic.irem: {
-                    int value2 = (int) dg.pop();
-                    int value1 = (int) dg.pop();
+                    int value2 = dg.popInt();
+                    int value1 = dg.popInt();
                     if (value2 == 0) {
                         throw new ArithmeticException("the division is 0");
                     }
@@ -1341,60 +1353,60 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.ishl: {
-                    int value2 = (int) dg.pop();
-                    int value1 = (int) dg.pop();
+                    int value2 = dg.popInt();
+                    int value1 = dg.popInt();
                     dg.push(value1 << (value2 & 0x1F));
                 }
                 break;
 
                 case Mnemonic.ishr: {
-                    int value2 = (int) dg.pop();
-                    int value1 = (int) dg.pop();
+                    int value2 = dg.popInt();
+                    int value1 = dg.popInt();
                     dg.push(value1 >> (value2 & 0x1F));
                 }
                 break;
 
                 case Mnemonic.istore: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    int value = (int) dg.pop();
+                    int value = dg.popInt();
                     dg.setLocalVar(index, value);
                 }
                 break;
 
                 case Mnemonic.istore_0: {
-                    int value = (int) dg.pop();
+                    int value = dg.popInt();
                     dg.setLocalVar(0, value);
                 }
                 break;
 
                 case Mnemonic.istore_1: {
-                    int value = (int) dg.pop();
+                    int value = dg.popInt();
                     dg.setLocalVar(1, value);
                 }
                 break;
 
                 case Mnemonic.istore_2: {
-                    int value = (int) dg.pop();
+                    int value = dg.popInt();
                     dg.setLocalVar(2, value);
                 }
                 break;
 
                 case Mnemonic.istore_3: {
-                    int value = (int) dg.pop();
+                    int value = dg.popInt();
                     dg.setLocalVar(3, value);
                 }
                 break;
 
                 case Mnemonic.isub: {
-                    int value2 = (int) dg.pop();
-                    int value1 = (int) dg.pop();
+                    int value2 = dg.popInt();
+                    int value1 = dg.popInt();
                     dg.push(value1 - value2);
                 }
                 break;
 
                 case Mnemonic.iushr: {
-                    int value2 = (int) dg.pop();
-                    int value1 = (int) dg.pop();
+                    int value2 = dg.popInt();
+                    int value1 = dg.popInt();
                     if (value1 > 0) {
                         dg.push(value1 >> (value2 & 0x1F));
                     } else if (value1 < 0) {
@@ -1404,8 +1416,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.ixor: {
-                    int value2 = (int) dg.pop();
-                    int value1 = (int) dg.pop();
+                    int value2 = dg.popInt();
+                    int value1 = dg.popInt();
                     dg.push(value1 ^ value2);
 
                 }
@@ -1413,59 +1425,59 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.jsr:
                 case Mnemonic.jsr_w: {
-                    throw new ClassInitializingException("unsupport the JSR opcode, you may change a posterior compiler version of Java SE 6 ");
+                    throw new VMExecutionException("unsupport the JSR opcode, you may change a posterior compiler version of Java SE 6 ");
                 }
 
                 case Mnemonic.l2d: {
-                    long value = (long) dg.pop();
+                    long value = dg.popLong();
                     dg.push((double) value);
                 }
                 break;
 
                 case Mnemonic.l2f: {
-                    long value = (long) dg.pop();
+                    long value = dg.popLong();
                     dg.push((float) value);
                 }
                 break;
 
                 case Mnemonic.l2i: {
-                    long value = (long) dg.pop();
+                    long value = dg.popLong();
                     dg.push((int) value);
                 }
                 break;
 
                 case Mnemonic.ladd: {
-                    long value2 = (long) dg.pop();
-                    long value1 = (long) dg.pop();
+                    long value2 = dg.popLong();
+                    long value1 = dg.popLong();
                     dg.push(value1 + value2);
                 }
                 break;
 
                 case Mnemonic.laload: {
-                    int index = (int) dg.pop();
+                    int index = dg.popInt();
                     YArray array = (YArray) dg.pop();
                     dg.push(array.get(index));
                 }
                 break;
 
                 case Mnemonic.land: {
-                    long value2 = (long) dg.pop();
-                    long value1 = (long) dg.pop();
+                    long value2 = dg.popLong();
+                    long value1 = dg.popLong();
                     dg.push(value1 & value2);
                 }
                 break;
 
                 case Mnemonic.lastore: {
-                    long value = (long) dg.pop();
-                    int index = (int) dg.pop();
+                    long value = dg.popLong();
+                    int index = dg.popInt();
                     YArray array = (YArray) dg.pop();
                     dg.setLocalVar(index, array.get(index));
                 }
                 break;
 
                 case Mnemonic.lcmp: {
-                    long value2 = (long) dg.pop();
-                    long value1 = (long) dg.pop();
+                    long value2 = dg.popLong();
+                    long value1 = dg.popLong();
                     if (value1 > value2) {
                         dg.push(1);
                     } else if (value1 == value2) {
@@ -1498,10 +1510,11 @@ public final class CodeExecutionEngine {
                         dg.push(poolRef.findInInteger(index));
                     } else if (!Predicate.isNull(poolRef.findInString(index))) {
                         dg.push(poolRef.findInString(index));
-                    } else if (!Predicate.isNull(poolRef.findInClass(classLoader, index))) {
-                        Class c = poolRef.findInClass(classLoader, index);
+                    } else if (!Predicate.isNull(poolRef.findInClass(index))) {
+                        Class c = methodScopeRef.getMetaClass(poolRef.findInClass(index),classLoader.getClass()).getClassLoader();
                         dg.push(c);
                     } else {
+                        //todo:if not find class then load it
                         //todo: support methodtype and methodhandle
                     }
                 }
@@ -1520,10 +1533,11 @@ public final class CodeExecutionEngine {
                         dg.push(poolRef.findInInteger(index));
                     } else if (!Predicate.isNull(poolRef.findInString(index))) {
                         dg.push(poolRef.findInString(index));
-                    } else if (!Predicate.isNull(poolRef.findInClass(classLoader, index))) {
-                        Class c = poolRef.findInClass(classLoader, index);
+                    } else if (!Predicate.isNull(poolRef.findInClass(index))) {
+                        Class c = methodScopeRef.getMetaClass(poolRef.findInClass(index),classLoader.getClass()).getClassLoader();
                         dg.push(c);
                     } else {
+                        //todo:if not find class then load it
                         //todo: support methodtype and methodhandle
                     }
                 }
@@ -1541,14 +1555,14 @@ public final class CodeExecutionEngine {
                     } else if (!Predicate.isNull(poolRef.findInDouble(index))) {
                         dg.push(poolRef.findInDouble(index));
                     } else {
-                        throw new ClassInitializingException("ldc_2 has a invalid constant pool entry");
+                        throw new VMExecutionException("ldc_2 has a invalid constant pool entry");
                     }
                 }
                 break;
 
                 case Mnemonic.ldiv: {
-                    long value2 = (long) dg.pop();
-                    long value1 = (long) dg.pop();
+                    long value2 = dg.popLong();
+                    long value1 = dg.popLong();
                     dg.push(value1 / value2);
                 }
                 break;
@@ -1580,14 +1594,14 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.lmul: {
-                    long value2 = (long) dg.pop();
-                    long value1 = (long) dg.pop();
+                    long value2 = dg.popLong();
+                    long value1 = dg.popLong();
                     dg.push(value1 * value2);
                 }
                 break;
 
                 case Mnemonic.lneg: {
-                    long value = (long) dg.pop();
+                    long value = dg.popLong();
                     dg.push(-value);
                 }
                 break;
@@ -1598,15 +1612,15 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.lor: {
-                    long value2 = (long) dg.pop();
-                    long value1 = (long) dg.pop();
+                    long value2 = dg.popLong();
+                    long value1 = dg.popLong();
                     dg.push(value1 | value2);
                 }
                 break;
 
                 case Mnemonic.lrem: {
-                    long value2 = (long) dg.pop();
-                    long value1 = (long) dg.pop();
+                    long value2 = dg.popLong();
+                    long value1 = dg.popLong();
                     if (value1 == 0) {
                         throw new ArithmeticException("the division is 0");
                     }
@@ -1620,67 +1634,67 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.lshl: {
-                    long value2 = (long) dg.pop();
-                    long value1 = (long) dg.pop();
+                    long value2 = dg.popLong();
+                    long value1 = dg.popLong();
                     dg.push(value1 << (value2 & 0x3F));
                 }
                 break;
 
                 case Mnemonic.lshr: {
-                    long value2 = (long) dg.pop();
-                    long value1 = (long) dg.pop();
+                    long value2 = dg.popLong();
+                    long value1 = dg.popLong();
                     dg.push(value1 >> (value2 & 0x3F));
                 }
                 break;
 
                 case Mnemonic.lstore: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    long value = (long) dg.pop();
+                    long value = dg.popLong();
                     dg.setLocalVar(index, value);
                 }
                 break;
 
                 case Mnemonic.lstore_0: {
-                    long value = (long) dg.pop();
+                    long value = dg.popLong();
                     dg.setLocalVar(0, value);
                 }
                 break;
 
                 case Mnemonic.lstore_1: {
-                    long value = (long) dg.pop();
+                    long value = dg.popLong();
                     dg.setLocalVar(1, value);
                 }
                 break;
 
                 case Mnemonic.lstore_2: {
-                    long value = (long) dg.pop();
+                    long value = dg.popLong();
                     dg.setLocalVar(2, value);
                 }
                 break;
 
                 case Mnemonic.lstore_3: {
-                    long value = (long) dg.pop();
+                    long value = dg.popLong();
                     dg.setLocalVar(3, value);
                 }
                 break;
 
                 case Mnemonic.lsub: {
-                    long value2 = (long) dg.pop();
-                    long value1 = (long) dg.pop();
+                    long value2 = dg.popLong();
+                    long value1 = dg.popLong();
                     dg.push(value1 - value2);
                 }
                 break;
 
                 case Mnemonic.lushr: {
-                    int value2 = (int) dg.pop();
-                    long value1 = (long) dg.pop();
+                    int value2 = dg.popInt();
+                    long value1 = dg.popLong();
                     dg.push((value1 >> (value2 & 0x3F)) + (2L << ~(value2 & 0x3F)));
                 }
                 break;
 
                 case Mnemonic.lxor: {
-                    long value2 = (long) dg.pop();
-                    long value1 = (long) dg.pop();
+                    long value2 = dg.popLong();
+                    long value1 = dg.popLong();
                     dg.push(value1 ^ value2);
                 }
                 break;
@@ -1758,23 +1772,23 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.saload: {
-                    int index = (int) dg.pop();
+                    int index = dg.popInt();
                     YArray array = (YArray) dg.pop();
-                    if (Predicate.isNull(array)) {
-                        throw new NullPointerException("array is null");
-                    }
+
+                    Continuation.ifNullThrowNullptrException(array);
+
                     short v = (short) array.get(index);
                     dg.push(v);
                 }
                 break;
 
                 case Mnemonic.sastore: {
-                    int value = (int) dg.pop();
-                    int index = (int) dg.pop();
+                    int value = dg.popInt();
+                    int index = dg.popInt();
                     YArray array = (YArray) dg.pop();
-                    if (Predicate.isNull(array)) {
-                        throw new NullPointerException("array is null");
-                    }
+
+                    Continuation.ifNullThrowNullptrException(array);
+
                     array.set(index, (short) value);
                 }
                 break;
@@ -1799,7 +1813,7 @@ public final class CodeExecutionEngine {
                         dg.push(value1);
                         dg.push(value2);
                     } else {
-                        throw new ClassInitializingException("The Java Virtual Machine does not provide an instruction\n" +
+                        throw new VMExecutionException("The Java Virtual Machine does not provide an instruction\n" +
                                 "implementing a swap on operands of category 2 computational\n" +
                                 "types.");
                     }
@@ -1817,7 +1831,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 default:
-                    throw new ClassInitializingException("unknown opcode in execution sequence");
+                    throw new VMExecutionException("unknown opcode in execution sequence");
             }
         }
     }

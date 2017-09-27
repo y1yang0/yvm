@@ -31,9 +31,7 @@ import java.io.IOException;
 
 public class YClassLoader {
     private ClassFileReader reader;
-    /**
-     * Associate reference block
-     */
+
     private YThread threadRef;
 
     private String javaClass;
@@ -43,11 +41,12 @@ public class YClassLoader {
         this.javaClass = javaClass;
     }
 
+    @SuppressWarnings("unused")
     public YClassLoader() {
 
     }
 
-    @SuppressWarnings("unchecked,unused")
+    @SuppressWarnings({"unchecked","unused"})
     public Tuple6<ConstantPoolObject, InterfacesObject,
             FieldObject, MethodObject,
             ClassFileAttributeObject, u2[]> loadClass(String javaClass) throws ClassLoadingException {
@@ -115,11 +114,9 @@ public class YClassLoader {
         return m;
     }
 
-    public void initializeClass(YMethodScope methodScope, MetaClass meta) throws ClassInitializingException {
-        CodeExecutionEngine engine = new CodeExecutionEngine(threadRef);
-        engine.ignite(meta);
-        engine.associateClassLoader(this);
-        engine.associateMethodScope(methodScope);
+    public void initializeClass(MetaClass meta) throws ClassInitializingException {
+        CodeExecutionEngine engine = new CodeExecutionEngine();
+        engine.ignite(meta,YClassLoader.this);
         engine.executeCLinit();
     }
 
@@ -175,19 +172,21 @@ public class YClassLoader {
         return meta;
     }
 
-    public void loadInheritanceChain(YMethodScope methodScope, YThread thread, YClassLoader loader, String leaves)
+    public void loadInheritanceChain(String leaves)
             throws ClassLoadingException, ClassLinkingException, ClassInitializingException {
-        if (!methodScope.existClass(leaves, loader.getClass())) {
-            loader.associateThread(thread);
-            Tuple6 bundle = loader.loadClass(leaves);
-            MetaClass meta = loader.linkClass(bundle);
+        YMethodScope methodScope = threadRef.runtimeVM().methodScope();
+
+        if (!methodScope.existClass(leaves, this.getClass())) {
+            this.associateThread(threadRef);
+            Tuple6 bundle = this.loadClass(leaves);
+            MetaClass meta = this.linkClass(bundle);
             methodScope.addMetaClass(meta);
 
-            if (!meta.superClassName.isEmpty() && !methodScope.existClass(meta.superClassName, loader.getClass())) {
-                loadInheritanceChain(methodScope, thread, loader, meta.superClassName);
+            if (!meta.superClassName.isEmpty() && !methodScope.existClass(meta.superClassName, this.getClass())) {
+                loadInheritanceChain(meta.superClassName);
             }
 
-            loader.initializeClass(methodScope, meta);
+            this.initializeClass(meta);
         }
     }
 
@@ -208,6 +207,10 @@ public class YClassLoader {
 
     public synchronized void associateThread(YThread thread) {
         threadRef = thread;
+    }
+
+    public synchronized YThread getStartupThread(){
+        return threadRef;
     }
 
 }
