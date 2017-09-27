@@ -895,6 +895,312 @@ public final class CodeExecutionEngine {
                 }
                 break;
 
+                case Mnemonic.iadd: {
+                    int value2 = (int) dg.pop();
+                    int value1 = (int) dg.pop();
+                    dg.push(value1 + value2);
+                }
+                break;
+
+                case Mnemonic.iaload: {
+                    int index = (int) dg.pop();
+                    YArray array = (YArray) dg.pop();
+                    dg.push(array.get(index));
+                }
+                break;
+
+                case Mnemonic.iand: {
+                    int value2 = (int) dg.pop();
+                    int value1 = (int) dg.pop();
+                    dg.push(value1 & value2);
+                }
+                break;
+
+                case Mnemonic.iastore: {
+                    int value = (int) dg.pop();
+                    int index = (int) dg.pop();
+                    YArray array = (YArray) dg.pop();
+                    array.set(index, value);
+                }
+                break;
+
+                case Mnemonic.iconst_m1: {
+                    dg.push(-1);
+                }
+                break;
+
+                case Mnemonic.iconst_0: {
+                    dg.push(0);
+                }
+                break;
+
+                case Mnemonic.iconst_1: {
+                    dg.push(1);
+                }
+                break;
+
+                case Mnemonic.iconst_2: {
+                    dg.push(2);
+                }
+                break;
+
+                case Mnemonic.iconst_3: {
+                    dg.push(3);
+                }
+                break;
+
+                case Mnemonic.iconst_4: {
+                    dg.push(4);
+                }
+                break;
+
+                case Mnemonic.iconst_5: {
+                    dg.push(5);
+                }
+                break;
+
+                case Mnemonic.idiv: {
+                    int value2 = (int) dg.pop();
+                    int value1 = (int) dg.pop();
+                    if (value1 == 0) {
+                        throw new ArithmeticException("the division is 0");
+                    }
+                    dg.push(value1 / value2);
+                }
+                break;
+
+                case Mnemonic.if_acmpeq: {
+                    YObject value2 = (YObject) dg.pop();
+                    YObject value1 = (YObject) dg.pop();
+                    if (value1 == value2) {
+                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchOffset = (branchByte1 << 8) | branchByte2;
+                        Tuple3 newOp = opcodes.get(branchOffset);
+                        int currentI = opcodes.indexOf(newOp);
+                        if (currentI == -1) {
+                            throw new ClassInitializingException("incorrect address to go");
+                        }
+                        i = currentI;
+                    }
+                }
+                break;
+
+                case Mnemonic.if_acmpne: {
+                    YObject value2 = (YObject) dg.pop();
+                    YObject value1 = (YObject) dg.pop();
+                    if (value1 != value2) {
+                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchOffset = (branchByte1 << 8) | branchByte2;
+                        Tuple3 newOp = opcodes.get(branchOffset);
+                        int currentI = opcodes.indexOf(newOp);
+                        if (currentI == -1) {
+                            throw new ClassInitializingException("incorrect address to go");
+                        }
+                        i = currentI;
+                    }
+                }
+                break;
+
+                case Mnemonic.if_icmpeq: {
+                    int value2 = (int) dg.pop();
+                    int value1 = (int) dg.pop();
+                    if (value1 == value2) {
+                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchOffset = (branchByte1 << 8) | branchByte2;
+                        Tuple3 newOp = opcodes.get(branchOffset);
+                        int currentI = opcodes.indexOf(newOp);
+                        if (currentI == -1) {
+                            throw new ClassInitializingException("incorrect address to go");
+                        }
+                        i = currentI;
+                    }
+                }
+                break;
+
+                case Mnemonic.if_icmpne: {
+                    int value2 = (int) dg.pop();
+                    int value1 = (int) dg.pop();
+                    if (value1 != value2) {
+                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchOffset = (branchByte1 << 8) | branchByte2;
+                        Tuple3 newOp = opcodes.get(branchOffset);
+                        int currentI = opcodes.indexOf(newOp);
+                        if (currentI == -1) {
+                            throw new ClassInitializingException("incorrect address to go");
+                        }
+                        i = currentI;
+                    }
+                }
+                break;
+
+                case Mnemonic.if_icmplt: {
+                    int value2 = (int) dg.pop();
+                    int value1 = (int) dg.pop();
+                    if (value1 < value2) {
+                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchOffset = (branchByte1 << 8) | branchByte2;
+                        Tuple3 newOp = opcodes.get(branchOffset);
+                        int currentI = opcodes.indexOf(newOp);
+                        if (currentI == -1) {
+                            throw new ClassInitializingException("incorrect address to go");
+                        }
+                        i = currentI;
+                    }
+                }
+                break;
+
+                case Mnemonic.if_icmpge: {
+                    int value2 = (int) dg.pop();
+                    int value1 = (int) dg.pop();
+                    if (value1 >= value2) {
+                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchOffset = (branchByte1 << 8) | branchByte2;
+                        Tuple3 newOp = opcodes.get(branchOffset);
+                        int currentI = opcodes.indexOf(newOp);
+                        if (currentI == -1) {
+                            throw new ClassInitializingException("incorrect address to go");
+                        }
+                        i = currentI;
+                    }
+                }
+                break;
+
+                case Mnemonic.if_icmpgt: {
+                    int value2 = (int) dg.pop();
+                    int value1 = (int) dg.pop();
+                    if (value1 > value2) {
+                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchOffset = (branchByte1 << 8) | branchByte2;
+                        Tuple3 newOp = opcodes.get(branchOffset);
+                        int currentI = opcodes.indexOf(newOp);
+                        if (currentI == -1) {
+                            throw new ClassInitializingException("incorrect address to go");
+                        }
+                        i = currentI;
+                    }
+                }
+                break;
+
+                case Mnemonic.if_icmple: {
+                    int value2 = (int) dg.pop();
+                    int value1 = (int) dg.pop();
+                    if (value1 <= value2) {
+                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchOffset = (branchByte1 << 8) | branchByte2;
+                        Tuple3 newOp = opcodes.get(branchOffset);
+                        int currentI = opcodes.indexOf(newOp);
+                        if (currentI == -1) {
+                            throw new ClassInitializingException("incorrect address to go");
+                        }
+                        i = currentI;
+                    }
+                }
+                break;
+
+                case Mnemonic.ifeq: {
+                    int value = (int) dg.pop();
+                    if (value == 0) {
+                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchOffset = (branchByte1 << 8) | branchByte2;
+                        Tuple3 newOp = opcodes.get(branchOffset);
+                        int currentI = opcodes.indexOf(newOp);
+                        if (currentI == -1) {
+                            throw new ClassInitializingException("incorrect address to go");
+                        }
+                        i = currentI;
+                    }
+                }
+                break;
+
+                case Mnemonic.ifne: {
+                    int value = (int) dg.pop();
+                    if (value != 0) {
+                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchOffset = (branchByte1 << 8) | branchByte2;
+                        Tuple3 newOp = opcodes.get(branchOffset);
+                        int currentI = opcodes.indexOf(newOp);
+                        if (currentI == -1) {
+                            throw new ClassInitializingException("incorrect address to go");
+                        }
+                        i = currentI;
+                    }
+                }
+                break;
+
+                case Mnemonic.iflt: {
+                    int value = (int) dg.pop();
+                    if (value < 0) {
+                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchOffset = (branchByte1 << 8) | branchByte2;
+                        Tuple3 newOp = opcodes.get(branchOffset);
+                        int currentI = opcodes.indexOf(newOp);
+                        if (currentI == -1) {
+                            throw new ClassInitializingException("incorrect address to go");
+                        }
+                        i = currentI;
+                    }
+                }
+                break;
+
+                case Mnemonic.ifge: {
+                    int value = (int) dg.pop();
+                    if (value >= 0) {
+                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchOffset = (branchByte1 << 8) | branchByte2;
+                        Tuple3 newOp = opcodes.get(branchOffset);
+                        int currentI = opcodes.indexOf(newOp);
+                        if (currentI == -1) {
+                            throw new ClassInitializingException("incorrect address to go");
+                        }
+                        i = currentI;
+                    }
+                }
+                break;
+
+                case Mnemonic.ifgt: {
+                    int value = (int) dg.pop();
+                    if (value > 0) {
+                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchOffset = (branchByte1 << 8) | branchByte2;
+                        Tuple3 newOp = opcodes.get(branchOffset);
+                        int currentI = opcodes.indexOf(newOp);
+                        if (currentI == -1) {
+                            throw new ClassInitializingException("incorrect address to go");
+                        }
+                        i = currentI;
+                    }
+                }
+                break;
+
+                case Mnemonic.ifle: {
+                    int value = (int) dg.pop();
+                    if (value <= 0) {
+                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchOffset = (branchByte1 << 8) | branchByte2;
+                        Tuple3 newOp = opcodes.get(branchOffset);
+                        int currentI = opcodes.indexOf(newOp);
+                        if (currentI == -1) {
+                            throw new ClassInitializingException("incorrect address to go");
+                        }
+                        i = currentI;
+                    }
+                }
+                break;
+
                 default:
                     throw new ClassInitializingException("unknown opcode in execution sequence");
             }
