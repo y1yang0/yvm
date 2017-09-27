@@ -523,15 +523,15 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.dup:{
-                    Object value = (Object) dg.pop();
+                    Object value = dg.pop();
                     dg.push(value);
                     dg.push(value);
                 }
                 break;
 
                 case Mnemonic.dup_x1:{
-                    Object value1 = (Object) dg.pop();
-                    Object value2 = (Object) dg.pop();
+                    Object value1 = dg.pop();
+                    Object value2 = dg.pop();
                     dg.push(value1);
                     dg.push(value2);
                     dg.push(value1);
@@ -539,8 +539,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.dup_x2:{
-                    Object value1 = (Object) dg.pop();
-                    Object value2 = (Object) dg.pop();
+                    Object value1 = dg.pop();
+                    Object value2 = dg.pop();
                     if(value2 instanceof Long || value2 instanceof Double){
                         //category 2 computational type
                         dg.push(value1);
@@ -548,7 +548,7 @@ public final class CodeExecutionEngine {
                         dg.push(value1);
                     }else{
                         //category 1 computational type
-                        Object value3 = (Object) dg.pop();
+                        Object value3 = dg.pop();
                         dg.push(value1);
                         dg.push(value3);
                         dg.push(value2);
@@ -665,14 +665,14 @@ public final class CodeExecutionEngine {
                 case Mnemonic.fadd:{
                     float value2 = (float) dg.pop();
                     float value1 = (float) dg.pop();
-                    dg.push((float)(value1+value2));
+                    dg.push(value1 + value2);
                 }
                 break;
 
                 case Mnemonic.faload:{
                     int index = (int) dg.pop();
                     YArray array = (YArray) dg.pop();
-                    dg.push((float)array.get(index));
+                    dg.push(array.get(index));
                 }
                 break;
 
@@ -772,9 +772,129 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.fstore:{
-
+                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    float value = (float) dg.pop();
+                    dg.setLocalVar(index, value);
                 }
                 break;
+
+                case Mnemonic.fstore_0: {
+                    float value = (float) dg.pop();
+                    dg.setLocalVar(0, value);
+                }
+                break;
+
+                case Mnemonic.fstore_1: {
+                    float value = (float) dg.pop();
+                    dg.setLocalVar(1, value);
+                }
+                break;
+
+                case Mnemonic.fstore_2: {
+                    float value = (float) dg.pop();
+                    dg.setLocalVar(2, value);
+                }
+                break;
+
+                case Mnemonic.fstore_3: {
+                    float value = (float) dg.pop();
+                    dg.setLocalVar(3, value);
+                }
+                break;
+
+                case Mnemonic.fsub: {
+                    float value2 = (float) dg.pop();
+                    float value1 = (float) dg.pop();
+                    dg.push(value1 - value2);
+                }
+                break;
+
+                case Mnemonic.getfield: {
+                    //todo:getfield
+                }
+                break;
+
+                case Mnemonic.getstatic: {
+                    //todo:getstatic
+                }
+                break;
+
+                case Mnemonic.goto$: {
+                    int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                    int branchOffset = (branchByte1 << 8) | branchByte2;
+                    Tuple3 newOp = opcodes.get(branchOffset);
+                    int currentI = opcodes.indexOf(newOp);
+                    if (currentI == -1) {
+                        throw new ClassInitializingException("incorrect address to go");
+                    }
+                    i = currentI;
+                }
+                break;
+
+                case Mnemonic.goto_w: {
+                    /*
+                    Although the goto_w instruction takes a 4-byte branch offset, other
+                    factors limit the size of a method to 65535 bytes . This limit may
+                    be raised in a future release of the Java Virtual Machine.
+                     */
+                    int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                    int branchByte3 = (int) ((Operand) cd.get3Placeholder()).get2();
+                    int branchByte4 = (int) ((Operand) cd.get3Placeholder()).get3();
+                    int branchOffset = (branchByte1 << 24) | (branchByte2 << 16)
+                            | (branchByte3 << 8) | branchByte4;
+                    Tuple3 newOp = opcodes.get(branchOffset);
+                    int currentI = opcodes.indexOf(newOp);
+                    if (currentI == -1) {
+                        throw new ClassInitializingException("incorrect address to go");
+                    }
+                    i = currentI;
+                }
+                break;
+
+                case Mnemonic.i2b: {
+                    int value = (int) dg.pop();
+                    byte value$ = (byte) value;
+                    dg.push((int) value$);
+                }
+                break;
+
+                case Mnemonic.i2c: {
+                    int value = (int) dg.pop();
+                    char value$ = (char) value;
+                    dg.push((int) value$);
+                }
+                break;
+
+                case Mnemonic.i2d: {
+                    int value = (int) dg.pop();
+                    double value$ = (double) value;
+                    dg.push(value$);
+                }
+                break;
+
+                case Mnemonic.i2f: {
+                    int value = (int) dg.pop();
+                    float value$ = (float) value;
+                    dg.push(value$);
+                }
+                break;
+
+                case Mnemonic.i2l: {
+                    int value = (int) dg.pop();
+                    long value$ = (long) value;
+                    dg.push(value$);
+                }
+                break;
+
+                case Mnemonic.i2s: {
+                    int value = (int) dg.pop();
+                    short value$ = (short) value;
+                    dg.push((int) value$);
+                }
+                break;
+
                 default:
                     throw new ClassInitializingException("unknown opcode in execution sequence");
             }

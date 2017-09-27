@@ -4,13 +4,17 @@ import java.util.HashMap;
 
 import static yvm.auxil.Convert.rawArrayToString;
 
-public interface Operand<_FstPlaceHolderType, _SndPlaceHolderType> {
+public interface Operand<_FstPlaceHolderType, _SndPlaceHolderType, _TrdPlaceHolderType, _FrthPlaceHolderType> {
     _FstPlaceHolderType get0();
 
     _SndPlaceHolderType get1();
+
+    _TrdPlaceHolderType get2();
+
+    _FrthPlaceHolderType get3();
 }
 
-class GenericOperand implements Operand<Integer, Integer> {
+class GenericOperand implements Operand<Integer, Integer, Integer, Integer> {
     private int[] operands;
 
     private GenericOperand() {
@@ -38,9 +42,19 @@ class GenericOperand implements Operand<Integer, Integer> {
     public Integer get1() {
         return operands[1];
     }
+
+    @Override
+    public Integer get2() {
+        return operands[2];
+    }
+
+    @Override
+    public Integer get3() {
+        return operands[3];
+    }
 }
 
-class LookupSwitchOperand implements Operand<Integer, HashMap<Integer, Integer>> {
+class LookupSwitchOperand implements Operand<Integer, HashMap<Integer, Integer>, Integer, Integer> {
     private HashMap<Integer, Integer> matchOffsetPairs;
     private int defaultGoto;
 
@@ -79,9 +93,19 @@ class LookupSwitchOperand implements Operand<Integer, HashMap<Integer, Integer>>
     public HashMap<Integer, Integer> get1() {
         return matchOffsetPairs;
     }
+
+    @Override
+    public Integer get2() {
+        return null;
+    }
+
+    @Override
+    public Integer get3() {
+        return null;
+    }
 }
 
-class TableSwitchOperand implements Operand<Integer, HashMap<Integer, Integer>> {
+class TableSwitchOperand implements Operand<Integer, HashMap<Integer, Integer>, Integer, Integer> {
     private int defaultGoto;
     private HashMap<Integer, Integer> jumpOffsets;
 
@@ -119,5 +143,15 @@ class TableSwitchOperand implements Operand<Integer, HashMap<Integer, Integer>> 
     @Override
     public HashMap<Integer, Integer> get1() {
         return jumpOffsets;
+    }
+
+    @Override
+    public Integer get2() {
+        return null;
+    }
+
+    @Override
+    public Integer get3() {
+        return null;
     }
 }
