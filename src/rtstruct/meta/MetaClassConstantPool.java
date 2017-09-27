@@ -1,10 +1,16 @@
 package rtstruct.meta;
 
+import rtstruct.YThread;
+import ycloader.YClassLoader;
 import ycloader.adt.constantpool.*;
 import ycloader.dataobject.ConstantPoolObject;
+import ycloader.exception.ClassInitializingException;
 import ycloader.exception.ClassLinkingException;
+import ycloader.exception.ClassLoadingException;
+import yvm.Yvm;
 import yvm.adt.Tuple2;
 import yvm.adt.Tuple3;
+import yvm.auxil.Predicate;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -249,5 +255,35 @@ public class MetaClassConstantPool {
             System.out.println("#" + Index + "\t" + Bundle.get1Placeholder() + "," + Bundle.get2Placeholder() + "," + Bundle.get3Placeholder() + "#");
         });
         System.out.println("###############################################################################");
+    }
+
+    public Integer findInInteger(int index) {
+        Integer a = integers.get(index);
+        if (!Predicate.isNull(a)) {
+            return a;
+        }
+        return null;
+    }
+
+    public Float findInFloat(int index) {
+        Float a = floats.get(index);
+        if (!Predicate.isNull(a)) {
+            return a;
+        }
+        return null;
+    }
+
+    public String findInString(int index) {
+        String a = strings.get(index);
+        if (!Predicate.isNull(a)) {
+            return a;
+        }
+        return null;
+    }
+
+    public Class findInClass(Yvm vm, YThread thread, YClassLoader loader, int index)
+            throws ClassLoadingException, ClassLinkingException, ClassInitializingException {
+        String className = classes.get(index);
+        return null;
     }
 }

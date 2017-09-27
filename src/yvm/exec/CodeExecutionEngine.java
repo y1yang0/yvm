@@ -2,6 +2,7 @@ package yvm.exec;
 
 import rtstruct.*;
 import rtstruct.meta.MetaClass;
+import rtstruct.meta.MetaClassConstantPool;
 import rtstruct.meta.MetaClassMethod;
 import rtstruct.ystack.YStack;
 import rtstruct.ystack.YStackFrame;
@@ -10,6 +11,7 @@ import ycloader.adt.u1;
 import ycloader.exception.ClassInitializingException;
 import yvm.adt.*;
 import yvm.auxil.Peel;
+import yvm.auxil.Predicate;
 
 import java.util.ArrayList;
 
@@ -22,6 +24,7 @@ public final class CodeExecutionEngine {
     private MetaClass metaClassRef;
     private YMethodScope methodScopeRef;
     private YHeap heapRef;
+    private Class classLoader;
 
     public CodeExecutionEngine(YThread thread) {
         this.thread = thread;
@@ -39,6 +42,10 @@ public final class CodeExecutionEngine {
 
     public void associateHeap(YHeap heap) {
         heapRef = heap;
+    }
+
+    public void associateClassLoader(Class classLoader) {
+        this.classLoader = classLoader;
     }
 
     public void executeCLinit() throws ClassInitializingException {
@@ -214,7 +221,7 @@ public final class CodeExecutionEngine {
                         throw new NegativeArraySizeException("array size required a positive integer");
                     }
                     if (!isNull(res)) {
-                        if (methodScopeRef.existClass(res)) {
+                        if (methodScopeRef.existClass(res, classLoader)) {
                             MetaClass meta = methodScopeRef.getMetaClass(res, metaClassRef.getClassLoader());
                             YObject object = new YObject(meta);
                             object.init();
@@ -226,7 +233,7 @@ public final class CodeExecutionEngine {
                         } else {
                             String arrayComponentType = Peel.getArrayComponent(res);
                             int arrayDimension = Peel.getArrayDimension(res);
-                            if (methodScopeRef.existClass(arrayComponentType)) {
+                            if (methodScopeRef.existClass(arrayComponentType, classLoader)) {
                                 MetaClass meta = methodScopeRef.getMetaClass(res, metaClassRef.getClassLoader());
                                 YObject object = new YObject(meta);
                                 object.init();
@@ -1200,6 +1207,302 @@ public final class CodeExecutionEngine {
                     }
                 }
                 break;
+
+                case Mnemonic.ifnonnull: {
+                    YObject value = (YObject) dg.pop();
+                    if (value != null) {
+                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchOffset = (branchByte1 << 8) | branchByte2;
+                        Tuple3 newOp = opcodes.get(branchOffset);
+                        int currentI = opcodes.indexOf(newOp);
+                        if (currentI == -1) {
+                            throw new ClassInitializingException("incorrect address to go");
+                        }
+                        i = currentI;
+                    }
+                }
+                break;
+
+                case Mnemonic.ifnull: {
+                    YObject value = (YObject) dg.pop();
+                    if (value == null) {
+                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchOffset = (branchByte1 << 8) | branchByte2;
+                        Tuple3 newOp = opcodes.get(branchOffset);
+                        int currentI = opcodes.indexOf(newOp);
+                        if (currentI == -1) {
+                            throw new ClassInitializingException("incorrect address to go");
+                        }
+                        i = currentI;
+                    }
+                }
+                break;
+
+                case Mnemonic.iinc: {
+                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int const$ = (int) ((Operand) cd.get3Placeholder()).get1();
+                    dg.setLocalVar(index, (int) dg.getLocalVar(index) + const$);
+                }
+                break;
+
+                case Mnemonic.iload: {
+                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int value = (int) dg.getLocalVar(index);
+                    dg.push(value);
+                }
+                break;
+
+                case Mnemonic.iload_0: {
+                    int value = (int) dg.getLocalVar(0);
+                    dg.push(value);
+                }
+                break;
+
+                case Mnemonic.iload_1: {
+                    int value = (int) dg.getLocalVar(1);
+                    dg.push(value);
+                }
+                break;
+
+                case Mnemonic.iload_2: {
+                    int value = (int) dg.getLocalVar(2);
+                    dg.push(value);
+                }
+                break;
+
+                case Mnemonic.iload_3: {
+                    int value = (int) dg.getLocalVar(3);
+                    dg.push(value);
+                }
+                break;
+
+                case Mnemonic.imul: {
+                    int value2 = (int) dg.pop();
+                    int value1 = (int) dg.pop();
+                    dg.push(value1 * value2);
+                }
+                break;
+
+                case Mnemonic.ineg: {
+                    int value = (int) dg.pop();
+                    dg.push((~value) + 1);
+                }
+                break;
+
+                case Mnemonic.instanceof$: {
+                    //todo:instanceof
+                }
+                break;
+
+                case Mnemonic.invokedynamic: {
+                    //todo:invokedymaic
+                }
+                break;
+
+                case Mnemonic.invokeinterface: {
+                    //todo:invokeinterface
+                }
+                break;
+
+                case Mnemonic.invokespecial: {
+                    //todo:invokespecial
+                }
+                break;
+
+                case Mnemonic.invokestatic: {
+                    //todo:invokestatic
+                }
+                break;
+
+                case Mnemonic.invokevirtual: {
+                    //todo:invokevirtual
+                }
+                break;
+
+                case Mnemonic.ior: {
+                    int value2 = (int) dg.pop();
+                    int value1 = (int) dg.pop();
+                    dg.push(value1 | value2);
+                }
+                break;
+
+                case Mnemonic.irem: {
+                    int value2 = (int) dg.pop();
+                    int value1 = (int) dg.pop();
+                    if (value2 == 0) {
+                        throw new ArithmeticException("the division is 0");
+                    }
+                    dg.push(value1 - (value1 / value2));
+                }
+                break;
+
+                case Mnemonic.ireturn: {
+                    //todo:ireturn
+                }
+                break;
+
+                case Mnemonic.ishl: {
+                    int value2 = (int) dg.pop();
+                    int value1 = (int) dg.pop();
+                    dg.push(value1 << (value2 & 0x1F));
+                }
+                break;
+
+                case Mnemonic.ishr: {
+                    int value2 = (int) dg.pop();
+                    int value1 = (int) dg.pop();
+                    dg.push(value1 >> (value2 & 0x1F));
+                }
+                break;
+
+                case Mnemonic.istore: {
+                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int value = (int) dg.pop();
+                    dg.setLocalVar(index, value);
+                }
+                break;
+
+                case Mnemonic.istore_0: {
+                    int value = (int) dg.pop();
+                    dg.setLocalVar(0, value);
+                }
+                break;
+
+                case Mnemonic.istore_1: {
+                    int value = (int) dg.pop();
+                    dg.setLocalVar(1, value);
+                }
+                break;
+
+                case Mnemonic.istore_2: {
+                    int value = (int) dg.pop();
+                    dg.setLocalVar(2, value);
+                }
+                break;
+
+                case Mnemonic.istore_3: {
+                    int value = (int) dg.pop();
+                    dg.setLocalVar(3, value);
+                }
+                break;
+
+                case Mnemonic.isub: {
+                    int value2 = (int) dg.pop();
+                    int value1 = (int) dg.pop();
+                    dg.push(value1 - value2);
+                }
+                break;
+
+                case Mnemonic.iushr: {
+                    int value2 = (int) dg.pop();
+                    int value1 = (int) dg.pop();
+                    if (value1 > 0) {
+                        dg.push(value1 >> (value2 & 0x1F));
+                    } else if (value1 < 0) {
+                        dg.push(value1 >> (value2 & 0x1F) + (1 << ~(value2 & 0x1F)));
+                    }
+                }
+                break;
+
+                case Mnemonic.ixor: {
+                    int value2 = (int) dg.pop();
+                    int value1 = (int) dg.pop();
+                    dg.push(value1 ^ value2);
+
+                }
+                break;
+
+                case Mnemonic.jsr:
+                case Mnemonic.jsr_w: {
+                    throw new ClassInitializingException("unsupport the JSR opcode, you may change a posterior compiler version of Java SE 6 ");
+                }
+
+                case Mnemonic.l2d: {
+                    long value = (long) dg.pop();
+                    dg.push((double) value);
+                }
+                break;
+
+                case Mnemonic.l2f: {
+                    long value = (long) dg.pop();
+                    dg.push((float) value);
+                }
+                break;
+
+                case Mnemonic.l2i: {
+                    long value = (long) dg.pop();
+                    dg.push((int) value);
+                }
+                break;
+
+                case Mnemonic.ladd: {
+                    long value2 = (long) dg.pop();
+                    long value1 = (long) dg.pop();
+                    dg.push(value1 + value2);
+                }
+                break;
+
+                case Mnemonic.laload: {
+                    int index = (int) dg.pop();
+                    YArray array = (YArray) dg.pop();
+                    dg.push(array.get(index));
+                }
+                break;
+
+                case Mnemonic.land: {
+                    long value2 = (long) dg.pop();
+                    long value1 = (long) dg.pop();
+                    dg.push(value1 & value2);
+                }
+                break;
+
+                case Mnemonic.lastore: {
+                    long value = (long) dg.pop();
+                    int index = (int) dg.pop();
+                    YArray array = (YArray) dg.pop();
+                    dg.setLocalVar(index, array.get(index));
+                }
+                break;
+
+                case Mnemonic.lcmp: {
+                    long value2 = (long) dg.pop();
+                    long value1 = (long) dg.pop();
+                    if (value1 > value2) {
+                        dg.push(1);
+                    } else if (value1 == value2) {
+                        dg.push(0);
+                    } else if (value1 < value2) {
+                        dg.push(-1);
+                    }
+                }
+                break;
+
+                case Mnemonic.lconst_0: {
+                    dg.push(0L);
+                }
+                break;
+
+                case Mnemonic.lconst_1: {
+                    dg.push(1L);
+                }
+                break;
+
+                //Push item from run-time constant pool
+                case Mnemonic.ldc: {
+                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+
+                    MetaClassConstantPool poolRef = metaClassRef.getConstantPool();
+
+                    if (!Predicate.isNull(poolRef.findInFloat(index))) {
+                        dg.push(poolRef.findInFloat(index));
+                    } else if (!Predicate.isNull(poolRef.findInInteger(index))) {
+                        dg.push(poolRef.findInInteger(index));
+                    } else if (!Predicate.isNull(poolRef.findInString(index))) {
+                        dg.push(poolRef.findInString(index));
+                    }
+                }
 
                 default:
                     throw new ClassInitializingException("unknown opcode in execution sequence");

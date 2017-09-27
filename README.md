@@ -18,5 +18,8 @@
 - [ ] MetaClass去掉getter,setter
 - [ ] Javadoc注释
 
+# Tips
++ 不打算支持`jsr`和`jsr_w`指令，所以`JavaSE6`及其之前的编译器编译出的`class`可能无法正常工作
+
 # License
 目前采用MIT协议发布

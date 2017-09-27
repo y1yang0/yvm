@@ -9,7 +9,6 @@ import ycloader.exception.ClassInitializingException;
 import ycloader.exception.ClassLinkingException;
 import ycloader.exception.ClassLoadingException;
 import yvm.adt.Tuple6;
-import yvm.auxil.Predicate;
 
 public final class Yvm {
     private YHeap heap;
@@ -25,39 +24,19 @@ public final class Yvm {
         vm.start();
     }
 
-    private void loadInheritChain(YThread thread, YClassLoader loader, String leaves) throws ClassLoadingException, ClassLinkingException, ClassInitializingException {
-        if (!methodScope.existClass(leaves)) {
+    public void loadInheritanceChain(YThread thread, YClassLoader loader, String leaves)
+            throws ClassLoadingException, ClassLinkingException, ClassInitializingException {
+        if (!methodScope.existClass(leaves, loader.getClass())) {
             loader.associateThread(thread);
             Tuple6 bundle = loader.loadClass(leaves);
             MetaClass meta = loader.linkClass(bundle);
             methodScope.addMetaClass(meta);
-            if (!meta.superClassName.isEmpty() && !methodScope.existClass(meta.superClassName)) {
-                loadInheritChain(thread, loader, meta.superClassName);
-            } else {
-                //if there were loaded by the different class loader, then loading it again by this loader
-                if (!meta.superClassName.isEmpty() && Predicate.isNull(methodScope.getMetaClass(meta.superClassName, loader.getClass()))) {
-                    loadInheritChain(thread, loader, meta.superClassName);
-                }
-            }
-            loader.initializeClass(meta);
-        } else {
-            //if exist, check if they were loaded by the same class loader
-            if (!leaves.isEmpty() && Predicate.isNull(methodScope.getMetaClass(leaves, loader.getClass()))) {
-                loader.associateThread(thread);
-                Tuple6 bundle = loader.loadClass(leaves);
-                MetaClass meta = loader.linkClass(bundle);
-                methodScope.addMetaClass(meta);
 
-                if (!meta.superClassName.isEmpty() && !methodScope.existClass(meta.superClassName)) {
-                    loadInheritChain(thread, loader, meta.superClassName);
-                } else {
-                    //if there were loaded by the different class loader, then loading it again by this loader
-                    if (!meta.superClassName.isEmpty() && Predicate.isNull(methodScope.getMetaClass(meta.superClassName, loader.getClass()))) {
-                        loadInheritChain(thread, loader, meta.superClassName);
-                    }
-                }
-                loader.initializeClass(meta);
+            if (!meta.superClassName.isEmpty() && !methodScope.existClass(meta.superClassName, loader.getClass())) {
+                loadInheritanceChain(thread, loader, meta.superClassName);
             }
+
+            loader.initializeClass(meta);
         }
     }
 
@@ -75,7 +54,7 @@ public final class Yvm {
                 MetaClass meta = loader.linkClass(bundle);
                 methodScope.addMetaClass(meta);
 
-                loadInheritChain(classLoadingThread, loader, meta.superClassName);
+                loadInheritanceChain(classLoadingThread, loader, meta.superClassName);
 
                 loader.initializeClass(meta);
             } catch (ClassLinkingException | ClassLoadingException | ClassInitializingException e) {
@@ -84,7 +63,13 @@ public final class Yvm {
         });
     }
 
+    @SuppressWarnings("unused")
     public synchronized YHeap getVMHeap() {
         return heap;
+    }
+
+    @SuppressWarnings("unused")
+    public synchronized YMethodScope getMethodScope() {
+        return methodScope;
     }
 }

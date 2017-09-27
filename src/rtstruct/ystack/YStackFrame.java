@@ -6,9 +6,6 @@ import java.util.Stack;
 class DynamicLinking {
 }
 
-class ReturnAddress {
-}
-
 class OperandStack extends Stack {
 }
 
@@ -19,13 +16,11 @@ public class YStackFrame {
     private LocalVarTable vars;
     private OperandStack operands;
     private DynamicLinking linker;
-    private ReturnAddress retAddr;
 
     public YStackFrame() {
         vars = new LocalVarTable();
         operands = new OperandStack();
         linker = new DynamicLinking();
-        retAddr = new ReturnAddress();
     }
 
     public void allocateSize(int maxStack, int maxLocal) {
