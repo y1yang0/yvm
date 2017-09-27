@@ -39,4 +39,12 @@ public class Predicate {
     public static boolean isArray(Class x) {
         return x.isArray();
     }
+
+    public static boolean isCategory1ComputationalType(Object x) {
+        return !isCategory2ComputationalType(x);
+    }
+
+    public static boolean isCategory2ComputationalType(Object x) {
+        return x instanceof Double || x instanceof Long;
+    }
 }

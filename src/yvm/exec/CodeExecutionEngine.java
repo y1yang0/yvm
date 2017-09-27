@@ -81,14 +81,15 @@ public final class CodeExecutionEngine {
     private void codeExecution(Opcode op) throws ClassInitializingException, ClassLinkingException, ClassLoadingException {
         YStack stack = thread.stack();
         class Delegate {
+            private Object peek() {
+                return stack.currentFrame().peekOperand();
+            }
             private Object pop() {
                 return stack.currentFrame().pop$operand();
             }
-
             private void push(Object object) {
                 stack.currentFrame().push$operand(object);
             }
-
             private void setLocalVar(int index,Object value){
                 stack.currentFrame().setLocalVariable(index,value);
             }
@@ -1684,6 +1685,143 @@ public final class CodeExecutionEngine {
                 }
                 break;
 
+                case Mnemonic.lxor: {
+                    long value2 = (long) dg.pop();
+                    long value1 = (long) dg.pop();
+                    dg.push(value1 ^ value2);
+                }
+                break;
+
+                case Mnemonic.monitorenter: {
+                    //todo:monitorenter
+                }
+                break;
+
+                case Mnemonic.monitorexit: {
+                    //todo:monitorexit
+                }
+                break;
+
+                case Mnemonic.multianewarray: {
+                    //todo:multianewarray
+                }
+                break;
+
+                case Mnemonic.new$: {
+                    //todo:new
+                }
+                break;
+
+                case Mnemonic.newarray: {
+                    //todo:newarray
+                }
+                break;
+
+                case Mnemonic.nop: {
+                    //////////////
+                    //DO NOTHING//
+                    //////////////
+                }
+                break;
+
+                case Mnemonic.pop: {
+                    dg.pop();
+                }
+                break;
+
+                case Mnemonic.pop2: {
+                    Object value = dg.peek();
+                    if (Predicate.isCategory2ComputationalType(value)) {
+                        dg.pop();
+                    } else {
+                        Object value1 = dg.pop();
+                        Object value2 = dg.peek();
+                        if (Predicate.isCategory1ComputationalType(value2) &&
+                                Predicate.isCategory1ComputationalType(value1)) {
+                            dg.pop();
+                        }
+                    }
+                }
+                break;
+
+                case Mnemonic.putfield: {
+                    //todo:putfield
+                }
+                break;
+
+                case Mnemonic.putstatic: {
+                    //todo:putstatic
+                }
+                break;
+
+                case Mnemonic.ret: {
+                    //todo:ret
+                }
+                break;
+
+                case Mnemonic.return$: {
+                    //todo:return
+                }
+                break;
+
+                case Mnemonic.saload: {
+                    int index = (int) dg.pop();
+                    YArray array = (YArray) dg.pop();
+                    if (Predicate.isNull(array)) {
+                        throw new NullPointerException("array is null");
+                    }
+                    short v = (short) array.get(index);
+                    dg.push(v);
+                }
+                break;
+
+                case Mnemonic.sastore: {
+                    int value = (int) dg.pop();
+                    int index = (int) dg.pop();
+                    YArray array = (YArray) dg.pop();
+                    if (Predicate.isNull(array)) {
+                        throw new NullPointerException("array is null");
+                    }
+                    array.set(index, (short) value);
+                }
+                break;
+
+                case Mnemonic.sipush: {
+                    int byte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int byte2 = (int) ((Operand) cd.get3Placeholder()).get0();
+                    short byte$ = (short) ((byte1 <<
+                            8) | byte2);
+                    dg.push((int) byte$);
+                }
+                break;
+
+                case Mnemonic.swap: {
+                    Object value1 = dg.pop();
+                    Object value2 = dg.pop();
+                    if (Predicate.isCategory1ComputationalType(value1) &&
+                            Predicate.isCategory1ComputationalType(value2)) {
+                        Object temp = value1;
+                        value1 = value2;
+                        value2 = temp;
+                        dg.push(value1);
+                        dg.push(value2);
+                    } else {
+                        throw new ClassInitializingException("The Java Virtual Machine does not provide an instruction\n" +
+                                "implementing a swap on operands of category 2 computational\n" +
+                                "types.");
+                    }
+                }
+                break;
+
+                case Mnemonic.tableswitch: {
+                    //todo:tableswitch
+                }
+                break;
+
+                case Mnemonic.wide: {
+                    //todo:wide;
+                }
+                break;
 
                 default:
                     throw new ClassInitializingException("unknown opcode in execution sequence");

@@ -28,6 +28,10 @@ public class YStackFrame {
         operands.setSize(maxStack);
     }
 
+    public Object peekOperand() {
+        return operands.peek();
+    }
+
     public Object pop$operand() {
         return operands.pop();
     }
