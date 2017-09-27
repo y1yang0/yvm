@@ -37,6 +37,7 @@ public class YClassLoader {
 
     private String javaClass;
 
+    @SuppressWarnings("unused")
     public YClassLoader(String javaClass) {
         this.javaClass = javaClass;
     }
@@ -45,7 +46,7 @@ public class YClassLoader {
 
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("unchecked,unused")
     public Tuple6<ConstantPoolObject, InterfacesObject,
             FieldObject, MethodObject,
             ClassFileAttributeObject, u2[]> loadClass(String javaClass) throws ClassLoadingException {

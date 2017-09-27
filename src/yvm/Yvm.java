@@ -25,23 +25,23 @@ public final class Yvm {
         vm.start();
     }
 
-    public void loadInheritChain(YThread thread, YClassLoader loader, String leaves) throws ClassLoadingException, ClassLinkingException {
+    private void loadInheritChain(YThread thread, YClassLoader loader, String leaves) throws ClassLoadingException, ClassLinkingException {
         if (!methodScope.existClass(leaves)) {
             loader.associateThread(thread);
             Tuple6 bundle = loader.loadClass(leaves);
             MetaClass meta = loader.linkClass(bundle);
             methodScope.addMetaClass(meta);
-            if (!methodScope.existClass(meta.superClassName)) {
+            if (!meta.superClassName.isEmpty() && !methodScope.existClass(meta.superClassName)) {
                 loadInheritChain(thread, loader, meta.superClassName);
             } else {
                 //if there were loaded by the different class loader, then loading it again by this loader
-                if (Predicate.isNull(methodScope.getMetaClass(meta.superClassName, loader.getClass()))) {
+                if (!meta.superClassName.isEmpty() && Predicate.isNull(methodScope.getMetaClass(meta.superClassName, loader.getClass()))) {
                     loadInheritChain(thread, loader, meta.superClassName);
                 }
             }
         } else {
             //if exist, check if they were loaded by the same class loader
-            if (Predicate.isNull(methodScope.getMetaClass(leaves, loader.getClass()))) {
+            if (!leaves.isEmpty() && Predicate.isNull(methodScope.getMetaClass(leaves, loader.getClass()))) {
                 loadInheritChain(thread, loader, leaves);
             }
         }
