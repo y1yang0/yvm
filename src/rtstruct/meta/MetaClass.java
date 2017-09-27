@@ -8,10 +8,10 @@ import java.util.Map;
 
 public class MetaClass {
     public MetaClassField fields;
+    public String superClassName;
     private int accessFlag;
     private boolean isClass;
     private String qualifiedClassName;
-    private String superClassName;
     private Class classLoader;
     private Map<Integer, Tuple4<String, String, Integer, Attribute[]>> staticVars;
     private Class classReference;

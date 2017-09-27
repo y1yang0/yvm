@@ -35,12 +35,25 @@ public class YClassLoader {
      */
     private YThread threadRef;
 
+    private String javaClass;
+
     public YClassLoader(String javaClass) {
-        reader = new ClassFileReader(javaClass);
+        this.javaClass = javaClass;
+    }
+
+    public YClassLoader() {
+
     }
 
     @SuppressWarnings("unchecked")
-    public Tuple6<ConstantPoolObject, InterfacesObject, FieldObject, MethodObject, ClassFileAttributeObject, u2[]> loadClass() throws ClassLoadingException {
+    public Tuple6<ConstantPoolObject, InterfacesObject,
+            FieldObject, MethodObject,
+            ClassFileAttributeObject, u2[]> loadClass(String javaClass) throws ClassLoadingException {
+
+        this.javaClass = javaClass;
+
+        setClassFileReader();
+
         try {
             if (!reader.openDataInputStream()) {
                 throw new IOException("Failed to get class file data");
@@ -92,13 +105,23 @@ public class YClassLoader {
         return null;
     }
 
-    public MetaClass linkClass(Tuple6<ConstantPoolObject, InterfacesObject, FieldObject, MethodObject, ClassFileAttributeObject, u2[]> bundle) throws ClassLinkingException {
+    public MetaClass linkClass(Tuple6<ConstantPoolObject, InterfacesObject,
+            FieldObject, MethodObject,
+            ClassFileAttributeObject, u2[]> bundle) throws ClassLinkingException {
         verify(bundle);
         MetaClass m = resolve(bundle);
         return m;
     }
 
-    private void verify(Tuple6<ConstantPoolObject, InterfacesObject, FieldObject, MethodObject, ClassFileAttributeObject, u2[]> bundle) throws ClassLinkingException {
+    public void initializeClass(MetaClass meta) throws ClassInitializingException {
+        CodeExecutionEngine engine = new CodeExecutionEngine(threadRef);
+        engine.ignite(meta);
+        engine.executeCLinit();
+    }
+
+    private void verify(Tuple6<ConstantPoolObject, InterfacesObject,
+            FieldObject, MethodObject,
+            ClassFileAttributeObject, u2[]> bundle) throws ClassLinkingException {
         if (!FormatChecking.ProperLengthOfAttribute.with(bundle.get3Placeholder(), bundle.get4Placeholder(), bundle.get5Placeholder())) {
             throw new ClassLinkingException("attributes in .class file doesn't have proper length");
         }
@@ -111,7 +134,9 @@ public class YClassLoader {
         }
     }
 
-    private MetaClass resolve(Tuple6<ConstantPoolObject, InterfacesObject, FieldObject, MethodObject, ClassFileAttributeObject, u2[]> bundle) throws ClassLinkingException {
+    private MetaClass resolve(Tuple6<ConstantPoolObject, InterfacesObject,
+            FieldObject, MethodObject,
+            ClassFileAttributeObject, u2[]> bundle) throws ClassLinkingException {
         ConstantPoolObject cp = bundle.get1Placeholder();
         InterfacesObject inter = bundle.get2Placeholder();
         FieldObject field = bundle.get3Placeholder();
@@ -146,6 +171,13 @@ public class YClassLoader {
         return meta;
     }
 
+    private void setClassFileReader() throws ClassLoadingException {
+        if (this.javaClass.isEmpty()) {
+            throw new ClassLoadingException("no java class file to be loaded");
+        }
+        reader = new ClassFileReader(this.javaClass);
+    }
+
     private u2 read2Bytes() throws IOException {
         return reader.read2Bytes();
     }
@@ -154,11 +186,6 @@ public class YClassLoader {
         return reader.read4Bytes();
     }
 
-    public void initializeClass(MetaClass meta) throws ClassInitializingException {
-        CodeExecutionEngine engine = new CodeExecutionEngine(threadRef);
-        engine.ignite(meta);
-        engine.executeCLinit();
-    }
 
     public void associateThread(YThread thread) {
         threadRef = thread;
