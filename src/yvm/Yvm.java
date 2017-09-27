@@ -37,6 +37,7 @@ public final class Yvm {
                 Tuple6 bundle = loader.loadClass("ycloader/example/Example");
                 MetaClass meta = loader.linkClass(bundle);
                 methodScope.addMetaClass(meta);
+                //todo:linking related class and adding to method scope, there related class could be found at meta which got before
 
                 loader.loadInheritanceChain(methodScope, classLoadingThread, loader, meta.superClassName);
 

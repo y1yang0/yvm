@@ -1506,8 +1506,184 @@ public final class CodeExecutionEngine {
                         dg.push(poolRef.findInString(index));
                     } else if (!Predicate.isNull(poolRef.findInClass(methodScopeRef, thread, classLoader, index))) {
                         Class c = poolRef.findInClass(methodScopeRef, thread, classLoader, index);
+                        dg.push(c);
+                    } else {
+                        //todo: support methodtype and methodhandle
                     }
                 }
+                break;
+
+                case Mnemonic.ldc_w: {
+                    int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int index = (indexByte1 << 8) | indexByte2;
+
+                    MetaClassConstantPool poolRef = metaClassRef.getConstantPool();
+
+                    if (!Predicate.isNull(poolRef.findInFloat(index))) {
+                        dg.push(poolRef.findInFloat(index));
+                    } else if (!Predicate.isNull(poolRef.findInInteger(index))) {
+                        dg.push(poolRef.findInInteger(index));
+                    } else if (!Predicate.isNull(poolRef.findInString(index))) {
+                        dg.push(poolRef.findInString(index));
+                    } else if (!Predicate.isNull(poolRef.findInClass(methodScopeRef, thread, classLoader, index))) {
+                        Class c = poolRef.findInClass(methodScopeRef, thread, classLoader, index);
+                        dg.push(c);
+                    } else {
+                        //todo: support methodtype and methodhandle
+                    }
+                }
+                break;
+
+                case Mnemonic.ldc2_w: {
+                    int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int index = (indexByte1 << 8) | indexByte2;
+
+                    MetaClassConstantPool poolRef = metaClassRef.getConstantPool();
+
+                    if (!Predicate.isNull(poolRef.findInLong(index))) {
+                        dg.push(poolRef.findInLong(index));
+                    } else if (!Predicate.isNull(poolRef.findInDouble(index))) {
+                        dg.push(poolRef.findInDouble(index));
+                    } else {
+                        throw new ClassInitializingException("ldc_2 has a invalid constant pool entry");
+                    }
+                }
+                break;
+
+                case Mnemonic.ldiv: {
+                    long value2 = (long) dg.pop();
+                    long value1 = (long) dg.pop();
+                    dg.push(value1 / value2);
+                }
+                break;
+
+                case Mnemonic.lload: {
+                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    dg.push(dg.getLocalVar(index));
+                }
+                break;
+
+                case Mnemonic.lload_0: {
+                    dg.push(dg.getLocalVar(0));
+                }
+                break;
+
+                case Mnemonic.lload_1: {
+                    dg.push(dg.getLocalVar(1));
+                }
+                break;
+
+                case Mnemonic.lload_2: {
+                    dg.push(dg.getLocalVar(2));
+                }
+                break;
+
+                case Mnemonic.lload_3: {
+                    dg.push(dg.getLocalVar(3));
+                }
+                break;
+
+                case Mnemonic.lmul: {
+                    long value2 = (long) dg.pop();
+                    long value1 = (long) dg.pop();
+                    dg.push(value1 * value2);
+                }
+                break;
+
+                case Mnemonic.lneg: {
+                    long value = (long) dg.pop();
+                    dg.push(-value);
+                }
+                break;
+
+                case Mnemonic.lookupswitch: {
+                    //todo:lookupswitch
+                }
+                break;
+
+                case Mnemonic.lor: {
+                    long value2 = (long) dg.pop();
+                    long value1 = (long) dg.pop();
+                    dg.push(value1 | value2);
+                }
+                break;
+
+                case Mnemonic.lrem: {
+                    long value2 = (long) dg.pop();
+                    long value1 = (long) dg.pop();
+                    if (value1 == 0) {
+                        throw new ArithmeticException("the division is 0");
+                    }
+                    dg.push(value1 - (value1 / value2) * value2);
+                }
+                break;
+
+                case Mnemonic.lreturn: {
+                    //todo:lreturn
+                }
+                break;
+
+                case Mnemonic.lshl: {
+                    long value2 = (long) dg.pop();
+                    long value1 = (long) dg.pop();
+                    dg.push(value1 << (value2 & 0x3F));
+                }
+                break;
+
+                case Mnemonic.lshr: {
+                    long value2 = (long) dg.pop();
+                    long value1 = (long) dg.pop();
+                    dg.push(value1 >> (value2 & 0x3F));
+                }
+                break;
+
+                case Mnemonic.lstore: {
+                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    long value = (long) dg.pop();
+                    dg.setLocalVar(index, value);
+                }
+                break;
+
+                case Mnemonic.lstore_0: {
+                    long value = (long) dg.pop();
+                    dg.setLocalVar(0, value);
+                }
+                break;
+
+                case Mnemonic.lstore_1: {
+                    long value = (long) dg.pop();
+                    dg.setLocalVar(1, value);
+                }
+                break;
+
+                case Mnemonic.lstore_2: {
+                    long value = (long) dg.pop();
+                    dg.setLocalVar(2, value);
+                }
+                break;
+
+                case Mnemonic.lstore_3: {
+                    long value = (long) dg.pop();
+                    dg.setLocalVar(3, value);
+                }
+                break;
+
+                case Mnemonic.lsub: {
+                    long value2 = (long) dg.pop();
+                    long value1 = (long) dg.pop();
+                    dg.push(value1 - value2);
+                }
+                break;
+
+                case Mnemonic.lushr: {
+                    int value2 = (int) dg.pop();
+                    long value1 = (long) dg.pop();
+                    dg.push((value1 >> (value2 & 0x3F)) + (2L << ~(value2 & 0x3F)));
+                }
+                break;
+
 
                 default:
                     throw new ClassInitializingException("unknown opcode in execution sequence");

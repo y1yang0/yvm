@@ -68,7 +68,8 @@ public class MetaClassConstantPool {
 
     private HashMap<
             Integer,                    //cp index
-            Integer>                    //reference index;
+            Tuple2<Integer,             //reference kind
+                    Integer>>           //reference index;
             methodHandles;
 
     private HashMap<
@@ -178,8 +179,9 @@ public class MetaClassConstantPool {
             } else if (x instanceof ConstantUtf8Info) {
                 utf8s.put(index, x.toString());
             } else if (x instanceof ConstantMethodHandleInfo) {
+                int referenceKind = ((ConstantMethodHandleInfo) x).referenceKind.getValue();
                 int referenceIndex = ((ConstantMethodHandleInfo) x).referenceIndex.getValue();
-                methodHandles.put(index, referenceIndex);
+                methodHandles.put(index, new Tuple2<>(referenceKind, referenceIndex));
             } else if (x instanceof ConstantMethodTypeInfo) {
                 int descriptorIndex = ((ConstantMethodTypeInfo) x).descriptorIndex.getValue();
                 String descriptor = cp.at(descriptorIndex).toString();
@@ -280,6 +282,23 @@ public class MetaClassConstantPool {
         }
         return null;
     }
+
+    public Double findInDouble(int index) {
+        Double a = doubles.get(index);
+        if (!Predicate.isNull(a)) {
+            return a;
+        }
+        return null;
+    }
+
+    public Long findInLong(int index) {
+        Long a = longs.get(index);
+        if (!Predicate.isNull(a)) {
+            return a;
+        }
+        return null;
+    }
+
 
     public Class findInClass(YMethodScope methodScope, YThread thread, YClassLoader loader, int index)
             throws ClassLoadingException, ClassLinkingException, ClassInitializingException {
