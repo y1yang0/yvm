@@ -1,6 +1,9 @@
 package yvm.exec;
 
-import rtstruct.*;
+import rtstruct.YArray;
+import rtstruct.YMethodScope;
+import rtstruct.YObject;
+import rtstruct.YThread;
 import rtstruct.meta.MetaClass;
 import rtstruct.meta.MetaClassConstantPool;
 import rtstruct.meta.MetaClassMethod;
@@ -26,30 +29,20 @@ public final class CodeExecutionEngine {
     private boolean ignited;
     private MetaClass metaClassRef;
     private YMethodScope methodScopeRef;
-    private YHeap heapRef;
     private YClassLoader classLoader;
 
-    public CodeExecutionEngine(YThread thread) {
-        this.thread = thread;
+    public CodeExecutionEngine() {
         ignited = false;
     }
 
-    public void ignite(MetaClass metaClassInfo) {
+    public void ignite(MetaClass metaClassInfo, YClassLoader loader) {
+        this.classLoader = loader;
         this.metaClassRef = metaClassInfo;
+        this.methodScopeRef = loader.getStartupThread().runtimeVM().methodScope();
+        this.thread = loader.getStartupThread();
         ignited = true;
     }
 
-    public void associateMethodScope(YMethodScope methodScope) {
-        methodScopeRef = methodScope;
-    }
-
-    public void associateHeap(YHeap heap) {
-        heapRef = heap;
-    }
-
-    public void associateClassLoader(YClassLoader classLoader) {
-        this.classLoader = classLoader;
-    }
 
     public void executeCLinit() throws ClassInitializingException {
         if (!ignited) {
@@ -61,7 +54,7 @@ public final class CodeExecutionEngine {
                 clinit = metaClassRef.getMethods().findMethod("<clinit>");
 
         if (isNull(clinit) || strNotEqual(clinit.get1Placeholder(), "<clinit>")) {
-            throw new ClassInitializingException("can not find synthetic <clinit> method");
+            return;
         }
 
         int maxLocals = clinit.get4Placeholder().maxLocals;
@@ -85,10 +78,10 @@ public final class CodeExecutionEngine {
                 return stack.currentFrame().peekOperand();
             }
             private Object pop() {
-                return stack.currentFrame().pop$operand();
+                return stack.currentFrame().popOperand();
             }
             private void push(Object object) {
-                stack.currentFrame().push$operand(object);
+                stack.currentFrame().pushOperand(object);
             }
             private void setLocalVar(int index,Object value){
                 stack.currentFrame().setLocalVariable(index,value);
@@ -552,7 +545,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.dup_x2:{
                     Object value1 = dg.pop();
                     Object value2 = dg.pop();
-                    if(value2 instanceof Long || value2 instanceof Double){
+                    if (Predicate.isCategory2ComputationalType(value2)) {
                         //category 2 computational type
                         dg.push(value1);
                         dg.push(value2);
@@ -570,7 +563,7 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.dup2: {
                     Object value =  dg.pop();
-                    if(value instanceof Long || value instanceof Double) {
+                    if (Predicate.isCategory2ComputationalType(value)) {
                         //category 2 computational type
                         dg.push(value);
                         dg.push(value);
@@ -587,7 +580,7 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.dup2_x1:{
                     Object value1=  dg.pop();
-                    if(value1 instanceof Long || value1 instanceof Double) {
+                    if (Predicate.isCategory2ComputationalType(value1)) {
                         //category 2 computational type
                         Object value2 = dg.pop();
                         dg.push(value1);
@@ -610,17 +603,17 @@ public final class CodeExecutionEngine {
                     Object value1=  dg.pop();
                     Object value2=  dg.pop();
                     //Form 4
-                    if((value1 instanceof Long || value1 instanceof  Double)&&
-                            (value2 instanceof Long || value2 instanceof Double)){
+                    if (Predicate.isCategory2ComputationalType(value1) &&
+                            Predicate.isCategory2ComputationalType(value2)) {
                         dg.push(value1);
                         dg.push(value2);
                         dg.push(value1);
                     }else{
                         Object value3 = dg.pop();
                         //Form 3
-                        if(!(value1 instanceof Long || value1 instanceof  Double)&&
-                                !(value2 instanceof Long || value2 instanceof Double)&&
-                                (value3 instanceof Long || value3 instanceof Double)){
+                        if (Predicate.isCategory1ComputationalType(value1) &&
+                                Predicate.isCategory1ComputationalType(value2) &&
+                                Predicate.isCategory2ComputationalType(value3)) {
                             dg.push(value2);
                             dg.push(value1);
                             dg.push(value3);
@@ -628,9 +621,9 @@ public final class CodeExecutionEngine {
                             dg.push(value1);
                         }
                         //Form 2
-                        else if((value1 instanceof Long || value1 instanceof  Double)&&
-                                !(value2 instanceof Long || value2 instanceof Double)&&
-                                !(value3 instanceof Long || value3 instanceof Double)){
+                        else if (Predicate.isCategory2ComputationalType(value1) &&
+                                Predicate.isCategory1ComputationalType(value2) &&
+                                Predicate.isCategory1ComputationalType(value3)) {
                             dg.push(value1);
                             dg.push(value3);
                             dg.push(value2);
@@ -639,10 +632,10 @@ public final class CodeExecutionEngine {
                         else{
                             Object value4 = dg.pop();
                             //Form 1
-                            if((value1 instanceof Long || value1 instanceof  Double)&&
-                                    (value2 instanceof Long || value2 instanceof  Double)&&
-                                    (value3 instanceof Long || value3 instanceof  Double)&&
-                                    (value4 instanceof Long || value4 instanceof  Double)){
+                            if (Predicate.isCategory2ComputationalType(value1) &&
+                                    Predicate.isCategory2ComputationalType(value2) &&
+                                    Predicate.isCategory2ComputationalType(value3) &&
+                                    Predicate.isCategory2ComputationalType(value4)) {
                                 dg.push(value2);
                                 dg.push(value1);
                                 dg.push(value4);
@@ -1505,8 +1498,8 @@ public final class CodeExecutionEngine {
                         dg.push(poolRef.findInInteger(index));
                     } else if (!Predicate.isNull(poolRef.findInString(index))) {
                         dg.push(poolRef.findInString(index));
-                    } else if (!Predicate.isNull(poolRef.findInClass(methodScopeRef, thread, classLoader, index))) {
-                        Class c = poolRef.findInClass(methodScopeRef, thread, classLoader, index);
+                    } else if (!Predicate.isNull(poolRef.findInClass(classLoader, index))) {
+                        Class c = poolRef.findInClass(classLoader, index);
                         dg.push(c);
                     } else {
                         //todo: support methodtype and methodhandle
@@ -1527,8 +1520,8 @@ public final class CodeExecutionEngine {
                         dg.push(poolRef.findInInteger(index));
                     } else if (!Predicate.isNull(poolRef.findInString(index))) {
                         dg.push(poolRef.findInString(index));
-                    } else if (!Predicate.isNull(poolRef.findInClass(methodScopeRef, thread, classLoader, index))) {
-                        Class c = poolRef.findInClass(methodScopeRef, thread, classLoader, index);
+                    } else if (!Predicate.isNull(poolRef.findInClass(classLoader, index))) {
+                        Class c = poolRef.findInClass(classLoader, index);
                         dg.push(c);
                     } else {
                         //todo: support methodtype and methodhandle

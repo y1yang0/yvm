@@ -3,24 +3,13 @@ package rtstruct.ystack;
 import java.util.ArrayList;
 import java.util.Stack;
 
-class DynamicLinking {
-}
-
-class OperandStack extends Stack {
-}
-
-class LocalVarTable extends ArrayList<Object> {
-}
-
 public class YStackFrame {
     private LocalVarTable vars;
     private OperandStack operands;
-    private DynamicLinking linker;
 
     public YStackFrame() {
         vars = new LocalVarTable();
         operands = new OperandStack();
-        linker = new DynamicLinking();
     }
 
     public void allocateSize(int maxStack, int maxLocal) {
@@ -32,11 +21,11 @@ public class YStackFrame {
         return operands.peek();
     }
 
-    public Object pop$operand() {
+    public Object popOperand() {
         return operands.pop();
     }
 
-    public <T> void push$operand(T item) {
+    public void pushOperand(Object item) {
         operands.push(item);
     }
 
@@ -46,5 +35,11 @@ public class YStackFrame {
 
     public void setLocalVariable(int index, Object value) {
         vars.set(index, value);
+    }
+
+    class OperandStack extends Stack {
+    }
+
+    class LocalVarTable extends ArrayList<Object> {
     }
 }
