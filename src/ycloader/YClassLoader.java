@@ -1,5 +1,6 @@
 package ycloader;
 
+import rtstruct.YMethodScope;
 import rtstruct.YThread;
 import rtstruct.meta.*;
 import ycloader.adt.u2;
@@ -114,9 +115,11 @@ public class YClassLoader {
         return m;
     }
 
-    public void initializeClass(MetaClass meta) throws ClassInitializingException {
+    public void initializeClass(YMethodScope methodScope, MetaClass meta) throws ClassInitializingException {
         CodeExecutionEngine engine = new CodeExecutionEngine(threadRef);
         engine.ignite(meta);
+        engine.associateClassLoader(this);
+        engine.associateMethodScope(methodScope);
         engine.executeCLinit();
     }
 
@@ -172,6 +175,22 @@ public class YClassLoader {
         return meta;
     }
 
+    public void loadInheritanceChain(YMethodScope methodScope, YThread thread, YClassLoader loader, String leaves)
+            throws ClassLoadingException, ClassLinkingException, ClassInitializingException {
+        if (!methodScope.existClass(leaves, loader.getClass())) {
+            loader.associateThread(thread);
+            Tuple6 bundle = loader.loadClass(leaves);
+            MetaClass meta = loader.linkClass(bundle);
+            methodScope.addMetaClass(meta);
+
+            if (!meta.superClassName.isEmpty() && !methodScope.existClass(meta.superClassName, loader.getClass())) {
+                loadInheritanceChain(methodScope, thread, loader, meta.superClassName);
+            }
+
+            loader.initializeClass(methodScope, meta);
+        }
+    }
+
     private synchronized void setClassFileReader() throws ClassLoadingException {
         if (this.javaClass.isEmpty()) {
             throw new ClassLoadingException("no java class file to be loaded");
@@ -186,7 +205,6 @@ public class YClassLoader {
     private synchronized u4 read4Bytes() throws IOException {
         return reader.read4Bytes();
     }
-
 
     public synchronized void associateThread(YThread thread) {
         threadRef = thread;

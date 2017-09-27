@@ -1,5 +1,6 @@
 package rtstruct.meta;
 
+import rtstruct.YMethodScope;
 import rtstruct.YThread;
 import ycloader.YClassLoader;
 import ycloader.adt.constantpool.*;
@@ -7,7 +8,6 @@ import ycloader.dataobject.ConstantPoolObject;
 import ycloader.exception.ClassInitializingException;
 import ycloader.exception.ClassLinkingException;
 import ycloader.exception.ClassLoadingException;
-import yvm.Yvm;
 import yvm.adt.Tuple2;
 import yvm.adt.Tuple3;
 import yvm.auxil.Predicate;
@@ -281,9 +281,18 @@ public class MetaClassConstantPool {
         return null;
     }
 
-    public Class findInClass(Yvm vm, YThread thread, YClassLoader loader, int index)
+    public Class findInClass(YMethodScope methodScope, YThread thread, YClassLoader loader, int index)
             throws ClassLoadingException, ClassLinkingException, ClassInitializingException {
         String className = classes.get(index);
-        return null;
+        if (className != null) {
+            if (!methodScope.existClass(className, loader.getClass())) {
+                loader.loadInheritanceChain(methodScope, thread, loader, className);
+                return methodScope.getMetaClass(className, loader.getClass()).getClass();
+            } else {
+                return methodScope.getMetaClass(className, loader.getClass()).getClass();
+            }
+        } else {
+            return null;
+        }
     }
 }

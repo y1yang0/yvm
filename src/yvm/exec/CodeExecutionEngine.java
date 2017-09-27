@@ -6,9 +6,12 @@ import rtstruct.meta.MetaClassConstantPool;
 import rtstruct.meta.MetaClassMethod;
 import rtstruct.ystack.YStack;
 import rtstruct.ystack.YStackFrame;
+import ycloader.YClassLoader;
 import ycloader.adt.attribute.Attribute;
 import ycloader.adt.u1;
 import ycloader.exception.ClassInitializingException;
+import ycloader.exception.ClassLinkingException;
+import ycloader.exception.ClassLoadingException;
 import yvm.adt.*;
 import yvm.auxil.Peel;
 import yvm.auxil.Predicate;
@@ -24,7 +27,7 @@ public final class CodeExecutionEngine {
     private MetaClass metaClassRef;
     private YMethodScope methodScopeRef;
     private YHeap heapRef;
-    private Class classLoader;
+    private YClassLoader classLoader;
 
     public CodeExecutionEngine(YThread thread) {
         this.thread = thread;
@@ -44,7 +47,7 @@ public final class CodeExecutionEngine {
         heapRef = heap;
     }
 
-    public void associateClassLoader(Class classLoader) {
+    public void associateClassLoader(YClassLoader classLoader) {
         this.classLoader = classLoader;
     }
 
@@ -75,7 +78,7 @@ public final class CodeExecutionEngine {
     }
 
     @SuppressWarnings("unused")
-    private void codeExecution(Opcode op) throws ClassInitializingException {
+    private void codeExecution(Opcode op) throws ClassInitializingException, ClassLinkingException, ClassLoadingException {
         YStack stack = thread.stack();
         class Delegate {
             private Object pop() {
@@ -221,7 +224,7 @@ public final class CodeExecutionEngine {
                         throw new NegativeArraySizeException("array size required a positive integer");
                     }
                     if (!isNull(res)) {
-                        if (methodScopeRef.existClass(res, classLoader)) {
+                        if (methodScopeRef.existClass(res, classLoader.getClass())) {
                             MetaClass meta = methodScopeRef.getMetaClass(res, metaClassRef.getClassLoader());
                             YObject object = new YObject(meta);
                             object.init();
@@ -233,7 +236,7 @@ public final class CodeExecutionEngine {
                         } else {
                             String arrayComponentType = Peel.getArrayComponent(res);
                             int arrayDimension = Peel.getArrayDimension(res);
-                            if (methodScopeRef.existClass(arrayComponentType, classLoader)) {
+                            if (methodScopeRef.existClass(arrayComponentType, classLoader.getClass())) {
                                 MetaClass meta = methodScopeRef.getMetaClass(res, metaClassRef.getClassLoader());
                                 YObject object = new YObject(meta);
                                 object.init();
@@ -1501,6 +1504,8 @@ public final class CodeExecutionEngine {
                         dg.push(poolRef.findInInteger(index));
                     } else if (!Predicate.isNull(poolRef.findInString(index))) {
                         dg.push(poolRef.findInString(index));
+                    } else if (!Predicate.isNull(poolRef.findInClass(methodScopeRef, thread, classLoader, index))) {
+                        Class c = poolRef.findInClass(methodScopeRef, thread, classLoader, index);
                     }
                 }
 

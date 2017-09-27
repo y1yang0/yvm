@@ -24,22 +24,6 @@ public final class Yvm {
         vm.start();
     }
 
-    public void loadInheritanceChain(YThread thread, YClassLoader loader, String leaves)
-            throws ClassLoadingException, ClassLinkingException, ClassInitializingException {
-        if (!methodScope.existClass(leaves, loader.getClass())) {
-            loader.associateThread(thread);
-            Tuple6 bundle = loader.loadClass(leaves);
-            MetaClass meta = loader.linkClass(bundle);
-            methodScope.addMetaClass(meta);
-
-            if (!meta.superClassName.isEmpty() && !methodScope.existClass(meta.superClassName, loader.getClass())) {
-                loadInheritanceChain(thread, loader, meta.superClassName);
-            }
-
-            loader.initializeClass(meta);
-        }
-    }
-
 
     public void start() {
         YThread classLoadingThread = new YThread("classLoadingThread");
@@ -54,9 +38,9 @@ public final class Yvm {
                 MetaClass meta = loader.linkClass(bundle);
                 methodScope.addMetaClass(meta);
 
-                loadInheritanceChain(classLoadingThread, loader, meta.superClassName);
+                loader.loadInheritanceChain(methodScope, classLoadingThread, loader, meta.superClassName);
 
-                loader.initializeClass(meta);
+                loader.initializeClass(methodScope, meta);
             } catch (ClassLinkingException | ClassLoadingException | ClassInitializingException e) {
                 e.printStackTrace();
             }
