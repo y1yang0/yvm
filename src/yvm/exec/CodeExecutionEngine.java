@@ -70,7 +70,7 @@ public final class CodeExecutionEngine {
     @SuppressWarnings("unused")
     private void codeExecution(Opcode op) throws ClassInitializingException {
         YStack stack = thread.stack();
-        class Aux {
+        class Delegate {
             private Object pop() {
                 return stack.currentFrame().pop$operand();
             }
@@ -78,9 +78,16 @@ public final class CodeExecutionEngine {
             private void push(Object object) {
                 stack.currentFrame().push$operand(object);
             }
+
+            private void setLocalVar(int index,Object value){
+                stack.currentFrame().setLocalVariable(index,value);
+            }
+            private Object getLocalVar(int index){
+                return stack.currentFrame().getLocalVariable(index);
+            }
         }
 
-        Aux aux = new Aux();
+        Delegate dg = new Delegate();
         //program counter//opcode value//operand of related opcode
         ArrayList<Tuple3<Integer, Integer, Operand>>
                 opcodes = op.getOpcodes();
@@ -92,8 +99,8 @@ public final class CodeExecutionEngine {
 
                 //Load reference from array
                 case Mnemonic.aaload: {
-                    int index = (int) aux.pop();
-                    YArray arrayRef = (YArray) aux.pop();
+                    int index = (int) dg.pop();
+                    YArray arrayRef = (YArray) dg.pop();
 
                     if (isNull(arrayRef)) {
                         throw new NullPointerException("reference of an array is null");
@@ -101,15 +108,15 @@ public final class CodeExecutionEngine {
                     if (!inRange(arrayRef, index)) {
                         throw new ArrayIndexOutOfBoundsException("array index " + index + " out of bounds");
                     }
-                    aux.push(arrayRef.get(index));
+                    dg.push(arrayRef.get(index));
                 }
                 break;
 
                 //Store into reference array
                 case Mnemonic.aastore: {
-                    Object value = aux.pop();
-                    int index = (int) aux.pop();
-                    YArray arrayRef = (YArray) aux.pop();
+                    Object value = dg.pop();
+                    int index = (int) dg.pop();
+                    YArray arrayRef = (YArray) dg.pop();
 
                     if (isClass(value.getClass())) {
                         if (!isSameClass(arrayRef.getClass().getComponentType(), value.getClass())
@@ -153,43 +160,43 @@ public final class CodeExecutionEngine {
 
                 //Push null
                 case Mnemonic.aconst_null: {
-                    aux.push(null);
+                    dg.push(null);
                 }
                 break;
 
                 //Load reference from local variable
                 case Mnemonic.aload: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    Object objectRef = stack.currentFrame().getLocalVariable(index);
-                    aux.push(objectRef);
+                    Object objectRef = dg.getLocalVar(index);
+                    dg.push(objectRef);
                 }
                 break;
 
                 //Load reference from local variable with index 0
                 case Mnemonic.aload_0: {
-                    Object objectRef = stack.currentFrame().getLocalVariable(0);
-                    aux.push(objectRef);
+                    Object objectRef = dg.getLocalVar(0);
+                    dg.push(objectRef);
                 }
                 break;
 
                 //Load reference from local variable with index 1
                 case Mnemonic.aload_1: {
-                    Object objectRef = stack.currentFrame().getLocalVariable(1);
-                    aux.push(objectRef);
+                    Object objectRef = dg.getLocalVar(1);
+                    dg.push(objectRef);
                 }
                 break;
 
                 //Load reference from local variable with index 2
                 case Mnemonic.aload_2: {
-                    Object objectRef = stack.currentFrame().getLocalVariable(2);
-                    aux.push(objectRef);
+                    Object objectRef = dg.getLocalVar(2);
+                    dg.push(objectRef);
                 }
                 break;
 
                 //Load reference from local variable with index 3
                 case Mnemonic.aload_3: {
-                    Object objectRef = stack.currentFrame().getLocalVariable(3);
-                    aux.push(objectRef);
+                    Object objectRef = dg.getLocalVar(3);
+                    dg.push(objectRef);
                 }
                 break;
 
@@ -197,7 +204,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.anewarray: {
                     //The count represents the number of components of the array to
                     //be created.
-                    int count = (int) aux.pop();
+                    int count = (int) dg.pop();
                     byte indexByte1 = (byte) ((Operand) cd.get3Placeholder()).get0();
                     byte indexByte2 = (byte) ((Operand) cd.get3Placeholder()).get1();
                     int index = (indexByte1 << 8) | indexByte2;
@@ -215,7 +222,7 @@ public final class CodeExecutionEngine {
                             YArray array = new YArray<>(count, object);
                             array.init();
 
-                            aux.push(array);
+                            dg.push(array);
                         } else {
                             String arrayComponentType = Peel.getArrayComponent(res);
                             int arrayDimension = Peel.getArrayDimension(res);
@@ -230,7 +237,7 @@ public final class CodeExecutionEngine {
                                 YArray outer = new YArray<>(count, inner);
                                 outer.init();
 
-                                aux.push(outer);
+                                dg.push(outer);
                             }
                         }
                     }
@@ -244,56 +251,56 @@ public final class CodeExecutionEngine {
 
                 //Get length of array
                 case Mnemonic.arraylength: {
-                    YArray arrayRef = (YArray) aux.pop();
+                    YArray arrayRef = (YArray) dg.pop();
                     if (isNull(arrayRef)) {
                         throw new NullPointerException("array reference is null");
                     }
-                    aux.push(arrayRef.getDimension());
+                    dg.push(arrayRef.getDimension());
                 }
                 break;
 
                 //Store reference into local variable
                 case Mnemonic.astore: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    Object top = aux.pop();
+                    Object top = dg.pop();
 
-                    stack.currentFrame().setLocalVariable(index, top);
+                    dg.setLocalVar(index, top);
                 }
                 break;
 
                 //Store reference into local variable
                 case Mnemonic.astore_0: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    Object top = aux.pop();
+                    Object top = dg.pop();
 
-                    stack.currentFrame().setLocalVariable(0, top);
+                    dg.setLocalVar(0, top);
                 }
                 break;
 
                 //Store reference into local variable
                 case Mnemonic.astore_1: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    Object top = aux.pop();
+                    Object top = dg.pop();
 
-                    stack.currentFrame().setLocalVariable(1, top);
+                    dg.setLocalVar(1, top);
                 }
                 break;
 
                 //Store reference into local variable
                 case Mnemonic.astore_2: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    Object top = aux.pop();
+                    Object top = dg.pop();
 
-                    stack.currentFrame().setLocalVariable(2, top);
+                    dg.setLocalVar(2, top);
                 }
                 break;
 
                 //Store reference into local variable
                 case Mnemonic.astore_3: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    Object top = aux.pop();
+                    Object top = dg.pop();
 
-                    stack.currentFrame().setLocalVariable(3, top);
+                    dg.setLocalVar(3, top);
                 }
                 break;
 
@@ -304,42 +311,42 @@ public final class CodeExecutionEngine {
 
                 //Load byte or boolean from array
                 case Mnemonic.baload: {
-                    int index = (int) aux.pop();
-                    YArray arrayRef = (YArray) aux.pop();
+                    int index = (int) dg.pop();
+                    YArray arrayRef = (YArray) dg.pop();
                     if (isNull(arrayRef)) {
                         throw new NullPointerException("array reference is null");
                     }
                     if (index > arrayRef.getDimension()) {
                         throw new ArrayIndexOutOfBoundsException("array index out of bounds");
                     }
-                    aux.push(arrayRef.get(index));
+                    dg.push(arrayRef.get(index));
                 }
                 break;
 
                 case Mnemonic.bastore: {
-                    int value = (int) aux.pop();
-                    int index = (int) aux.pop();
-                    YArray array = (YArray) aux.pop();
+                    int value = (int) dg.pop();
+                    int index = (int) dg.pop();
+                    YArray array = (YArray) dg.pop();
                     array.set(index, value);
                 }
                 break;
 
                 case Mnemonic.bipush: {
-                    aux.push(((Operand) cd.get3Placeholder()).get0());
+                    dg.push(((Operand) cd.get3Placeholder()).get0());
                 }
                 break;
 
                 case Mnemonic.caload: {
-                    int index = (int) aux.pop();
-                    YArray array = (YArray) aux.pop();
-                    aux.push(array.get(index));
+                    int index = (int) dg.pop();
+                    YArray array = (YArray) dg.pop();
+                    dg.push(array.get(index));
                 }
                 break;
 
                 case Mnemonic.castore: {
-                    int value = (int) aux.pop();
-                    int index = (int) aux.pop();
-                    YArray array = (YArray) aux.pop();
+                    int value = (int) dg.pop();
+                    int index = (int) dg.pop();
+                    YArray array = (YArray) dg.pop();
                     array.set(index, value);
                 }
                 break;
@@ -350,116 +357,424 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.d2f: {
-                    double value = (double) aux.pop();
-                    aux.push((float) value);
+                    double value = (double) dg.pop();
+                    dg.push((float) value);
                 }
                 break;
 
                 case Mnemonic.d2i: {
-                    double value = (double) aux.pop();
-                    aux.push((int) value);
+                    double value = (double) dg.pop();
+                    dg.push((int) value);
                 }
                 break;
 
                 case Mnemonic.d2l: {
-                    double value = (double) aux.pop();
-                    aux.push((long) value);
+                    double value = (double) dg.pop();
+                    dg.push((long) value);
                 }
                 break;
 
                 case Mnemonic.dadd: {
-                    double value2 = (double) aux.pop();
-                    double value1 = (double) aux.pop();
-                    aux.push(value1 + value2);
+                    double value2 = (double) dg.pop();
+                    double value1 = (double) dg.pop();
+                    dg.push(value1 + value2);
                 }
                 break;
 
                 case Mnemonic.daload: {
-                    int index = (int) aux.pop();
-                    YArray array = (YArray) aux.pop();
-                    aux.push(array.get(index));
+                    int index = (int) dg.pop();
+                    YArray array = (YArray) dg.pop();
+                    dg.push(array.get(index));
                 }
                 break;
 
                 case Mnemonic.dastore: {
-                    double value = (double) aux.pop();
-                    int index = (int) aux.pop();
-                    YArray array = (YArray) aux.pop();
+                    double value = (double) dg.pop();
+                    int index = (int) dg.pop();
+                    YArray array = (YArray) dg.pop();
                     array.set(index, value);
                 }
                 break;
 
                 case Mnemonic.dcmpg:
                 case Mnemonic.dcmpl: {
-                    double value2 = (double) aux.pop();
-                    double value1 = (double) aux.pop();
+                    double value2 = (double) dg.pop();
+                    double value1 = (double) dg.pop();
                     float value1$ = (float) value1;
                     float value2$ = (float) value2;
                     if (value1$ > value2$) {
-                        aux.push(0);
+                        dg.push(0);
                     } else if (value1$ < value2$) {
-                        aux.push(-1);
+                        dg.push(-1);
                     } else if ((Math.abs(value1$ - value2$) > 0)) {
-                        aux.push(0);
+                        dg.push(0);
                     }
                 }
                 break;
 
                 case Mnemonic.dconst_0: {
-                    aux.push(0.0);
+                    dg.push(0.0);
                 }
                 break;
 
                 case Mnemonic.dconst_1: {
-                    aux.push(1.0);
+                    dg.push(1.0);
                 }
                 break;
 
                 case Mnemonic.ddiv: {
-                    double value2 = (double) aux.pop();
-                    double value1 = (double) aux.pop();
-                    aux.push(value1 / value2);
+                    double value2 = (double) dg.pop();
+                    double value1 = (double) dg.pop();
+                    dg.push(value1 / value2);
                 }
                 break;
 
                 case Mnemonic.dload: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    double value = (double) stack.currentFrame().getLocalVariable(index);
-                    aux.push(value);
+                    double value = (double) dg.getLocalVar(index);
+                    dg.push(value);
                 }
                 break;
 
                 case Mnemonic.dload_0: {
-                    double value = (double) stack.currentFrame().getLocalVariable(0);
-                    aux.push(value);
+                    double value = (double) dg.getLocalVar(0);
+                    dg.push(value);
                 }
                 break;
 
                 case Mnemonic.dload_1: {
-                    double value = (double) stack.currentFrame().getLocalVariable(1);
-                    aux.push(value);
+                    double value = (double) dg.getLocalVar(1);
+                    dg.push(value);
                 }
                 break;
 
                 case Mnemonic.dload_2: {
-                    double value = (double) stack.currentFrame().getLocalVariable(2);
-                    aux.push(value);
+                    double value = (double) dg.getLocalVar(2);
+                    dg.push(value);
                 }
                 break;
 
                 case Mnemonic.dload_3: {
-                    double value = (double) stack.currentFrame().getLocalVariable(3);
-                    aux.push(value);
+                    double value = (double) dg.getLocalVar(3);
+                    dg.push(value);
                 }
                 break;
 
                 case Mnemonic.dmul: {
-                    double value2 = (double) aux.pop();
-                    double value1 = (double) aux.pop();
-                    aux.push(value1 * value2);
+                    double value2 = (double) dg.pop();
+                    double value1 = (double) dg.pop();
+                    dg.push(value1 * value2);
                 }
 
+                case Mnemonic.dneg:{
+                    double value = (double) dg.pop();
+                    dg.push(-value);
+                }
+                break;
 
+                case Mnemonic.drem:{
+                    double value2 = (double) dg.pop();
+                    double value1 = (double) dg.pop();
+                    dg.push(value1 % value2);
+                }
+                break;
+
+                case Mnemonic.dreturn:{
+                    //todo:dreturn
+                }
+                break;
+
+                case Mnemonic.dstore:{
+                    double value = (double) dg.pop();
+                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    dg.setLocalVar(index,value);
+                }
+                break;
+
+                case Mnemonic.dstore_0:{
+                    double value = (double) dg.pop();
+                    dg.setLocalVar(0,value);
+                }
+                break;
+
+                case Mnemonic.dstore_1:{
+                    double value = (double) dg.pop();
+                    dg.setLocalVar(1,value);
+                }
+                break;
+
+                case Mnemonic.dstore_2:{
+                    double value = (double) dg.pop();
+                    dg.setLocalVar(2,value);
+                }
+                break;
+
+                case Mnemonic.dstore_3:{
+                    double value = (double) dg.pop();
+                    dg.setLocalVar(3,value);
+                }
+                break;
+
+                case Mnemonic.dsub:{
+                    double value2 = (double) dg.pop();
+                    double value1 = (double) dg.pop();
+                    dg.push(value1 - value2);
+                }
+                break;
+
+                case Mnemonic.dup:{
+                    Object value = (Object) dg.pop();
+                    dg.push(value);
+                    dg.push(value);
+                }
+                break;
+
+                case Mnemonic.dup_x1:{
+                    Object value1 = (Object) dg.pop();
+                    Object value2 = (Object) dg.pop();
+                    dg.push(value1);
+                    dg.push(value2);
+                    dg.push(value1);
+                }
+                break;
+
+                case Mnemonic.dup_x2:{
+                    Object value1 = (Object) dg.pop();
+                    Object value2 = (Object) dg.pop();
+                    if(value2 instanceof Long || value2 instanceof Double){
+                        //category 2 computational type
+                        dg.push(value1);
+                        dg.push(value2);
+                        dg.push(value1);
+                    }else{
+                        //category 1 computational type
+                        Object value3 = (Object) dg.pop();
+                        dg.push(value1);
+                        dg.push(value3);
+                        dg.push(value2);
+                        dg.push(value1);
+                    }
+                }
+                break;
+
+                case Mnemonic.dup2: {
+                    Object value =  dg.pop();
+                    if(value instanceof Long || value instanceof Double) {
+                        //category 2 computational type
+                        dg.push(value);
+                        dg.push(value);
+                    }else{
+                        //category 1 computational type
+                        Object value2 =  dg.pop();
+                        dg.push(value2);
+                        dg.push(value);
+                        dg.push(value2);
+                        dg.push(value);
+                    }
+                }
+                break;
+
+                case Mnemonic.dup2_x1:{
+                    Object value1=  dg.pop();
+                    if(value1 instanceof Long || value1 instanceof Double) {
+                        //category 2 computational type
+                        Object value2 = dg.pop();
+                        dg.push(value1);
+                        dg.push(value2);
+                        dg.push(value1);
+                    }else{
+                        //category 1 computational type
+                        Object value2 =  dg.pop();
+                        Object value3 =  dg.pop();
+                        dg.push(value2);
+                        dg.push(value1);
+                        dg.push(value3);
+                        dg.push(value2);
+                        dg.push(value1);
+                    }
+                }
+                break;
+
+                case Mnemonic.dup2_x2:{
+                    Object value1=  dg.pop();
+                    Object value2=  dg.pop();
+                    //Form 4
+                    if((value1 instanceof Long || value1 instanceof  Double)&&
+                            (value2 instanceof Long || value2 instanceof Double)){
+                        dg.push(value1);
+                        dg.push(value2);
+                        dg.push(value1);
+                    }else{
+                        Object value3 = dg.pop();
+                        //Form 3
+                        if(!(value1 instanceof Long || value1 instanceof  Double)&&
+                                !(value2 instanceof Long || value2 instanceof Double)&&
+                                (value3 instanceof Long || value3 instanceof Double)){
+                            dg.push(value2);
+                            dg.push(value1);
+                            dg.push(value3);
+                            dg.push(value2);
+                            dg.push(value1);
+                        }
+                        //Form 2
+                        else if((value1 instanceof Long || value1 instanceof  Double)&&
+                                !(value2 instanceof Long || value2 instanceof Double)&&
+                                !(value3 instanceof Long || value3 instanceof Double)){
+                            dg.push(value1);
+                            dg.push(value3);
+                            dg.push(value2);
+                            dg.push(value1);
+                        }
+                        else{
+                            Object value4 = dg.pop();
+                            //Form 1
+                            if((value1 instanceof Long || value1 instanceof  Double)&&
+                                    (value2 instanceof Long || value2 instanceof  Double)&&
+                                    (value3 instanceof Long || value3 instanceof  Double)&&
+                                    (value4 instanceof Long || value4 instanceof  Double)){
+                                dg.push(value2);
+                                dg.push(value1);
+                                dg.push(value4);
+                                dg.push(value3);
+                                dg.push(value2);
+                                dg.push(value1);
+                            }
+                        }
+                    }
+                }
+                break;
+
+                case Mnemonic.f2d:{
+                    float value = (float) dg.pop();
+                    dg.push((double)value);
+                }
+                break;
+
+                case Mnemonic.f2i:{
+                    float value = (float) dg.pop();
+                    dg.push((int)value);
+                }
+                break;
+
+                case Mnemonic.f2l:{
+                    float value = (float) dg.pop();
+                    dg.push((long)value);
+                }
+                break;
+
+                case Mnemonic.fadd:{
+                    float value2 = (float) dg.pop();
+                    float value1 = (float) dg.pop();
+                    dg.push((float)(value1+value2));
+                }
+                break;
+
+                case Mnemonic.faload:{
+                    int index = (int) dg.pop();
+                    YArray array = (YArray) dg.pop();
+                    dg.push((float)array.get(index));
+                }
+                break;
+
+                case Mnemonic.fastore:{
+                    float  value = (float)dg.pop();
+                    int index = (int) dg.pop();
+                    YArray array = (YArray) dg.pop();
+                    array.set(index,value);
+                }
+                break;
+
+                case Mnemonic.fcmpg:
+                case Mnemonic.fcmpl:{
+                    float value2 = (float) dg.pop();
+                    float value1  = (float) dg.pop();
+                    if(value1 > value2){
+                        dg.push(1);
+                    }else if(value1 < value2){
+                        dg.push(-1);
+                    }else if(Math.abs(value1 - value2) > 0){
+                        dg.push(0);
+                    }
+                }
+                break;
+
+                case Mnemonic.fconst_0:{
+                    dg.push(0.0);
+                }
+                break;
+
+                case Mnemonic.fconst_1:{
+                    dg.push(1.0);
+                }
+                break;
+
+                case Mnemonic.fconst_2:{
+                    dg.push(2.0);
+                }
+                break;
+
+                case Mnemonic.fdiv:{
+                    float value2 = (float) dg.pop();
+                    float value1  = (float) dg.pop();
+                    dg.push(value1/value2);
+                }
+                break;
+
+                case Mnemonic.fload:{
+                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    dg.push(dg.getLocalVar(index));
+                }
+                break;
+
+                case Mnemonic.fload_0:{
+                    dg.push(dg.getLocalVar(0));
+                }
+                break;
+
+                case Mnemonic.fload_1:{
+                    dg.push(dg.getLocalVar(1));
+                }
+                break;
+
+                case Mnemonic.fload_2:{
+                    dg.push(dg.getLocalVar(2));
+                }
+                break;
+
+                case Mnemonic.fload_3:{
+                    dg.push(dg.getLocalVar(3));
+                }
+                break;
+
+                case Mnemonic.fmul:{
+                    float value2 = (float) dg.pop();
+                    float value1 = (float) dg.pop();
+                    dg.push(value1*value2);
+                }
+                break;
+
+                case Mnemonic.fneg:{
+                    float value = (float) dg.pop();
+                    dg.push(-value);
+                }
+                break;
+
+                case Mnemonic.frem:{
+                    float value2 = (float) dg.pop();
+                    float value1 = (float) dg.pop();
+                    dg.push(value1-(value1/value2));
+                }
+                break;
+
+                case Mnemonic.freturn:{
+                    //todo:freturn
+                }
+                break;
+
+                case Mnemonic.fstore:{
+
+                }
+                break;
                 default:
                     throw new ClassInitializingException("unknown opcode in execution sequence");
             }
