@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<searchPath>
+    <jars>
+        <p>E:/Program Files/Java/jdk1.8.0_101/jre/lib/rt.jar</p>
+    </jars>
+    <classPath>
+        <p>C:/Users/asus/Desktop/yvm/out/production/yvm/</p>
+    </classPath>
+</searchPath>

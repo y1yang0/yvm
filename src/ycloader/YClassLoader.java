@@ -57,7 +57,7 @@ public class YClassLoader {
 
         try {
             if (!reader.openDataInputStream()) {
-                throw new IOException("Failed to get class file data");
+                throw new IOException("Failed to get class file data, check your config file in ./conf/rtsearch.xml");
             }
 
             if (!FormatChecking.MagicNumber.with(read4Bytes())) {
@@ -172,23 +172,23 @@ public class YClassLoader {
         return meta;
     }
 
-    private void setClassFileReader() throws ClassLoadingException {
+    private synchronized void setClassFileReader() throws ClassLoadingException {
         if (this.javaClass.isEmpty()) {
             throw new ClassLoadingException("no java class file to be loaded");
         }
         reader = new ClassFileReader(this.javaClass);
     }
 
-    private u2 read2Bytes() throws IOException {
+    private synchronized u2 read2Bytes() throws IOException {
         return reader.read2Bytes();
     }
 
-    private u4 read4Bytes() throws IOException {
+    private synchronized u4 read4Bytes() throws IOException {
         return reader.read4Bytes();
     }
 
 
-    public void associateThread(YThread thread) {
+    public synchronized void associateThread(YThread thread) {
         threadRef = thread;
     }
 

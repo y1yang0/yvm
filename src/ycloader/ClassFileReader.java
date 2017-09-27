@@ -8,6 +8,7 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -17,17 +18,22 @@ import java.util.regex.Pattern;
 public class ClassFileReader {
     private DataInputStream in;
     private String javaClass;
-    private String[] rtJarsList;
-    private String[] classPathList;
+
+    private RTSearchXMLParser confParser;
+    private ArrayList<String> rtJarsList;
+    private ArrayList<String> classPathList;
 
     ClassFileReader(String javaClass) {
         this.javaClass = javaClass;
-        rtJarsList = new String[]{"E:/Program Files/Java/jdk1.8.0_101/jre/lib/rt.jar"};
-        classPathList = new String[]{"C:/Users/asus/Desktop/yvm/out/production/yvm/"};
+
+        confParser = new RTSearchXMLParser();
     }
 
     boolean openDataInputStream() {
         try {
+            rtJarsList = confParser.getStringArray(RTSearchXMLParser.TYPE_JARS);
+            classPathList = confParser.getStringArray(RTSearchXMLParser.TYPE_CLASS_PATH);
+
             String parsedFileName = parseFileName(javaClass);
             //1. search in rt.jar
             for (String jar : rtJarsList) {
@@ -51,7 +57,7 @@ public class ClassFileReader {
             }
 
             return false;
-        } catch (IOException e) {
+        } catch (Exception e) {
             return false;
         }
     }
