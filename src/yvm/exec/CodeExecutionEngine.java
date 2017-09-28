@@ -66,7 +66,7 @@ public final class CodeExecutionEngine {
 
         YStackFrame frame = new YStackFrame();
         frame.allocateSize(maxStack, maxLocals);
-        thread.stack().pushFrame(frame);
+        thread.runtimeThread().stack().pushFrame(frame);
 
 
         try {
@@ -78,12 +78,12 @@ public final class CodeExecutionEngine {
             throw new VMExecutionException("failed to convert binary code to opcodes in executing <clinit> method");
         }
         //codeExecution(op);
-        thread.stack().popFrame();
+        thread.runtimeThread().stack().popFrame();
     }
 
     @SuppressWarnings({"unchecked","unused"})
     private void codeExecution(Opcode op){
-        YStack stack = thread.stack();
+        YStack stack = thread.runtimeThread().stack();
         class ConvenientDelegate {
             private Object peek() {
                 return stack.currentFrame().peekOperand();
@@ -120,7 +120,7 @@ public final class CodeExecutionEngine {
         for (int i = 0; i < opcodes.size(); i++) {
             Tuple3 cd = opcodes.get(i);
             int programCount = (Integer) cd.get1Placeholder();
-            thread.pc(programCount);
+            thread.runtimeThread().pc(programCount);
             switch ((Integer) cd.get2Placeholder()) {
 
                 //Load reference from array
@@ -244,7 +244,7 @@ public final class CodeExecutionEngine {
                             YObject object = new YObject(meta);
                             object.init();
 
-                            YArray array = new YArray<>(count, object);
+                            YArray array = new YArray(count);
                             array.init();
 
                             dg.push(array);
@@ -256,10 +256,10 @@ public final class CodeExecutionEngine {
                                 YObject object = new YObject(meta);
                                 object.init();
 
-                                YArray inner = new YArray<>(arrayDimension, object);
+                                YArray inner = new YArray(arrayDimension);
                                 inner.init();
 
-                                YArray outer = new YArray<>(count, inner);
+                                YArray outer = new YArray(count);
                                 outer.init();
 
                                 dg.push(outer);

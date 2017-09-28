@@ -1,13 +1,11 @@
 package rtstruct;
 
-public class YArray<_ComponentType> implements Initializable {
+public class YArray implements Initializable {
     private int dimension;
     private Object[] array;
-    private _ComponentType component;
 
-    public YArray(int dimension, _ComponentType component) {
+    public YArray(int dimension) {
         array = new Object[dimension];
-        this.component = component;
     }
 
     public int getDimension() {

@@ -23,8 +23,7 @@ public final class Yvm {
 
 
     public void start() {
-        YThread classLoadingThread = new YThread("classLoadingThread");
-        classLoadingThread.associateRuntimeVMData(runtimeVM);
+        YThread classLoadingThread = new YThread("classLoadingThread", runtimeVM);
 
         classLoadingThread.runTask(() -> {
             try {

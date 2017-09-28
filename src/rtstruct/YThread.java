@@ -1,17 +1,16 @@
 package rtstruct;
 
-import rtstruct.ystack.YStack;
-
 public class YThread {
     private Thread thread;
-    private int programCounter = Integer.MIN_VALUE;
-    private YStack stack;
     private String threadName;
-    private RuntimeVM runtimeVMRef;
 
-    public YThread(String threadName) {
+    private RuntimeVM runtimeVMRef;
+    private RuntimeThread runtimeThread;
+
+    public YThread(String threadName, RuntimeVM runtimeVM) {
         this.threadName = threadName;
-        stack = new YStack();
+        this.runtimeVMRef = runtimeVM;
+        runtimeThread = new RuntimeThread();
     }
 
     public void runTask(Runnable task) {
@@ -20,43 +19,15 @@ public class YThread {
         thread.start();
     }
 
-    public void associateRuntimeVMData(RuntimeVM runtimeVM) {
-        this.runtimeVMRef = runtimeVM;
-    }
-
-    /**
-     * get stack of related thread
-     * @return
-     */
-    public YStack stack() {
-        return stack;
-    }
-
-    /**
-     * get0 program counter if passing nothing
-     *
-     * @return
-     */
-    public int pc() {
-        return programCounter;
-    }
-
-    /**
-     * set program counter if passing a integer argument;
-     * there it use the same "pc" as its method name for
-     * simply code and in my thinking it's a very elegant way
-     *
-     * @param pc
-     */
-    public void pc(int pc) {
-        this.programCounter = pc;
-    }
-
     /**
      * get runtime virtual machine data scope
      * @return
      */
     public RuntimeVM runtimeVM() {
         return runtimeVMRef;
+    }
+
+    public RuntimeThread runtimeThread() {
+        return runtimeThread;
     }
 }
