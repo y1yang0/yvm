@@ -192,7 +192,7 @@ public class YClassLoader {
         }
     }
 
-    @SuppressWarnings("ununsed")
+    @Deprecated
     public void loadRelatedClasses(MetaClass metaClass)
             throws ClassLoadingException, ClassLinkingException, ClassInitializingException {
         Collection<String> classes = metaClass.constantPool.getClasses();

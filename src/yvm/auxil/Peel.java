@@ -47,6 +47,7 @@ public class Peel {
         }
     }
 
+
     public static void main(String[] args) {
         System.out.println(peelDescriptor("java/lang/ClassLoader.class"));
     }

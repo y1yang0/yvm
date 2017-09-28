@@ -15,14 +15,14 @@ import java.util.Map;
 
 public class MetaClassMethod implements Resolvable<MethodObject> {
     private
-    Map<Integer,                            //method index at constant pool
-            Tuple6<                         //
-                    String,                 //method name
-                    String,                 //method descriptor
-                    u1[],                   //method codes
-                    StackRequirement,       //stack requirement for this method
-                    ExceptionTable[],       //method exception tables,they are differ from checked exception in function signature
-                    ArrayList<Attribute>    //method related attributes,it would be use for future vm version,there just ignore them
+    Map<Integer,                                //method index at constant pool
+            Tuple6<                             //
+                    String,                     //method name
+                    String,                     //method descriptor
+                    u1[],                       //method codes
+                    StackRequirement,           //stack requirement for this method
+                    ArrayList<ExceptionTable>,  //method exception tables,they are differ from checked exception in function signature
+                    MethodExtension             //it would be change frequently, so there we create a flexible class to store data
                     >> methods;
 
     public MetaClassMethod() {
@@ -54,28 +54,36 @@ public class MetaClassMethod implements Resolvable<MethodObject> {
 
     @Override
     public void resolve(MethodObject r, ConstantPoolObject cp) {
-        ArrayList<FieldInfo> rmethods = r.getRawData();
+        ArrayList<FieldInfo> allMethods = r.getRawData();
         for (int i = 0; i < r.getFieldCount(); i++) {
-            int methodNameIndex = rmethods.get(i).nameIndex.getValue();//constant pool index,it's necessary for code execution engine later
-            int methodDescriptorIndex = rmethods.get(i).descriptorIndex.getValue();
-            ArrayList<Attribute> attrs = r.getAttributes();
+
+            int methodNameIndex = allMethods.get(i).nameIndex.getValue();//constant pool index,it's necessary for code execution engine later
+
+            int methodDescriptorIndex = allMethods.get(i).descriptorIndex.getValue();
+
+            MethodExtension extension = new MethodExtension();
+            extension.attrs = r.getAttributes();
+            extension.isSynchronized = (allMethods.get(i).accessFlags.getValue() & 0x0020) == 20;
 
             StackRequirement sr = new StackRequirement();
-            MetaClassMethod.ExceptionTable[] table = null;
+
+            ArrayList<MetaClassMethod.ExceptionTable> table = new ArrayList<>();
+
             u1[] codes = null;
-            for (Attribute attribute : attrs) {
+
+            for (Attribute attribute : extension.attrs) {
                 if (attribute instanceof CodeAttribute) {
                     sr.maxStack = ((CodeAttribute) attribute).maxStack.getValue();
                     sr.maxLocals = ((CodeAttribute) attribute).maxLocals.getValue();
 
-                    table = new ExceptionTable[((CodeAttribute) attribute).exceptionTableLength.getValue()];
                     for (int k = 0; k < ((CodeAttribute) attribute).exceptionTableLength.getValue(); k++) {
-                        CodeAttribute.ExceptionTable[] x = ((CodeAttribute) attribute).table;
-                        /*table[k].startPC = ((CodeAttribute) attribute).table[k].startPc.getValue();
-                        table[k].endPC = ((CodeAttribute) attribute).table[k].endPc.getValue();
-                        table[k].handlePC = ((CodeAttribute) attribute).table[k].handlerPc.getValue();
-                        table[k].catchTypeName = cp.getClassName(((CodeAttribute) attribute).table[k].catchType.getValue());
-                    */
+                        MetaClassMethod.ExceptionTable et = new MetaClassMethod.ExceptionTable();
+                        et.startPC = ((CodeAttribute) attribute).table[k].startPc.getValue();
+                        et.endPC = ((CodeAttribute) attribute).table[k].endPc.getValue();
+                        et.handlePC = ((CodeAttribute) attribute).table[k].handlerPc.getValue();
+                        et.catchTypeName = cp.getClassName(((CodeAttribute) attribute).table[k].catchType.getValue());
+                        table.add(et);
+
                     }
                     codes = ((CodeAttribute) attribute).code;
 
@@ -88,7 +96,7 @@ public class MetaClassMethod implements Resolvable<MethodObject> {
                             codes,
                             sr,
                             table,
-                            attrs));
+                            extension));
         }
     }
 
@@ -102,5 +110,10 @@ public class MetaClassMethod implements Resolvable<MethodObject> {
         public int endPC;
         public int handlePC;
         public String catchTypeName;
+    }
+
+    public class MethodExtension {
+        public ArrayList<Attribute> attrs;
+        public boolean isSynchronized;
     }
 }

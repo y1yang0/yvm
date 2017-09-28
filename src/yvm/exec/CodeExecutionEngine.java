@@ -11,7 +11,6 @@ import rtstruct.rtexception.VMExecutionException;
 import rtstruct.ystack.YStack;
 import rtstruct.ystack.YStackFrame;
 import ycloader.YClassLoader;
-import ycloader.adt.attribute.Attribute;
 import ycloader.adt.u1;
 import ycloader.exception.ClassInitializingException;
 import yvm.adt.*;
@@ -20,6 +19,8 @@ import yvm.auxil.Peel;
 import yvm.auxil.Predicate;
 
 import java.util.ArrayList;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static java.util.Objects.isNull;
 import static yvm.auxil.Predicate.*;
@@ -30,6 +31,7 @@ public final class CodeExecutionEngine {
     private MetaClass metaClassRef;
     private YMethodScope methodScopeRef;
     private YClassLoader classLoader;
+    private Lock methodLock;
 
     public CodeExecutionEngine() {
         ignited = false;
@@ -54,7 +56,7 @@ public final class CodeExecutionEngine {
                 u1[],                                   //method codes
                 MetaClassMethod.StackRequirement,       //stack requirement for this method
                 MetaClassMethod.ExceptionTable[],       //method exception tables,they are differ from checked exception in function signature
-                ArrayList<Attribute>>                   ////method related attributes,it would be use for future vm version,there just ignore them
+                MetaClassMethod.MethodExtension>                   ////method related attributes,it would be use for future vm version,there just ignore them
                 clinit = metaClassRef.methods.findMethod("<clinit>");
 
         if (isNull(clinit) || strNotEqual(clinit.get1Placeholder(), "<clinit>")) {
@@ -63,26 +65,30 @@ public final class CodeExecutionEngine {
 
         int maxLocals = clinit.get4Placeholder().maxLocals;
         int maxStack = clinit.get4Placeholder().maxStack;
+        boolean isSynchronized = clinit.get6Placeholder().isSynchronized;
 
-        YStackFrame frame = new YStackFrame();
-        frame.allocateSize(maxStack, maxLocals);
-        thread.runtimeThread().stack().pushFrame(frame);
-
+        allocateStackFrame(maxLocals, maxStack);
+        System.out.println("method desc" + clinit.get2Placeholder());
 
         try {
             Opcode op = new Opcode(clinit.get3Placeholder());
             op.codes2Opcodes();
-            op.debug(metaClassRef.qualifiedClassName + " clinit");
+            //op.debug(metaClassRef.qualifiedClassName + " clinit");
 
         } catch (ClassInitializingException ignored) {
             throw new VMExecutionException("failed to convert binary code to opcodes in executing <clinit> method");
         }
-        //codeExecution(op);
-        thread.runtimeThread().stack().popFrame();
+        //codeExecution(op,isSynchronized);
     }
 
     @SuppressWarnings({"unchecked","unused"})
-    private void codeExecution(Opcode op){
+    private void codeExecution(Opcode op, boolean isSynchronized) {
+        /***************************************************************
+         *  get current thread stack reference, and create a convenient
+         *  operator class <ConvenientDelegate> to execute push/pop of
+         *  stack operations
+         *
+         ***************************************************************/
         YStack stack = thread.runtimeThread().stack();
         class ConvenientDelegate {
             private Object peek() {
@@ -107,6 +113,11 @@ public final class CodeExecutionEngine {
         }
         ConvenientDelegate dg = new ConvenientDelegate();//use a convenient delegate class to wrap stack operations
 
+
+        /***************************************************************
+         *  get the opcodes list from argument, which would be used soon
+         *
+         ***************************************************************/
         ArrayList<                                      //get opcode list from argument "op" of Opcode
                 Tuple3<                                 //
                         Integer,                        //program counter
@@ -114,8 +125,20 @@ public final class CodeExecutionEngine {
                         Operand>>                       //operand of this opcode
                 opcodes = op.getOpcodes();              //
 
+        /***************************************************************
+         *  create a critical region if it's a <synchronized> method
+         *  and lock this region using a reentrant lock
+         *
+         ***************************************************************/
+        if (isSynchronized) {
+            methodLock = new ReentrantLock();
+            methodLock.lock();
+        }
 
-        //opcode execution
+        /***************************************************************
+         *  the real code execution part.
+         *
+         ***************************************************************/
 
         for (int i = 0; i < opcodes.size(); i++) {
             Tuple3 cd = opcodes.get(i);
@@ -269,7 +292,12 @@ public final class CodeExecutionEngine {
                 }
                 break;
 
+                //Return reference from method
                 case Mnemonic.areturn: {
+                    Object objectRef = dg.pop();
+                    if (isSynchronized) {
+                        methodLock.unlock();
+                    }
                     //todo:areturn
                 }
                 break;
@@ -1854,5 +1882,11 @@ public final class CodeExecutionEngine {
                     throw new VMExecutionException("unknown opcode encountered in execution sequence");
             }
         }
+    }
+
+    private void allocateStackFrame(int maxLocals, int maxStack) {
+        YStackFrame frame = new YStackFrame();
+        frame.allocateSize(maxStack, maxLocals);
+        thread.runtimeThread().stack().pushFrame(frame);
     }
 }
