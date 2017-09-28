@@ -145,29 +145,29 @@ public class YClassLoader {
         ClassFileAttributeObject attr = bundle.get5Placeholder();
 
         MetaClass meta = new MetaClass();
-        meta.setQualifiedClassName(cp.getClassName(bundle.get6Placeholder()[1].getValue()));
-        meta.setClassLoader(YClassLoader.class);
+        meta.qualifiedClassName = cp.getClassName(bundle.get6Placeholder()[1].getValue());
+        meta.classLoader = YClassLoader.class;
 
-        meta.setSuperClassName(cp.getClassName(bundle.get6Placeholder()[2].getValue()));
-        meta.setAccessFlag(bundle.get6Placeholder()[0].getValue());
+        meta.superClassName = cp.getClassName(bundle.get6Placeholder()[2].getValue());
+        meta.accessFlag = bundle.get6Placeholder()[0].getValue();
 
         MetaClassInterface resolvedInterface = new MetaClassInterface();
         resolvedInterface.resolve(inter, cp);
-        meta.setInterfaces(resolvedInterface);
+        meta.interfaces = resolvedInterface;
 
         MetaClassField resolvedField = new MetaClassField(meta);
         resolvedField.resolve(field, cp);
-        meta.setFields(resolvedField);
+        meta.fields = resolvedField;
         //resolvedField.debug();
 
         MetaClassMethod resolvedMethod = new MetaClassMethod();
         resolvedMethod.resolve(method, cp);
-        meta.setMethods(resolvedMethod);
+        meta.methods = resolvedMethod;
         //resolvedMethod.debug();
 
         MetaClassConstantPool resolvedConstantPool = new MetaClassConstantPool();
         resolvedConstantPool.resolve(cp);
-        meta.setConstantPool(resolvedConstantPool);
+        meta.constantPool = resolvedConstantPool;
         resolvedConstantPool.debug(cp.getClassName(bundle.get6Placeholder()[1].getValue()));
         return meta;
     }

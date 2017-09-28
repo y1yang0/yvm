@@ -55,7 +55,7 @@ public final class CodeExecutionEngine {
                 MetaClassMethod.StackRequirement,       //stack requirement for this method
                 MetaClassMethod.ExceptionTable[],       //method exception tables,they are differ from checked exception in function signature
                 ArrayList<Attribute>>                   ////method related attributes,it would be use for future vm version,there just ignore them
-                clinit = metaClassRef.getMethods().findMethod("<clinit>");
+                clinit = metaClassRef.methods.findMethod("<clinit>");
 
         if (isNull(clinit) || strNotEqual(clinit.get1Placeholder(), "<clinit>")) {
             return;
@@ -72,7 +72,7 @@ public final class CodeExecutionEngine {
         try {
             Opcode op = new Opcode(clinit.get3Placeholder());
             op.codes2Opcodes();
-            op.debug(metaClassRef.getQualifiedClassName() + " clinit");
+            op.debug(metaClassRef.qualifiedClassName + " clinit");
 
         } catch (ClassInitializingException ignored) {
             throw new VMExecutionException("failed to convert binary code to opcodes in executing <clinit> method");
@@ -233,14 +233,14 @@ public final class CodeExecutionEngine {
                     byte indexByte1 = (byte) ((Operand) cd.get3Placeholder()).get0();
                     byte indexByte2 = (byte) ((Operand) cd.get3Placeholder()).get1();
                     int index = (indexByte1 << 8) | indexByte2;
-                    String res = metaClassRef.getConstantPool().findInClasses(index);
+                    String res = metaClassRef.constantPool.findInClasses(index);
 
                     if (count < 0) {
                         throw new NegativeArraySizeException("array size required a positive integer");
                     }
                     if (!isNull(res)) {
                         if (methodScopeRef.existClass(res, classLoader.getClass())) {
-                            MetaClass meta = methodScopeRef.getMetaClass(res, metaClassRef.getClassLoader());
+                            MetaClass meta = methodScopeRef.getMetaClass(res, metaClassRef.classLoader);
                             YObject object = new YObject(meta);
                             object.init();
 
@@ -252,7 +252,7 @@ public final class CodeExecutionEngine {
                             String arrayComponentType = Peel.getArrayComponent(res);
                             int arrayDimension = Peel.getArrayDimension(res);
                             if (methodScopeRef.existClass(arrayComponentType, classLoader.getClass())) {
-                                MetaClass meta = methodScopeRef.getMetaClass(res, metaClassRef.getClassLoader());
+                                MetaClass meta = methodScopeRef.getMetaClass(res, metaClassRef.classLoader);
                                 YObject object = new YObject(meta);
                                 object.init();
 
@@ -1510,7 +1510,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.ldc: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
 
-                    MetaClassConstantPool poolRef = metaClassRef.getConstantPool();
+                    MetaClassConstantPool poolRef = metaClassRef.constantPool;
 
                     if (!Predicate.isNull(poolRef.findInFloat(index))) {
                         dg.push(poolRef.findInFloat(index));
@@ -1519,7 +1519,7 @@ public final class CodeExecutionEngine {
                     } else if (!Predicate.isNull(poolRef.findInString(index))) {
                         dg.push(poolRef.findInString(index));
                     } else if (!Predicate.isNull(poolRef.findInClass(index))) {
-                        Class c = methodScopeRef.getMetaClass(poolRef.findInClass(index),classLoader.getClass()).getClassLoader();
+                        Class c = methodScopeRef.getMetaClass(poolRef.findInClass(index), classLoader.getClass()).classLoader;
                         dg.push(c);
                     } else {
                         //todo:if not find class then load it
@@ -1533,7 +1533,7 @@ public final class CodeExecutionEngine {
                     int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get0();
                     int index = (indexByte1 << 8) | indexByte2;
 
-                    MetaClassConstantPool poolRef = metaClassRef.getConstantPool();
+                    MetaClassConstantPool poolRef = metaClassRef.constantPool;
 
                     if (!Predicate.isNull(poolRef.findInFloat(index))) {
                         dg.push(poolRef.findInFloat(index));
@@ -1542,7 +1542,7 @@ public final class CodeExecutionEngine {
                     } else if (!Predicate.isNull(poolRef.findInString(index))) {
                         dg.push(poolRef.findInString(index));
                     } else if (!Predicate.isNull(poolRef.findInClass(index))) {
-                        Class c = methodScopeRef.getMetaClass(poolRef.findInClass(index),classLoader.getClass()).getClassLoader();
+                        Class c = methodScopeRef.getMetaClass(poolRef.findInClass(index), classLoader.getClass()).classLoader;
                         dg.push(c);
                     } else {
                         //todo:if not find class then load it
@@ -1556,7 +1556,7 @@ public final class CodeExecutionEngine {
                     int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get0();
                     int index = (indexByte1 << 8) | indexByte2;
 
-                    MetaClassConstantPool poolRef = metaClassRef.getConstantPool();
+                    MetaClassConstantPool poolRef = metaClassRef.constantPool;
 
                     if (!Predicate.isNull(poolRef.findInLong(index))) {
                         dg.push(poolRef.findInLong(index));

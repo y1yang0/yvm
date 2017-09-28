@@ -11,13 +11,14 @@ public class YMethodScope {
         metas = new ArrayList<>();
     }
 
+    @SuppressWarnings("unused")
     public boolean addMetaClass(MetaClass metaClass) {
         return metas.add(metaClass);
     }
 
     public MetaClass getMetaClass(String className, Class classLoader) {
         for (MetaClass m : metas) {
-            if (m.getClassLoader() == classLoader && m.getQualifiedClassName().equals(className)) {
+            if (m.classLoader == classLoader && m.qualifiedClassName.equals(className)) {
                 return m;
             }
         }
@@ -26,7 +27,7 @@ public class YMethodScope {
 
     public boolean existClass(String className, Class classLoader) {
         for (MetaClass m : metas) {
-            if (m.getClassLoader() == classLoader && m.getQualifiedClassName().equals(className)) {
+            if (m.classLoader == classLoader && m.qualifiedClassName.equals(className)) {
                 return true;
             }
         }
