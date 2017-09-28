@@ -33,13 +33,8 @@ public final class Yvm {
                 Tuple6 bundle = loader.loadClass("java/io/ObjectStreamClass");
                 MetaClass meta = loader.linkClass(bundle);
                 runtimeVM.methodScope().addMetaClass(meta);
-                //todo:linking related class and adding to method scope, there related class could be found at meta which got before
-
                 loader.loadInheritanceChain(meta.superClassName);
-
                 loader.initializeClass(meta);
-
-                loader.loadRelatedClasses(meta);
             } catch (ClassLinkingException | ClassLoadingException | ClassInitializingException e) {
                 e.printStackTrace();
             }

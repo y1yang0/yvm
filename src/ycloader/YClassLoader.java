@@ -192,7 +192,9 @@ public class YClassLoader {
         }
     }
 
-    public void loadRelatedClasses(MetaClass metaClass) throws ClassLoadingException, ClassLinkingException, ClassInitializingException {
+    @SuppressWarnings("ununsed")
+    public void loadRelatedClasses(MetaClass metaClass)
+            throws ClassLoadingException, ClassLinkingException, ClassInitializingException {
         Collection<String> classes = metaClass.constantPool.getClasses();
         for (String aClass : classes) {
             String peeledClass = Peel.peelDescriptor(aClass);
