@@ -11,16 +11,16 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class RTSearchXMLParser {
-    public static final short TYPE_JARS = 0;
-    public static final short TYPE_CLASS_PATH = 1;
+class RTSearchXMLParser {
+    static final short TYPE_JARS = 0;
+    static final short TYPE_CLASS_PATH = 1;
     private static final String RT_SEARCH_LIST_XML = "./conf/rtsearch.xml";
     private Document document;
     private NodeList root;
 
     private boolean isReady;
 
-    public RTSearchXMLParser() {
+    RTSearchXMLParser() {
         isReady = false;
     }
 
@@ -48,7 +48,7 @@ public class RTSearchXMLParser {
         return res;
     }
 
-    public ArrayList<String> getStringArray(short NODE_TYPE) throws ClassLoadingException {
+    ArrayList<String> getStringArray(short NODE_TYPE) throws ClassLoadingException {
         if (!isReady) {
             prepare();
         }
@@ -94,7 +94,7 @@ public class RTSearchXMLParser {
                 }
                 return res;
             default:
-                return res;
+                return null;
         }
     }
 }

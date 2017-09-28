@@ -49,8 +49,12 @@ public final class CodeExecutionEngine {
             throw new VMExecutionException("code execution engine is not ready");
         }
 
-        Tuple6<String, String, u1[], MetaClassMethod.StackRequirement,
-                MetaClassMethod.ExceptionTable[], ArrayList<Attribute>>
+        Tuple6<String,                                  //method name
+                String,                                 //method descriptor
+                u1[],                                   //method codes
+                MetaClassMethod.StackRequirement,       //stack requirement for this method
+                MetaClassMethod.ExceptionTable[],       //method exception tables,they are differ from checked exception in function signature
+                ArrayList<Attribute>>                   ////method related attributes,it would be use for future vm version,there just ignore them
                 clinit = metaClassRef.getMethods().findMethod("<clinit>");
 
         if (isNull(clinit) || strNotEqual(clinit.get1Placeholder(), "<clinit>")) {
@@ -64,14 +68,17 @@ public final class CodeExecutionEngine {
         frame.allocateSize(maxStack, maxLocals);
         thread.stack().pushFrame(frame);
 
-        Opcode op = new Opcode(clinit.get3Placeholder());
+
         try {
+            Opcode op = new Opcode(clinit.get3Placeholder());
             op.codes2Opcodes();
+            op.debug(metaClassRef.getQualifiedClassName() + " clinit");
+
         } catch (ClassInitializingException ignored) {
             throw new VMExecutionException("failed to convert binary code to opcodes in executing <clinit> method");
         }
-        op.debug(metaClassRef.getQualifiedClassName() + " clinit");
         //codeExecution(op);
+        thread.stack().popFrame();
     }
 
     @SuppressWarnings({"unchecked","unused"})
@@ -98,14 +105,14 @@ public final class CodeExecutionEngine {
             private long popLong(){return (long) stack.currentFrame().popOperand();}
             private float popFloat(){return (float) stack.currentFrame().popOperand();}
         }
-        ConvenientDelegate dg = new ConvenientDelegate();
+        ConvenientDelegate dg = new ConvenientDelegate();//use a convenient delegate class to wrap stack operations
 
         ArrayList<                                      //get opcode list from argument "op" of Opcode
                 Tuple3<                                 //
                         Integer,                        //program counter
                         Integer,                        //opcode numeric value
                         Operand>>                       //operand of this opcode
-                opcodes = op.getOpcodes();
+                opcodes = op.getOpcodes();              //
 
 
         //opcode execution
@@ -1425,7 +1432,8 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.jsr:
                 case Mnemonic.jsr_w: {
-                    throw new VMExecutionException("unsupport the JSR opcode, you may change a posterior compiler version of Java SE 6 ");
+                    throw new VMExecutionException("unsupport the JSR opcode, you may change a posterior compiler " +
+                            "version of Java SE 6 ");
                 }
 
                 case Mnemonic.l2d: {
@@ -1830,8 +1838,20 @@ public final class CodeExecutionEngine {
                 }
                 break;
 
+                case Mnemonic.breakpoint: {
+                    throw new VMExecutionException("<breakpoint> opcode was not mentioned on Jvm(R) 8 Spec");
+                }
+
+                case Mnemonic.impdep1: {
+                    throw new VMExecutionException("<impdep1> opcode was not mentioned on Jvm(R) 8 Spec");
+                }
+
+                case Mnemonic.impdep2: {
+                    throw new VMExecutionException("<impdep2> opcode was not mentioned on Jvm(R) 8 Spec");
+                }
+
                 default:
-                    throw new VMExecutionException("unknown opcode in execution sequence");
+                    throw new VMExecutionException("unknown opcode encountered in execution sequence");
             }
         }
     }
