@@ -51,12 +51,12 @@ public final class CodeExecutionEngine {
             throw new VMExecutionException("code execution engine is not ready");
         }
 
-        Tuple6<String,                                  //method name
-                String,                                 //method descriptor
-                u1[],                                   //method codes
-                MetaClassMethod.StackRequirement,       //stack requirement for this method
-                MetaClassMethod.ExceptionTable[],       //method exception tables,they are differ from checked exception in function signature
-                MetaClassMethod.MethodExtension>                   ////method related attributes,it would be use for future vm version,there just ignore them
+        Tuple6<String,                                                   //method name
+                String,                                                  //method descriptor
+                u1[],                                                    //method codes
+                MetaClassMethod.StackRequirement,                        //stack requirement for this method
+                ArrayList<MetaClassMethod.ExceptionTable>,               //method exception tables,they are differ from checked exception in function signature
+                MetaClassMethod.MethodExtension>                         //method related attributes,it would be use for future vm version,there just ignore them
                 clinit = metaClassRef.methods.findMethod("<clinit>");
 
         if (isNull(clinit) || strNotEqual(clinit.get1Placeholder(), "<clinit>")) {
@@ -66,23 +66,25 @@ public final class CodeExecutionEngine {
         int maxLocals = clinit.get4Placeholder().maxLocals;
         int maxStack = clinit.get4Placeholder().maxStack;
         boolean isSynchronized = clinit.get6Placeholder().isSynchronized;
+        ArrayList<MetaClassMethod.ExceptionTable> exceptionTable = clinit.get5Placeholder();
 
-        allocateStackFrame(maxLocals, maxStack);
-        System.out.println("method desc" + clinit.get2Placeholder());
+
 
         try {
+            allocateStackFrame(maxLocals, maxStack);
             Opcode op = new Opcode(clinit.get3Placeholder());
             op.codes2Opcodes();
             //op.debug(metaClassRef.qualifiedClassName + " clinit");
+            //codeExecution(op,exceptionTable,isSynchronized);
 
         } catch (ClassInitializingException ignored) {
             throw new VMExecutionException("failed to convert binary code to opcodes in executing <clinit> method");
         }
-        //codeExecution(op,isSynchronized);
+
     }
 
     @SuppressWarnings({"unchecked","unused"})
-    private void codeExecution(Opcode op, boolean isSynchronized) {
+    private void codeExecution(Opcode op, ArrayList<MetaClassMethod.ExceptionTable> exceptionTable, boolean isSynchronized) {
         /***************************************************************
          *  get current thread stack reference, and create a convenient
          *  operator class <ConvenientDelegate> to execute push/pop of
@@ -91,6 +93,9 @@ public final class CodeExecutionEngine {
          ***************************************************************/
         YStack stack = thread.runtimeThread().stack();
         class ConvenientDelegate {
+            private void clear() {
+                stack.currentFrame().clearOperand();
+            }
             private Object peek() {
                 return stack.currentFrame().peekOperand();
             }
@@ -126,7 +131,7 @@ public final class CodeExecutionEngine {
                 opcodes = op.getOpcodes();              //
 
         /***************************************************************
-         *  create a critical region if it's a <synchronized> method
+         *  create a critical section if it's a <synchronized> method
          *  and lock this region using a reentrant lock
          *
          ***************************************************************/
@@ -134,6 +139,25 @@ public final class CodeExecutionEngine {
             methodLock = new ReentrantLock();
             methodLock.lock();
         }
+
+        /***************************************************************
+         *  create convenient class to handle exception table of this
+         *  method
+         *
+         ***************************************************************/
+        class ConvenientExceptionTableDelegate {
+            private int findException(int programCounter, String x) {
+                for (MetaClassMethod.ExceptionTable CatchType : exceptionTable) {
+                    if (CatchType.catchTypeName.equals(x) && CatchType.startPC <= programCounter
+                            && CatchType.endPC >= programCounter) {
+                        return CatchType.handlePC;
+                    }
+                }
+                return -1;
+            }
+        }
+        ConvenientExceptionTableDelegate etDg = new ConvenientExceptionTableDelegate();
+
 
         /***************************************************************
          *  the real code execution part.
@@ -295,14 +319,12 @@ public final class CodeExecutionEngine {
                 //Return reference from method
                 case Mnemonic.areturn: {
                     Object objectRef = dg.pop();
-                    if (isSynchronized) {
-                        methodLock.unlock();
-                    }
-                    //todo:check if the objectRef is corresponding to method return type;
+
+                    Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
+                    //todo:check if the objectRef is corresponding to method return type;[enhance]
                     stack.popFrame();
                     stack.currentFrame().pushOperand(objectRef);
                     return;
-                    //todo:areturn
                 }
 
 
@@ -344,7 +366,7 @@ public final class CodeExecutionEngine {
                 //Store reference into local variable
                 case Mnemonic.astore_2: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    Object top = dg.pop();
+                    YObject top = (YObject) dg.pop();
 
                     dg.setLocalVar(2, top);
                 }
@@ -353,14 +375,41 @@ public final class CodeExecutionEngine {
                 //Store reference into local variable
                 case Mnemonic.astore_3: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    Object top = dg.pop();
+                    YObject top = (YObject) dg.pop();
 
                     dg.setLocalVar(3, top);
                 }
                 break;
 
                 case Mnemonic.athrow: {
-                    //todo:athrow
+                    YObject object = (YObject) dg.pop();
+
+                    Continuation.ifNullThrowNullptrException(object);
+
+                    class ThrowRoutine {
+                        public int handleThrow() {
+                            int handlePC = etDg.findException(programCount, object.getMetaReference().qualifiedClassName);
+                            if (handlePC != -1) {
+                                Tuple3 newOp = opcodes.get(handlePC);
+                                int currentI = opcodes.indexOf(newOp);
+                                if (currentI == -1) {
+                                    throw new VMExecutionException("incorrect address to go");
+                                }
+                                return currentI;
+                            } else {
+                                dg.clear();
+                                dg.push(object);
+
+                                stack.popFrame();
+                                Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
+                                dg.push(object);
+                                handleThrow();
+                            }
+                            throw new VMExecutionException("exception can not be handled");
+                        }
+                    }
+                    ThrowRoutine throwRoutine = new ThrowRoutine();
+                    i = throwRoutine.handleThrow();
                 }
                 break;
 
@@ -1886,6 +1935,12 @@ public final class CodeExecutionEngine {
                     throw new VMExecutionException("unknown opcode encountered in execution sequence");
             }
         }
+        /***************************************************************
+         *  leave a critical section if it's a <synchronized> method
+         *  is denoted
+         *
+         ***************************************************************/
+        Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
     }
 
     private void allocateStackFrame(int maxLocals, int maxStack) {

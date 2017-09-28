@@ -14,6 +14,10 @@ public class YObject implements Initializable {
         metaClassReference = relatedMetaClass;
     }
 
+    public MetaClass getMetaReference() {
+        return metaClassReference;
+    }
+
     @Override
     public void init() {
         for (int i = 0; i < metaClassReference.fields.getFields().size(); i++) {

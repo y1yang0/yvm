@@ -52,8 +52,8 @@ public class MetaClassField implements Resolvable<FieldObject>, DebugExtension {
             } else {
                 fields.put(fieldNameIndex, new Tuple4<>(fieldName, fieldDescriptor, accessFlag, fs.get(i).attributes));
             }
-            //todo:optimize attribute[] to more concrete information
-            //todo:just we can merge synthetic and deprecated so on to one byte
+            //todo:optimize attribute[] to more concrete information[enhance]
+            //todo:just we can merge synthetic and deprecated so on to one byte[enhance]
         }
     }
 

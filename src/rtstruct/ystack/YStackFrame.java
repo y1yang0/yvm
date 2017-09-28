@@ -37,9 +37,13 @@ public class YStackFrame {
         vars.set(index, value);
     }
 
-    class OperandStack extends Stack {
+    public void clearOperand() {
+        operands.clear();
     }
 
-    class LocalVarTable extends ArrayList<Object> {
+    private class OperandStack extends Stack {
+    }
+
+    private class LocalVarTable extends ArrayList<Object> {
     }
 }

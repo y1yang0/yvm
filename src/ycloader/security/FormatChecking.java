@@ -74,7 +74,7 @@ public class FormatChecking {
                     if (cp.at(temp1) == null || cp.at(temp1).getClass() != ConstantNameAndTypeInfo.class) {
                         return false;
                     }
-                    //todo:check descriptor
+                    //todo:check descriptor[enhance]
                 } else if (obj instanceof ConstantMethodRefInfo) {
                     int temp = ((ConstantMethodRefInfo) obj).classIndex.getValue();
                     if (cp.at(temp) == null || cp.at(temp).getClass() != ConstantClassInfo.class) {
@@ -84,7 +84,7 @@ public class FormatChecking {
                     if (cp.at(temp1) == null || cp.at(temp1).getClass() != ConstantNameAndTypeInfo.class) {
                         return false;
                     }
-                    //todo:check descriptor
+                    //todo:check descriptor[enhance]
                 } else if (obj instanceof ConstantInterfaceMethodRefInfo) {
                     int temp = ((ConstantInterfaceMethodRefInfo) obj).classIndex.getValue();
                     if (cp.at(temp) == null || cp.at(temp).getClass() != ConstantClassInfo.class) {
@@ -94,7 +94,7 @@ public class FormatChecking {
                     if (cp.at(temp1) == null || cp.at(temp1).getClass() != ConstantNameAndTypeInfo.class) {
                         return false;
                     }
-                    //todo:check descriptor
+                    //todo:check descriptor[enhance]
                 } else if (obj instanceof ConstantStringInfo) {
                     int temp = ((ConstantStringInfo) obj).stringIndex.getValue();
                     if (cp.at(temp) == null || cp.at(temp).getClass() != ConstantUtf8Info.class) {
@@ -106,21 +106,21 @@ public class FormatChecking {
                         return false;
                     }
                 } else if (obj instanceof ConstantFloatInfo) {
-                    //todo:check if it is a valid IEEE 754 floating-point single format
+                    //todo:check if it is a valid IEEE 754 floating-point single format[enhance]
                 } else if (obj instanceof ConstantLongInfo) {
                     int temp = obj.getTableIndex();
                     //check if it occupy two index items;
                     if (cp.at(temp + 1) != null) {
                         return false;
                     }
-                    //todo:check if it is a valid IEEE 754 floating-point single format
+                    //todo:check if it is a valid IEEE 754 floating-point single format[enhance]
                 } else if (obj instanceof ConstantDoubleInfo) {
                     int temp = obj.getTableIndex();
                     //check if it occupy two index items;
                     if (cp.at(temp + 1) != null) {
                         return false;
                     }
-                    //todo:check if it is a valid IEEE 754 floating-point single format
+                    //todo:check if it is a valid IEEE 754 floating-point single format[enhance]
                 } else if (obj instanceof ConstantNameAndTypeInfo) {
                     int temp = ((ConstantNameAndTypeInfo) obj).nameIndex.getValue();
                     if (cp.at(temp) == null || cp.at(temp).getClass() != ConstantUtf8Info.class) {
@@ -132,7 +132,7 @@ public class FormatChecking {
 
                     }
                 } else if (obj instanceof ConstantUtf8Info) {
-                    //todo:check if it is a utf8 string
+                    //todo:check if it is a utf8 string[enhance]
                 } else if (obj instanceof ConstantMethodHandleInfo) {
                     int refkind = ((ConstantMethodHandleInfo) obj).referenceKind.getValue();
 
