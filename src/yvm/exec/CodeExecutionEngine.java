@@ -298,9 +298,13 @@ public final class CodeExecutionEngine {
                     if (isSynchronized) {
                         methodLock.unlock();
                     }
+                    //todo:check if the objectRef is corresponding to method return type;
+                    stack.popFrame();
+                    stack.currentFrame().pushOperand(objectRef);
+                    return;
                     //todo:areturn
                 }
-                break;
+
 
                 //Get length of array
                 case Mnemonic.arraylength: {
