@@ -71,9 +71,13 @@ public class ClassFileReader {
     }
 
     private boolean isValidFileName(String str) {
-        Pattern pattern = Pattern.compile("([a-zA-Z]+)(\\.class{0,1}|(/[a-zA-Z]+)*)(\\.class){0,1}");
+        Pattern pattern = Pattern.compile("([a-zA-Z$0-9]+)(\\.class{0,1}|(/[a-zA-Z$0-9]+)*)(\\.class){0,1}");
         Matcher matcher = pattern.matcher(str);
         return matcher.matches();
+    }
+
+    public String getCurrentHandlingClassName() {
+        return javaClass;
     }
 
     public boolean isEOF() throws IOException {

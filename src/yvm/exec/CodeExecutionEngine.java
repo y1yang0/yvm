@@ -233,7 +233,7 @@ public final class CodeExecutionEngine {
                     byte indexByte1 = (byte) ((Operand) cd.get3Placeholder()).get0();
                     byte indexByte2 = (byte) ((Operand) cd.get3Placeholder()).get1();
                     int index = (indexByte1 << 8) | indexByte2;
-                    String res = metaClassRef.constantPool.findInClasses(index);
+                    String res = metaClassRef.constantPool.findInClass(index);
 
                     if (count < 0) {
                         throw new NegativeArraySizeException("array size required a positive integer");

@@ -11,10 +11,12 @@ import ycloader.exception.ClassLinkingException;
 import ycloader.exception.ClassLoadingException;
 import ycloader.security.FormatChecking;
 import yvm.adt.Tuple6;
+import yvm.auxil.Peel;
 import yvm.exec.CodeExecutionEngine;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.util.Collection;
 
 /**
  * This YClassLoader(Yet another java Class file Loader) is based on
@@ -57,7 +59,7 @@ public class YClassLoader {
 
         try {
             if (!reader.openDataInputStream()) {
-                throw new IOException("Failed to get class file data, check your config file in ./conf/rtsearch.xml");
+                throw new IOException("Failed to get " + reader.getCurrentHandlingClassName() + " class file data, check your config file in ./conf/rtsearch.xml");
             }
 
             if (!FormatChecking.MagicNumber.with(read4Bytes())) {
@@ -187,6 +189,20 @@ public class YClassLoader {
             }
 
             this.initializeClass(meta);
+        }
+    }
+
+    public void loadRelatedClasses(MetaClass metaClass) throws ClassLoadingException, ClassLinkingException, ClassInitializingException {
+        Collection<String> classes = metaClass.constantPool.getClasses();
+        for (String aClass : classes) {
+            String peeledClass = Peel.peelDescriptor(aClass);
+            if (!threadRef.runtimeVM().methodScope().existClass(peeledClass, this.getClass())) {
+                Tuple6 bundle = loadClass(peeledClass);
+                MetaClass meta = linkClass(bundle);
+                threadRef.runtimeVM().methodScope().addMetaClass(meta);
+                loadInheritanceChain(meta.superClassName);
+                initializeClass(meta);
+            }
         }
     }
 

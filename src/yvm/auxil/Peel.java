@@ -21,4 +21,33 @@ public class Peel {
         }
         return -1;
     }
+
+    public static String peelDescriptor(String qualifiedClassName) {
+        qualifiedClassName = qualifiedClassName.replaceAll("^\\[*L{0,1}", "");
+        qualifiedClassName = qualifiedClassName.replaceAll(";", "");
+        switch (qualifiedClassName) {
+            case "B":
+                return "java/lang/Byte";
+            case "C":
+                return "java/lang/Character";
+            case "D":
+                return "java/lang/Double";
+            case "F":
+                return "java/lang/Float";
+            case "I":
+                return "java/lang/Integer";
+            case "J":
+                return "java/lang/Long";
+            case "S":
+                return "java/lang/Short";
+            case "Z":
+                return "java/lang/Boolean";
+            default:
+                return qualifiedClassName;
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println(peelDescriptor("java/lang/ClassLoader.class"));
+    }
 }

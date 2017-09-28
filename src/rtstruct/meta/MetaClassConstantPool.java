@@ -1,17 +1,14 @@
 package rtstruct.meta;
 
-import rtstruct.YMethodScope;
-import ycloader.YClassLoader;
 import ycloader.adt.constantpool.*;
 import ycloader.dataobject.ConstantPoolObject;
-import ycloader.exception.ClassInitializingException;
 import ycloader.exception.ClassLinkingException;
-import ycloader.exception.ClassLoadingException;
 import yvm.adt.Tuple2;
 import yvm.adt.Tuple3;
 import yvm.auxil.Predicate;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 
 public class MetaClassConstantPool {
@@ -201,10 +198,6 @@ public class MetaClassConstantPool {
         }
     }
 
-    public String findInClasses(int index) {
-        return classes.get(index);
-    }
-
     public void debug(String thisClassName) {
         System.out.println("########################" + thisClassName + " Constant Pool#################################");
         System.out.println("#Class#");
@@ -298,12 +291,15 @@ public class MetaClassConstantPool {
         return null;
     }
 
-
     public String findInClass(int index) {
         String a = classes.get(index);
         if (!Predicate.isNull(a)) {
             return a;
         }
         return null;
+    }
+
+    public Collection<String> getClasses() {
+        return classes.values();
     }
 }

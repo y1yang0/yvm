@@ -38,6 +38,8 @@ public final class Yvm {
                 loader.loadInheritanceChain(meta.superClassName);
 
                 loader.initializeClass(meta);
+
+                loader.loadRelatedClasses(meta);
             } catch (ClassLinkingException | ClassLoadingException | ClassInitializingException e) {
                 e.printStackTrace();
             }
