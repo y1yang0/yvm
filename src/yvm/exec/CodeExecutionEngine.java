@@ -19,13 +19,12 @@ import yvm.adt.*;
 import yvm.auxil.Continuation;
 import yvm.auxil.Peel;
 import yvm.auxil.Predicate;
+import yvm.constant.NewArrayType;
 
 import java.util.ArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static java.util.Objects.isNull;
-import static yvm.auxil.Predicate.strNotEqual;
 
 public final class CodeExecutionEngine {
     private YThread thread;
@@ -47,7 +46,7 @@ public final class CodeExecutionEngine {
         ignited = true;
     }
 
-
+    @SuppressWarnings("unchecked")
     public void executeCLinit() {
         if (!ignited) {
             throw new VMExecutionException("code execution engine is not ready");
@@ -61,7 +60,7 @@ public final class CodeExecutionEngine {
                 MetaClassMethod.MethodExtension>                         //method related attributes,it would be use for future vm version,there just ignore them
                 clinit = metaClassRef.methods.findMethod("<clinit>");
 
-        if (isNull(clinit) || strNotEqual(clinit.get1Placeholder(), "<clinit>")) {
+        if (Predicate.isNull(clinit) || Predicate.strNotEqual(clinit.get1Placeholder(), "<clinit>")) {
             return;
         }
 
@@ -268,8 +267,8 @@ public final class CodeExecutionEngine {
 
                     YArray array = new YArray(count);
                     for (int t = 0; t < count; t++) {
-                        YObject object = new YObject(classLoader, methodScopeRef.getMetaClass(classes[index], classLoader.getClass()));
-                        object.initiateFields();
+                        YObject object = new YObject(methodScopeRef.getMetaClass(classes[index], classLoader.getClass()));
+                        //object.initiateFields(classLoader);
                         array.set(t, object);
                     }
 
@@ -1798,22 +1797,60 @@ public final class CodeExecutionEngine {
                         }
                     }
 
-                    YObject object = new YObject(classLoader, methodScopeRef.getMetaClass(classes[index], classLoader.getClass()));
-                    object.initiateFields();
+                    YObject object = new YObject(methodScopeRef.getMetaClass(classes[index], classLoader.getClass()));
+                    object.initiateFields(classLoader);
                     thread.runtimeVM().heap().addToObjectArea(object);
                     dg.push(object);
                 }
                 break;
 
                 case Mnemonic.newarray: {
-                    //todo:newarray
+                    int aType = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int count = dg.popInt();
+
+                    YArray array = new YArray(count);
+                    switch (aType) {
+                        case NewArrayType.T_INT:
+                        case NewArrayType.T_LONG:
+                        case NewArrayType.T_SHORT:
+                        case NewArrayType.T_BYTE:
+                            for (int t = 0; t < count; t++) {
+                                array.set(t, YObject.derivedFrom(0));
+                            }
+                            break;
+                        case NewArrayType.T_CHAR:
+                            for (int t = 0; t < count; t++) {
+                                array.set(t, YObject.derivedFrom('\u0000'));
+                            }
+                            break;
+                        case NewArrayType.T_DOUBLE:
+                            for (int t = 0; t < count; t++) {
+                                array.set(t, YObject.derivedFrom(0.0));
+                            }
+                            break;
+                        case NewArrayType.T_FLOAT:
+                            for (int t = 0; t < count; t++) {
+                                array.set(t, YObject.derivedFrom(0.0F));
+                            }
+                            break;
+                        case NewArrayType.T_BOOLEAN:
+                            for (int t = 0; t < count; t++) {
+                                array.set(t, YObject.derivedFrom(false));
+                            }
+                            break;
+                        default:
+                            throw new VMExecutionException("invalid operand " + aType + " of <newarray> opcode");
+                    }
+
+                    //add to runtime virtual machine heap section
+                    thread.runtimeVM().heap().addToArrayArea(array);
+                    //push reference to operand stack
+                    dg.pushArray(array);
                 }
                 break;
 
                 case Mnemonic.nop: {
-                    //////////////
-                    //DO NOTHING//
-                    //////////////
+                    //DO NOTHING :)
                 }
                 break;
 

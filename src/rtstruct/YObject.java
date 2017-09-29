@@ -13,7 +13,6 @@ import yvm.auxil.Peel;
 import java.util.Map;
 
 public class YObject{
-    private YClassLoader loader = null;
     private MetaClass metaClassReference;
     private Object[] fields;
 
@@ -47,10 +46,9 @@ public class YObject{
      *
      ***************************************************************/
     @SuppressWarnings("unchecked")
-    public YObject(YClassLoader loader, MetaClass metaClass) {
+    public YObject(MetaClass metaClass) {
         metaClassReference = metaClass;
         fields = null;
-        this.loader = loader;
     }
 
     @SuppressWarnings("unused")
@@ -78,7 +76,17 @@ public class YObject{
         return new YObject().asString(x);
     }
 
-    public void initiateFields() {
+    @SuppressWarnings("unused")
+    public static YObject derivedFrom(char x) {
+        return new YObject().asChar(x);
+    }
+
+    @SuppressWarnings("unused")
+    public static YObject derivedFrom(boolean x) {
+        return new YObject().asBoolean(x);
+    }
+
+    public void initiateFields(YClassLoader loader) {
         /***************************************************************
          *  get all fields of this class
          *
@@ -143,20 +151,22 @@ public class YObject{
                 case "java/lang/Short":
                 case "java/lang/Long":
                 case "java/lang/Integer":
-                    fields[counter.get()] = 0;
+                    fields[counter.get()] = YObject.derivedFrom(0);
                     break;
                 case "java/lang/Character":
-                    fields[counter.get()] = '\u0000';
+                    fields[counter.get()] = YObject.derivedFrom('\u0000');
                     break;
                 case "java/lang/Double":
+                    fields[counter.get()] = YObject.derivedFrom(0.0);
+                    break;
                 case "java/lang/Float":
-                    fields[counter.get()] = 0.0;
+                    fields[counter.get()] = YObject.derivedFrom(0.0F);
                     break;
                 case "java/lang/Boolean":
-                    fields[counter.get()] = false;
+                    fields[counter.get()] = YObject.derivedFrom(false);
                     break;
                 default:
-                    fields[counter.get()] = new YObject(loader,
+                    fields[counter.get()] = new YObject(
                             loader.getStartupThread()
                                     .runtimeVM()
                                     .methodScope()
@@ -195,6 +205,19 @@ public class YObject{
     }
 
     @SuppressWarnings("unused")
+    YObject asBoolean(boolean x) {
+        fields[0] = x;
+        return this;
+    }
+
+    @SuppressWarnings("unused")
+    YObject asChar(char x) {
+        fields[0] = x;
+        return this;
+    }
+
+
+    @SuppressWarnings("unused")
     YObject asString(String x) {
         fields[0] = x;
         return this;
@@ -220,10 +243,22 @@ public class YObject{
         return (float) fields[0];
     }
 
+
     @SuppressWarnings("unused")
-    public short toShort() {
-        return (short) fields[0];
+    public String toString() {
+        return (String) fields[0];
     }
+
+    @SuppressWarnings("unused")
+    public boolean toBoolean() {
+        return (boolean) fields[0];
+    }
+
+    @SuppressWarnings("unused")
+    public char toChar() {
+        return (char) fields[0];
+    }
+
 
     public void setArrayComponent(int index, YObject value) {
         fields[index] = value;
