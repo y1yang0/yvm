@@ -195,7 +195,7 @@ public class YClassLoader {
     @Deprecated
     public void loadRelatedClasses(MetaClass metaClass)
             throws ClassLoadingException, ClassLinkingException, ClassInitializingException {
-        Collection<String> classes = metaClass.constantPool.getClasses();
+        Collection<String> classes = metaClass.constantPool.getClassNames();
         for (String aClass : classes) {
             String peeledClass = Peel.peelDescriptor(aClass);
             if (!threadRef.runtimeVM().methodScope().existClass(peeledClass, this.getClass())) {

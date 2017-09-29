@@ -1,6 +1,16 @@
 package rtstruct;
 
 import rtstruct.meta.MetaClass;
+import rtstruct.rtexception.VMExecutionException;
+import ycloader.YClassLoader;
+import ycloader.exception.ClassInitializingException;
+import ycloader.exception.ClassLinkingException;
+import ycloader.exception.ClassLoadingException;
+import yvm.adt.Tuple4;
+import yvm.adt.Tuple6;
+import yvm.auxil.Peel;
+
+import java.util.Map;
 
 public class YObject{
     private MetaClass metaClassReference;
@@ -35,9 +45,101 @@ public class YObject{
      *  create a generic object
      *
      ***************************************************************/
-    public YObject(MetaClass metaClass) {
-        fields = null;
+    public YObject(YClassLoader loader, MetaClass metaClass) {
+        /***************************************************************
+         *  get all fields of this class
+         *
+         ***************************************************************/
+        Map fieldDesc = metaClass.fields.getFields();
+        int fieldsNum = fieldDesc.size();
+
+        /***************************************************************
+         *  create real fields, they will be used to store fields data
+         *
+         ***************************************************************/
+        fields = new Object[fieldsNum];
+
+        /***************************************************************
+         *  associate this object with meta class information
+         *
+         ***************************************************************/
         metaClassReference = metaClass;
+
+        /***************************************************************
+         *  create a constant class,because in anonymous function, any
+         *  reference which referred to outer state required to FINAL
+         *
+         ***************************************************************/
+
+        class Counter {
+            private int i = 0;
+
+            public void inc() {
+                i++;
+            }
+
+            public int get() {
+                return i;
+            }
+
+        }
+        final Counter counter = new Counter();
+        /***************************************************************
+         *  traverse all fields and initiate them using default value
+         *  according to JVM (R) 8 SPEC
+         *
+         ***************************************************************/
+        fieldDesc.forEach((_Unused, bundle) -> {
+            counter.inc();
+            //if this field is not loaded into vm, load it right now
+            if (!loader
+                    .getStartupThread()
+                    .runtimeVM()
+                    .methodScope()
+                    .existClass(Peel.peelDescriptor(((Tuple4) bundle).get2Placeholder().toString()), loader.getClass())) {
+                try {
+                    Tuple6 bundle1 = loader.loadClass(Peel.peelDescriptor(((Tuple4) bundle).get2Placeholder().toString()));
+                    MetaClass meta = loader.linkClass(bundle1);
+                    loader.getStartupThread().runtimeVM().methodScope().addMetaClass(meta);
+                    loader.loadInheritanceChain(meta.superClassName);
+                    loader.initializeClass(meta);
+                } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
+                    throw new VMExecutionException("can not load class" + Peel.peelDescriptor(Peel.peelDescriptor(((Tuple4) bundle).get2Placeholder().toString()))
+                            + " while executing anewarray opcode");
+                }
+            }
+
+            //if is a primitive type, assign a default value, or create a new instance
+            switch (Peel.peelDescriptor(((Tuple4) bundle).get2Placeholder().toString())) {
+                case "java/lang/Byte":
+                case "java/lang/Short":
+                case "java/lang/Long":
+                case "java/lang/Integer":
+                    fields[counter.get()] = 0;
+                    break;
+                case "java/lang/Character":
+                    fields[counter.get()] = '\u0000';
+                    break;
+                case "java/lang/Double":
+                case "java/lang/Float":
+                    fields[counter.get()] = 0.0;
+                    break;
+                case "java/lang/Boolean":
+                    fields[counter.get()] = false;
+                    break;
+                default:
+                    fields[counter.get()] = new YObject(loader,
+                            loader.getStartupThread()
+                                    .runtimeVM()
+                                    .methodScope()
+                                    .getMetaClass(
+                                            Peel.peelDescriptor(
+                                                    ((Tuple4) bundle).get2Placeholder().toString()),
+                                            loader.getClass()));
+                    break;
+            }
+
+        });
     }
 
     @SuppressWarnings("unused")

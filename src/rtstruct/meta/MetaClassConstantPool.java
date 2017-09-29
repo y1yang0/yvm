@@ -299,7 +299,7 @@ public class MetaClassConstantPool {
         return null;
     }
 
-    public Collection<String> getClasses() {
+    public Collection<String> getClassNames() {
         return classes.values();
     }
 }

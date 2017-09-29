@@ -250,31 +250,25 @@ public final class CodeExecutionEngine {
                     int index = (indexByte1 << 8) |
                             indexByte2;
 
-                    String[] classes = (String[]) metaClassRef.constantPool.getClasses().toArray();
-
-                    if (Peel.peelDescriptor(classes[index]) != metaClassRef.qualifiedClassName) {
-                        throw new VMExecutionException("no specified class existing in constant pool");
-                    }
-
-
-                    if (!methodScopeRef.existClass(metaClassRef.qualifiedClassName, classLoader.getClass())) {
+                    String[] classes = (String[]) metaClassRef.constantPool.getClassNames().toArray();
+                    if (!methodScopeRef.existClass(classes[index], classLoader.getClass())) {
                         YClassLoader loader = new YClassLoader();
                         loader.associateThread(thread);
                         try {
-                            Tuple6 bundle = loader.loadClass(metaClassRef.qualifiedClassName);
+                            Tuple6 bundle = loader.loadClass(classes[index]);
                             MetaClass meta = loader.linkClass(bundle);
                             thread.runtimeVM().methodScope().addMetaClass(meta);
                             loader.loadInheritanceChain(meta.superClassName);
                             loader.initializeClass(meta);
                         } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
-                            throw new VMExecutionException("can not load class" + Peel.peelDescriptor(metaClassRef.qualifiedClassName)
+                            throw new VMExecutionException("can not load class" + Peel.peelDescriptor(classes[index])
                                     + " while executing anewarray opcode");
                         }
                     }
 
                     YArray array = new YArray(count);
                     for (int t = 0; t < count; t++) {
-                        YObject object = new YObject(methodScopeRef.getMetaClass(metaClassRef.qualifiedClassName, classLoader.getClass()));
+                        YObject object = new YObject(classLoader, methodScopeRef.getMetaClass(classes[index], classLoader.getClass()));
                         array.set(t, object);
                     }
 
@@ -428,8 +422,6 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.checkcast: {
-                    int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                    int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get0();
                     //todo:checkcast
                 }
                 break;
@@ -1779,6 +1771,32 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.new$: {
+                    int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                    int count = dg.popInt();
+
+                    int index = (indexByte1 << 8) |
+                            indexByte2;
+
+                    String[] classes = (String[]) metaClassRef.constantPool.getClassNames().toArray();
+                    if (!methodScopeRef.existClass(classes[index], classLoader.getClass())) {
+                        YClassLoader loader = new YClassLoader();
+                        loader.associateThread(thread);
+                        try {
+                            Tuple6 bundle = loader.loadClass(classes[index]);
+                            MetaClass meta = loader.linkClass(bundle);
+                            thread.runtimeVM().methodScope().addMetaClass(meta);
+                            loader.loadInheritanceChain(meta.superClassName);
+                            loader.initializeClass(meta);
+                        } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
+                            throw new VMExecutionException("can not load class" + Peel.peelDescriptor(classes[index])
+                                    + " while executing anewarray opcode");
+                        }
+                    }
+
+                    YObject object = new YObject(classLoader, methodScopeRef.getMetaClass(classes[index], classLoader.getClass()));
+                    thread.runtimeVM().heap().addToObjectArea(object);
+                    dg.push(object);
                     //todo:new
                 }
                 break;
