@@ -269,6 +269,7 @@ public final class CodeExecutionEngine {
                     YArray array = new YArray(count);
                     for (int t = 0; t < count; t++) {
                         YObject object = new YObject(classLoader, methodScopeRef.getMetaClass(classes[index], classLoader.getClass()));
+                        object.initiateFields();
                         array.set(t, object);
                     }
 
@@ -1798,9 +1799,9 @@ public final class CodeExecutionEngine {
                     }
 
                     YObject object = new YObject(classLoader, methodScopeRef.getMetaClass(classes[index], classLoader.getClass()));
+                    object.initiateFields();
                     thread.runtimeVM().heap().addToObjectArea(object);
                     dg.push(object);
-                    //todo:new
                 }
                 break;
 

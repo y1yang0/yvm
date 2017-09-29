@@ -13,6 +13,7 @@ import yvm.auxil.Peel;
 import java.util.Map;
 
 public class YObject{
+    private YClassLoader loader = null;
     private MetaClass metaClassReference;
     private Object[] fields;
 
@@ -47,11 +48,42 @@ public class YObject{
      ***************************************************************/
     @SuppressWarnings("unchecked")
     public YObject(YClassLoader loader, MetaClass metaClass) {
+        metaClassReference = metaClass;
+        fields = null;
+        this.loader = loader;
+    }
+
+    @SuppressWarnings("unused")
+    public static YObject derivedFrom(int x) {
+        return new YObject().asInteger(x);
+    }
+
+    @SuppressWarnings("unused")
+    public static YObject derivedFrom(long x) {
+        return new YObject().asLong(x);
+    }
+
+    @SuppressWarnings("unused")
+    public static YObject derivedFrom(double x) {
+        return new YObject().asDouble(x);
+    }
+
+    @SuppressWarnings("unused")
+    public static YObject derivedFrom(float x) {
+        return new YObject().asFloat(x);
+    }
+
+    @SuppressWarnings("unused")
+    public static YObject derivedFrom(String x) {
+        return new YObject().asString(x);
+    }
+
+    public void initiateFields() {
         /***************************************************************
          *  get all fields of this class
          *
          ***************************************************************/
-        Map fieldDesc = metaClass.fields.getFields();
+        Map fieldDesc = metaClassReference.fields.getFields();
         int fieldsNum = fieldDesc.size();
 
         /***************************************************************
@@ -60,11 +92,6 @@ public class YObject{
          ***************************************************************/
         fields = new Object[fieldsNum];
 
-        /***************************************************************
-         *  associate this object with meta class information
-         *
-         ***************************************************************/
-        metaClassReference = metaClass;
 
         /***************************************************************
          *  create a constant class,because in anonymous function, any
@@ -141,31 +168,6 @@ public class YObject{
             }
 
         });
-    }
-
-    @SuppressWarnings("unused")
-    public static YObject derivedFrom(int x) {
-        return new YObject().asInteger(x);
-    }
-
-    @SuppressWarnings("unused")
-    public static YObject derivedFrom(long x) {
-        return new YObject().asLong(x);
-    }
-
-    @SuppressWarnings("unused")
-    public static YObject derivedFrom(double x) {
-        return new YObject().asDouble(x);
-    }
-
-    @SuppressWarnings("unused")
-    public static YObject derivedFrom(float x) {
-        return new YObject().asFloat(x);
-    }
-
-    @SuppressWarnings("unused")
-    public static YObject derivedFrom(String x) {
-        return new YObject().asString(x);
     }
 
     @SuppressWarnings("unused")
