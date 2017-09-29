@@ -120,11 +120,11 @@ public class YObject{
         return (short) fields[0];
     }
 
-    protected void setArrayComponent(int index, YObject value) {
+    public void setArrayComponent(int index, YObject value) {
         fields[index] = value;
-   }
+    }
 
-    protected YObject getArrayComponent(int index) {
+    public YObject getArrayComponent(int index) {
         return (YObject) fields[index];
     }
 

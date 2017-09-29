@@ -13,8 +13,11 @@ import rtstruct.ystack.YStackFrame;
 import ycloader.YClassLoader;
 import ycloader.adt.u1;
 import ycloader.exception.ClassInitializingException;
+import ycloader.exception.ClassLinkingException;
+import ycloader.exception.ClassLoadingException;
 import yvm.adt.*;
 import yvm.auxil.Continuation;
+import yvm.auxil.Peel;
 import yvm.auxil.Predicate;
 
 import java.util.ArrayList;
@@ -115,6 +118,10 @@ public final class CodeExecutionEngine {
             private long popLong(){return stack.currentFrame().popOperand().toLong();}
             private float popFloat(){return  stack.currentFrame().popOperand().toFloat();}
             private YArray popArray(){return (YArray) stack.currentFrame().popOperand();}
+
+            private void pushArray(YArray array) {
+                stack.currentFrame().pushOperand(array);
+            }
         }
         ConvenientDelegate dg = new ConvenientDelegate();//use a convenient delegate class to wrap stack operations
 
@@ -184,7 +191,11 @@ public final class CodeExecutionEngine {
 
                 //Store into reference array
                 case Mnemonic.aastore: {
-                    //todo:aastore
+                    YObject value = dg.pop();
+                    int index = dg.popInt();
+                    YArray array = dg.popArray();
+
+                    array.set(index, value);
                 }
                 break;
 
@@ -232,8 +243,48 @@ public final class CodeExecutionEngine {
 
                 //Create new array of reference
                 case Mnemonic.anewarray: {
-                    //todo:anewarray
+                    int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                    int count = dg.popInt();
+
+                    int index = (indexByte1 << 8) |
+                            indexByte2;
+
+                    String[] classes = (String[]) metaClassRef.constantPool.getClasses().toArray();
+
+                    if (Peel.peelDescriptor(classes[index]) != metaClassRef.qualifiedClassName) {
+                        throw new VMExecutionException("no specified class existing in constant pool");
+                    }
+
+
+                    if (!methodScopeRef.existClass(metaClassRef.qualifiedClassName, classLoader.getClass())) {
+                        YClassLoader loader = new YClassLoader();
+                        loader.associateThread(thread);
+                        try {
+                            Tuple6 bundle = loader.loadClass(metaClassRef.qualifiedClassName);
+                            MetaClass meta = loader.linkClass(bundle);
+                            thread.runtimeVM().methodScope().addMetaClass(meta);
+                            loader.loadInheritanceChain(meta.superClassName);
+                            loader.initializeClass(meta);
+                        } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
+                            throw new VMExecutionException("can not load class" + Peel.peelDescriptor(metaClassRef.qualifiedClassName)
+                                    + " while executing anewarray opcode");
+                        }
+                    }
+
+                    YArray array = new YArray(count);
+                    for (int t = 0; t < count; t++) {
+                        YObject object = new YObject(methodScopeRef.getMetaClass(metaClassRef.qualifiedClassName, classLoader.getClass()));
+                        array.set(t, object);
+                    }
+
+                    //add to runtime virtual machine heap section
+                    thread.runtimeVM().heap().addToArrayArea(array);
+                    //push reference to operand stack
+                    dg.pushArray(array);
+
                 }
+
                 break;
 
                 //Return reference from method
