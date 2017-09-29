@@ -9,7 +9,8 @@ import ycloader.exception.ClassLinkingException;
 import ycloader.exception.ClassLoadingException;
 import yvm.adt.Tuple6;
 
-public final class Yvm {
+public final class
+Yvm {
     private RuntimeVM runtimeVM;
 
     public Yvm() {

@@ -15,7 +15,6 @@ import ycloader.adt.u1;
 import ycloader.exception.ClassInitializingException;
 import yvm.adt.*;
 import yvm.auxil.Continuation;
-import yvm.auxil.Peel;
 import yvm.auxil.Predicate;
 
 import java.util.ArrayList;
@@ -96,25 +95,26 @@ public final class CodeExecutionEngine {
             private void clear() {
                 stack.currentFrame().clearOperand();
             }
-            private Object peek() {
-                return stack.currentFrame().peekOperand();
+            private YObject peek() {
+                return  stack.currentFrame().peekOperand();
             }
-            private Object pop() {
-                return stack.currentFrame().popOperand();
+            private YObject pop() {
+                return  stack.currentFrame().popOperand();
             }
-            private void push(Object object) {
+            private void push(YObject object) {
                 stack.currentFrame().pushOperand(object);
             }
-            private void setLocalVar(int index,Object value){
+            private void setLocalVar(int index,YObject value){
                 stack.currentFrame().setLocalVariable(index,value);
             }
-            private Object getLocalVar(int index){
-                return stack.currentFrame().getLocalVariable(index);
+            private YObject getLocalVar(int index){
+                return  stack.currentFrame().getLocalVariable(index);
             }
-            private int popInt(){return (int) stack.currentFrame().popOperand();}
-            private double popDouble(){return (double) stack.currentFrame().popOperand();}
-            private long popLong(){return (long) stack.currentFrame().popOperand();}
-            private float popFloat(){return (float) stack.currentFrame().popOperand();}
+            private int popInt(){return stack.currentFrame().popOperand().toInteger();}
+            private double popDouble(){return  stack.currentFrame().popOperand().toDouble();}
+            private long popLong(){return stack.currentFrame().popOperand().toLong();}
+            private float popFloat(){return  stack.currentFrame().popOperand().toFloat();}
+            private YArray popArray(){return (YArray) stack.currentFrame().popOperand();}
         }
         ConvenientDelegate dg = new ConvenientDelegate();//use a convenient delegate class to wrap stack operations
 
@@ -173,7 +173,7 @@ public final class CodeExecutionEngine {
                 //Load reference from array
                 case Mnemonic.aaload: {
                     int index = dg.popInt();
-                    YArray arrayRef = (YArray) dg.pop();
+                    YArray arrayRef = dg.popArray();
 
                     Continuation.ifNullThrowNullptrException(arrayRef);
 
@@ -188,7 +188,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.aastore: {
                     Object value = dg.pop();
                     int index = dg.popInt();
-                    YArray arrayRef = (YArray) dg.pop();
+                    YArray arrayRef = dg.popArray();
 
                     if (isClass(value.getClass())) {
                         if (!isSameClass(arrayRef.getClass().getComponentType(), value.getClass())
@@ -274,45 +274,7 @@ public final class CodeExecutionEngine {
 
                 //Create new array of reference
                 case Mnemonic.anewarray: {
-                    //The count represents the number of components of the array to
-                    //be created.
-                    int count = dg.popInt();
-                    byte indexByte1 = (byte) ((Operand) cd.get3Placeholder()).get0();
-                    byte indexByte2 = (byte) ((Operand) cd.get3Placeholder()).get1();
-                    int index = (indexByte1 << 8) | indexByte2;
-                    String res = metaClassRef.constantPool.findInClass(index);
-
-                    if (count < 0) {
-                        throw new NegativeArraySizeException("array size required a positive integer");
-                    }
-                    if (!isNull(res)) {
-                        if (methodScopeRef.existClass(res, classLoader.getClass())) {
-                            MetaClass meta = methodScopeRef.getMetaClass(res, metaClassRef.classLoader);
-                            YObject object = new YObject(meta);
-                            object.init();
-
-                            YArray array = new YArray(count);
-                            array.init();
-
-                            dg.push(array);
-                        } else {
-                            String arrayComponentType = Peel.getArrayComponent(res);
-                            int arrayDimension = Peel.getArrayDimension(res);
-                            if (methodScopeRef.existClass(arrayComponentType, classLoader.getClass())) {
-                                MetaClass meta = methodScopeRef.getMetaClass(res, metaClassRef.classLoader);
-                                YObject object = new YObject(meta);
-                                object.init();
-
-                                YArray inner = new YArray(arrayDimension);
-                                inner.init();
-
-                                YArray outer = new YArray(count);
-                                outer.init();
-
-                                dg.push(outer);
-                            }
-                        }
-                    }
+                    //todo:anewarray
                 }
                 break;
 
@@ -330,9 +292,9 @@ public final class CodeExecutionEngine {
 
                 //Get length of array
                 case Mnemonic.arraylength: {
-                    YArray arrayRef = (YArray) dg.pop();
+                    YArray arrayRef = dg.popArray();
                     Continuation.ifNullThrowNullptrException(arrayRef);
-                    dg.push(arrayRef.getDimension());
+                    dg.push(arrayRef.getLength());
                 }
                 break;
 
@@ -387,7 +349,7 @@ public final class CodeExecutionEngine {
                     Continuation.ifNullThrowNullptrException(object);
 
                     class ThrowRoutine {
-                        public int handleThrow() {
+                        private int handleThrow() {
                             int handlePC = etDg.findException(programCount, object.getMetaReference().qualifiedClassName);
                             if (handlePC != -1) {
                                 Tuple3 newOp = opcodes.get(handlePC);
@@ -416,11 +378,11 @@ public final class CodeExecutionEngine {
                 //Load byte or boolean from array
                 case Mnemonic.baload: {
                     int index = dg.popInt();
-                    YArray array = (YArray) dg.pop();
+                    YArray array = dg.popArray();
 
                     Continuation.ifNullThrowNullptrException(array);
 
-                    if (index > array.getDimension()) {
+                    if (index > array.getLength()) {
                         throw new ArrayIndexOutOfBoundsException("array index out of bounds");
                     }
                     dg.push(array.get(index));
@@ -430,7 +392,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.bastore: {
                     int value = dg.popInt();
                     int index = dg.popInt();
-                    YArray array = (YArray) dg.pop();
+                    YArray array = dg.popArray();
                     array.set(index, value);
                 }
                 break;
@@ -442,7 +404,7 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.caload: {
                     int index = dg.popInt();
-                    YArray array = (YArray) dg.pop();
+                    YArray array = dg.popArray();
                     dg.push(array.get(index));
                 }
                 break;
@@ -450,12 +412,14 @@ public final class CodeExecutionEngine {
                 case Mnemonic.castore: {
                     int value = dg.popInt();
                     int index = dg.popInt();
-                    YArray array = (YArray) dg.pop();
+                    YArray array = dg.popArray();
                     array.set(index, value);
                 }
                 break;
 
                 case Mnemonic.checkcast: {
+                    int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get0();
                     //todo:checkcast
                 }
                 break;
@@ -487,7 +451,7 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.daload: {
                     int index = dg.popInt();
-                    YArray array = (YArray) dg.pop();
+                    YArray array = dg.popArray();
                     dg.push(array.get(index));
                 }
                 break;
@@ -495,7 +459,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.dastore: {
                     double value = dg.popDouble();
                     int index = dg.popInt();
-                    YArray array = (YArray) dg.pop();
+                    YArray array = dg.popArray();
                     array.set(index, value);
                 }
                 break;
@@ -775,7 +739,7 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.faload:{
                     int index = dg.popInt();
-                    YArray array = (YArray) dg.pop();
+                    YArray array = dg.popArray();
                     dg.push(array.get(index));
                 }
                 break;
@@ -783,7 +747,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.fastore:{
                     float  value = (float)dg.pop();
                     int index = dg.popInt();
-                    YArray array = (YArray) dg.pop();
+                    YArray array = dg.popArray();
                     array.set(index,value);
                 }
                 break;
@@ -1008,7 +972,7 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.iaload: {
                     int index = dg.popInt();
-                    YArray array = (YArray) dg.pop();
+                    YArray array = dg.popArray();
                     dg.push(array.get(index));
                 }
                 break;
@@ -1023,7 +987,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.iastore: {
                     int value = dg.popInt();
                     int index = dg.popInt();
-                    YArray array = (YArray) dg.pop();
+                    YArray array = dg.popArray();
                     array.set(index, value);
                 }
                 break;
@@ -1544,7 +1508,7 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.laload: {
                     int index = dg.popInt();
-                    YArray array = (YArray) dg.pop();
+                    YArray array = dg.popArray();
                     dg.push(array.get(index));
                 }
                 break;
@@ -1559,7 +1523,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.lastore: {
                     long value = dg.popLong();
                     int index = dg.popInt();
-                    YArray array = (YArray) dg.pop();
+                    YArray array = dg.popArray();
                     dg.setLocalVar(index, array.get(index));
                 }
                 break;
@@ -1862,7 +1826,7 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.saload: {
                     int index = dg.popInt();
-                    YArray array = (YArray) dg.pop();
+                    YArray array = dg.popArray();
 
                     Continuation.ifNullThrowNullptrException(array);
 
@@ -1874,7 +1838,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.sastore: {
                     int value = dg.popInt();
                     int index = dg.popInt();
-                    YArray array = (YArray) dg.pop();
+                    YArray array = dg.popArray();
 
                     Continuation.ifNullThrowNullptrException(array);
 

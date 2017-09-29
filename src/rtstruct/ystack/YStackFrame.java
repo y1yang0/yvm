@@ -1,15 +1,17 @@
 package rtstruct.ystack;
 
+import rtstruct.YObject;
+
 import java.util.ArrayList;
 import java.util.Stack;
 
 public class YStackFrame {
-    private LocalVarTable vars;
-    private OperandStack operands;
+    private ArrayList<YObject> vars;
+    private Stack<YObject> operands;
 
     public YStackFrame() {
-        vars = new LocalVarTable();
-        operands = new OperandStack();
+        vars = new ArrayList<>();
+        operands = new Stack();
     }
 
     public void allocateSize(int maxStack, int maxLocal) {
@@ -17,33 +19,27 @@ public class YStackFrame {
         operands.setSize(maxStack);
     }
 
-    public Object peekOperand() {
+    public YObject peekOperand() {
         return operands.peek();
     }
 
-    public Object popOperand() {
+    public YObject popOperand() {
         return operands.pop();
     }
 
-    public void pushOperand(Object item) {
+    public void pushOperand(YObject item) {
         operands.push(item);
     }
 
-    public Object getLocalVariable(int index) {
+    public YObject getLocalVariable(int index) {
         return vars.get(index);
     }
 
-    public void setLocalVariable(int index, Object value) {
+    public void setLocalVariable(int index, YObject value) {
         vars.set(index, value);
     }
 
     public void clearOperand() {
         operands.clear();
-    }
-
-    private class OperandStack extends Stack {
-    }
-
-    private class LocalVarTable extends ArrayList<Object> {
     }
 }

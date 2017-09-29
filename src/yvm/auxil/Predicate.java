@@ -16,7 +16,7 @@ public class Predicate {
     }
 
     public static boolean inRange(YArray arr, int index) {
-        return index >= 0 && arr.getDimension() > index;
+        return index >= 0 && arr.getLength() > index;
     }
 
     public static boolean isClass(Class x) {

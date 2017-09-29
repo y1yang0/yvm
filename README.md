@@ -4,6 +4,8 @@
 
 
 # Tower of Babel
+- [x] 读取字节码并解析为运行时结构
+- [x] 有限的字节码安全校验
 - [ ] 完成代码执行引擎
 - [ ] 完善安全检查，目前只实现了`*.class`文件格式的静态检查
 - [ ] 支持本地方法调用
@@ -15,7 +17,7 @@
 - [ ] 浮点值在NaN/infinity等极值下的计算会造成VM crash
 
 # Improvement
-- [ ] MetaClass去掉getter,setter
+- [x] MetaClass去掉getter,setter
 - [ ] Javadoc注释
 
 # Tips
