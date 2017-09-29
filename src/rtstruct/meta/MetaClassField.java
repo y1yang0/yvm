@@ -1,5 +1,6 @@
 package rtstruct.meta;
 
+import rtstruct.YObject;
 import ycloader.adt.attribute.Attribute;
 import ycloader.adt.field.FieldInfo;
 import ycloader.dataobject.ConstantPoolObject;
@@ -7,6 +8,7 @@ import ycloader.dataobject.FieldObject;
 import yvm.adt.DebugExtension;
 import yvm.adt.Resolvable;
 import yvm.adt.Tuple4;
+import yvm.adt.Tuple5;
 import yvm.constant.MetaClassConstant;
 
 import java.util.ArrayList;
@@ -48,7 +50,8 @@ public class MetaClassField implements Resolvable<FieldObject>, DebugExtension {
 
             //if it's a static variable
             if ((accessFlag & MetaClassConstant.Access.ACC_STATIC) == 8) {
-                meta.addStaticVariables(fieldNameIndex, new Tuple4<>(fieldName, fieldDescriptor, accessFlag, fs.get(i).attributes));
+                YObject object = new YObject(meta);
+                meta.addStaticVariables(fieldNameIndex, new Tuple5<>(fieldName, fieldDescriptor, accessFlag, fs.get(i).attributes, object));
             } else {
                 fields.put(fieldNameIndex, new Tuple4<>(fieldName, fieldDescriptor, accessFlag, fs.get(i).attributes));
             }

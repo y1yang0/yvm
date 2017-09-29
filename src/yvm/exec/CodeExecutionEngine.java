@@ -27,11 +27,16 @@ import java.util.concurrent.locks.ReentrantLock;
 
 
 public final class CodeExecutionEngine {
+    @ValueRequired
     private YThread thread;
-    private boolean ignited;
+    @ValueRequired
     private MetaClass metaClassRef;
+    @ValueRequired
     private YMethodScope methodScopeRef;
+    @ValueRequired
     private YClassLoader classLoader;
+
+    private boolean ignited;
     private Lock methodLock;
 
     public CodeExecutionEngine() {
@@ -72,14 +77,18 @@ public final class CodeExecutionEngine {
 
 
         try {
+            ValueChecker.safeCheck(this.getClass(), this);
+
             allocateStackFrame(maxLocals, maxStack);
             Opcode op = new Opcode(clinit.get3Placeholder());
             op.codes2Opcodes();
-            op.debug(metaClassRef.qualifiedClassName + " clinit");
+            //op.debug(metaClassRef.qualifiedClassName + " clinit");
             //codeExecution(op,exceptionTable,isSynchronized);
 
         } catch (ClassInitializingException ignored) {
             throw new VMExecutionException("failed to convert binary code to opcodes in executing <clinit> method");
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
         }
 
     }
@@ -898,13 +907,33 @@ public final class CodeExecutionEngine {
                 }
                 break;
 
+                //Fetch field from object
                 case Mnemonic.getfield: {
-                    //todo:getfield
+                    int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                    int index = (indexByte1 << 8) | indexByte2;
+
+                    YObject object = dg.pop();
+                    YObject field = object.getField(index);
+                    if (!field.isInitialized()) {
+                        field.initiateFields(classLoader);
+                    }
+                    dg.push(field);
                 }
                 break;
 
+                //Get static field from class
                 case Mnemonic.getstatic: {
-                    //todo:getstatic
+                    int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                    int index = (indexByte1 << 8) | indexByte2;
+
+                    YObject staticVar = metaClassRef.getStaticVariable().get(index).get5Placeholder();
+                    if (!staticVar.isInitialized()) {
+                        staticVar.initiateFields(classLoader);
+                    }
+
+                    dg.push(staticVar);
                 }
                 break;
 

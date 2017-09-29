@@ -15,6 +15,7 @@ import java.util.Map;
 public class YObject{
     private MetaClass metaClassReference;
     private Object[] fields;
+    private boolean fieldsInitialized;
 
     /***************************************************************
      *  create a primitive type YObject. as*() methods stuffing this
@@ -178,6 +179,19 @@ public class YObject{
             }
 
         });
+        /***************************************************************
+         *  set fieldsInitialized flag to true
+         *
+         ***************************************************************/
+        fieldsInitialized = true;
+    }
+
+    public YObject getField(int index) {
+        return (YObject) fields[index];
+    }
+
+    public boolean isInitialized() {
+        return fieldsInitialized;
     }
 
     @SuppressWarnings("unused")

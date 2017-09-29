@@ -1,7 +1,8 @@
 package rtstruct.meta;
 
+import rtstruct.YObject;
 import ycloader.adt.attribute.Attribute;
-import yvm.adt.Tuple4;
+import yvm.adt.Tuple5;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,7 +16,7 @@ public class MetaClass {
     public MetaClassInterface interfaces;
     public MetaClassConstantPool constantPool;
     public MetaClassMethod methods;
-    private Map<Integer, Tuple4<String, String, Integer, Attribute[]>> staticVars;
+    private Map<Integer, Tuple5<String, String, Integer, Attribute[], YObject>> staticVars;
     //private boolean isClass;
     //private Class classReference;
 
@@ -24,11 +25,11 @@ public class MetaClass {
     }
 
 
-    public void addStaticVariables(int index, Tuple4<String, String, Integer, Attribute[]> staticVar) {
+    public void addStaticVariables(int index, Tuple5<String, String, Integer, Attribute[], YObject> staticVar) {
         staticVars.put(index, staticVar);
     }
 
-    public Map<Integer, Tuple4<String, String, Integer, Attribute[]>> getStaticVariable() {
+    public Map<Integer, Tuple5<String, String, Integer, Attribute[], YObject>> getStaticVariable() {
         return staticVars;
     }
 
