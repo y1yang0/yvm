@@ -1968,6 +1968,9 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.putfield: {
+                    int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                    int index = (indexByte1 << 8) | indexByte2;
                     //todo:putfield
                 }
                 break;
