@@ -9,8 +9,7 @@ import ycloader.exception.ClassLinkingException;
 import ycloader.exception.ClassLoadingException;
 import yvm.adt.Tuple6;
 
-public final class
-Yvm {
+public final class Yvm {
     private RuntimeVM runtimeVM;
 
     public Yvm() {
@@ -31,7 +30,7 @@ Yvm {
                 YClassLoader loader = new YClassLoader();
                 loader.associateThread(classLoadingThread);
 
-                Tuple6 bundle = loader.loadClass("java/io/ObjectStreamClass");
+                Tuple6 bundle = loader.loadClass("ycloader/example/Example");
                 MetaClass meta = loader.linkClass(bundle);
                 runtimeVM.methodScope().addMetaClass(meta);
                 loader.loadInheritanceChain(meta.superClassName);

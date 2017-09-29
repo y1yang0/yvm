@@ -21,7 +21,8 @@
 - [ ] Javadoc注释
 
 # Features or Faults
-+ 不打算支持`jsr`和`jsr_w`指令，所以`JavaSE6`及其之前的编译器编译出的`class`可能无法正常工作
++ 数组惰性求值，直到写操作才分配内存。
++ 不打算支持`jsr`,`ret`和`jsr_w`指令，所以`JavaSE6`及其之前的编译器编译含有`finally clause`的代码无法在该虚拟机工作
 + 异常重抛用局部类递归实现，所以如果异常链非常非常长又没有任何捕获clause会导致栈溢出
 
 # License

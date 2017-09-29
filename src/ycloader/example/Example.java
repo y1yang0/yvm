@@ -11,7 +11,18 @@ interface IB {
 }
 
 public class Example implements IA, IB {
+    public static final int CONST_INT = 1024;
+    public static int aaa = 16;
+    public static int bbb = 17;
+
     static {
+        try {
+            double x = 5 / 2;
+        } catch (ArithmeticException e) {
+            e.printStackTrace();
+        } finally {
+            System.out.println("final clause test");
+        }
         Object[] pp = new Object[14];
         double[] xx = new double[14];
         for (int i = 0; i < xx.length; i++) {
@@ -21,12 +32,9 @@ public class Example implements IA, IB {
         }
     }
 
+    private final String constStr = "this_is_a_long literal string";
     private double[] xx;
     private int[] arr = new int[7];
-    public static final int CONST_INT = 1024;
-    public static int aaa = 16;
-    public static int bbb = 17;
-    private final String constStr = "this_is_a_long literal string";
     private long this_is_a_long;
     private double this_is_a_double;
     private int this_is_a_int;

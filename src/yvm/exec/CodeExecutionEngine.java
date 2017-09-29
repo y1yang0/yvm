@@ -75,7 +75,7 @@ public final class CodeExecutionEngine {
             allocateStackFrame(maxLocals, maxStack);
             Opcode op = new Opcode(clinit.get3Placeholder());
             op.codes2Opcodes();
-            //op.debug(metaClassRef.qualifiedClassName + " clinit");
+            op.debug(metaClassRef.qualifiedClassName + " clinit");
             //codeExecution(op,exceptionTable,isSynchronized);
 
         } catch (ClassInitializingException ignored) {
@@ -287,6 +287,8 @@ public final class CodeExecutionEngine {
 
                     Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
                     //todo:check if the objectRef is corresponding to method return type;[enhance]
+
+                    dg.clear();
                     stack.popFrame();
                     stack.currentFrame().pushOperand(objectRef);
                     return;
@@ -552,10 +554,17 @@ public final class CodeExecutionEngine {
                 }
                 break;
 
+                //Return double from method
                 case Mnemonic.dreturn:{
-                    //todo:dreturn
+                    double value = dg.popDouble();
+
+                    Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
+                    //todo:check if the objectRef is corresponding to method return type;[enhance]
+                    dg.clear();
+                    stack.popFrame();
+                    stack.currentFrame().pushOperand(YObject.derivedFrom(value));
+                    return;
                 }
-                break;
 
                 case Mnemonic.dstore:{
                     double value = dg.popDouble();
@@ -839,10 +848,17 @@ public final class CodeExecutionEngine {
                 }
                 break;
 
+                //Return float from method
                 case Mnemonic.freturn:{
-                    //todo:freturn
+                    float value = dg.popFloat();
+
+                    Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
+                    //todo:check if the objectRef is corresponding to method return type;[enhance]
+                    dg.clear();
+                    stack.popFrame();
+                    stack.currentFrame().pushOperand(YObject.derivedFrom(value));
+                    return;
                 }
-                break;
 
                 case Mnemonic.fstore:{
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
@@ -1405,9 +1421,15 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.ireturn: {
-                    //todo:ireturn
+                    int value = dg.popInt();
+
+                    Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
+                    //todo:check if the objectRef is corresponding to method return type;[enhance]
+                    dg.clear();
+                    stack.popFrame();
+                    stack.currentFrame().pushOperand(YObject.derivedFrom(value));
+                    return;
                 }
-                break;
 
                 case Mnemonic.ishl: {
                     int value2 = dg.popInt();
@@ -1483,7 +1505,7 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.jsr:
                 case Mnemonic.jsr_w: {
-                    throw new VMExecutionException("unsupport the JSR opcode, you may change a posterior compiler " +
+                    throw new VMExecutionException("unsupport the <jsr/jsr_w> opcode, you may change a posterior compiler " +
                             "version of Java SE 6 ");
                 }
 
@@ -1687,9 +1709,15 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.lreturn: {
-                    //todo:lreturn
+                    long value = dg.popLong();
+
+                    Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
+                    //todo:check if the objectRef is corresponding to method return type;[enhance]
+                    dg.clear();
+                    stack.popFrame();
+                    stack.currentFrame().pushOperand(YObject.derivedFrom(value));
+                    return;
                 }
-                break;
 
                 case Mnemonic.lshl: {
                     long value2 = dg.popLong();
@@ -1769,7 +1797,43 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.multianewarray: {
-                    //todo:multianewarray
+                    int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                    int dimensions = (int) ((Operand) cd.get3Placeholder()).get2();
+                    int index = (indexByte1 << 8) |
+                            indexByte2;
+
+                    String[] classes = (String[]) metaClassRef.constantPool.getClassNames().toArray();
+                    if (!methodScopeRef.existClass(classes[index], classLoader.getClass())) {
+                        YClassLoader loader = new YClassLoader();
+                        loader.associateThread(thread);
+                        try {
+                            Tuple6 bundle = loader.loadClass(classes[index]);
+                            MetaClass meta = loader.linkClass(bundle);
+                            thread.runtimeVM().methodScope().addMetaClass(meta);
+                            loader.loadInheritanceChain(meta.superClassName);
+                            loader.initializeClass(meta);
+                        } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
+                            throw new VMExecutionException("can not load class" + Peel.peelDescriptor(classes[index])
+                                    + " while executing anewarray opcode");
+                        }
+                    }
+
+                    YArray array = new YArray(dimensions);
+                    for (int t = 0; t < array.getLength(); t++) {
+                        YArray subArray = new YArray(dg.popInt());
+                        for (int m = 0; m < subArray.getLength(); m++) {
+                            YObject object = new YObject(methodScopeRef.getMetaClass(classes[index], classLoader.getClass()));
+                            //object.initiateFields(classLoader);
+                            subArray.set(m, object);
+                        }
+                        array.set(t, subArray);
+                    }
+
+                    //add to runtime virtual machine heap section
+                    thread.runtimeVM().heap().addToArrayArea(array);
+                    //push reference to operand stack
+                    dg.pushArray(array);
                 }
                 break;
 
@@ -1885,14 +1949,17 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.ret: {
-                    //todo:ret
+                    throw new VMExecutionException("unsupport the <ret> opcode, you may change a posterior compiler " +
+                            "version of Java SE 6 ");
                 }
-                break;
 
                 case Mnemonic.return$: {
-                    //todo:return
+                    Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
+                    //todo:check if the objectRef is corresponding to method return type;[enhance]
+                    dg.clear();
+                    stack.popFrame();
+                    return;
                 }
-                break;
 
                 case Mnemonic.saload: {
                     int index = dg.popInt();
@@ -1900,7 +1967,7 @@ public final class CodeExecutionEngine {
 
                     Continuation.ifNullThrowNullptrException(array);
 
-                    short value = array.get(index).toShort();
+                    short value = (short) array.get(index).toInteger();
                     dg.push(YObject.derivedFrom(value));
                 }
                 break;
