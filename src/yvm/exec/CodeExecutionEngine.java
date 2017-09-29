@@ -22,7 +22,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static java.util.Objects.isNull;
-import static yvm.auxil.Predicate.*;
+import static yvm.auxil.Predicate.strNotEqual;
 
 public final class CodeExecutionEngine {
     private YThread thread;
@@ -176,57 +176,15 @@ public final class CodeExecutionEngine {
                     YArray arrayRef = dg.popArray();
 
                     Continuation.ifNullThrowNullptrException(arrayRef);
+                    Continuation.ifNotInThrowOutOfRangeException(arrayRef, index);
 
-                    if (!inRange(arrayRef, index)) {
-                        throw new ArrayIndexOutOfBoundsException("array index " + index + " out of bounds");
-                    }
                     dg.push(arrayRef.get(index));
                 }
                 break;
 
                 //Store into reference array
                 case Mnemonic.aastore: {
-                    Object value = dg.pop();
-                    int index = dg.popInt();
-                    YArray arrayRef = dg.popArray();
-
-                    if (isClass(value.getClass())) {
-                        if (!isSameClass(arrayRef.getClass().getComponentType(), value.getClass())
-                                && value.getClass().isInstance(arrayRef.getClass().getComponentType())) {
-                            throw new ArrayStoreException("incorrect value type to be stored into an array");
-                        }
-                    }
-                    if (isInterface(value.getClass())) {
-                        if (isClass(arrayRef.getClass().getComponentType())) {
-                            if (!isSameClass(arrayRef.getClass().getComponentType(), Object.class)) {
-                                throw new ArrayStoreException("incorrect value type to be stored into an array");
-                            }
-                        } else if (isInterface(arrayRef.getClass().getComponentType())) {
-                            if (!value.getClass().isInstance(arrayRef.getClass().getComponentType())) {
-                                throw new ArrayStoreException("incorrect value type to be stored into an array");
-                            }
-                        }
-                    } else if (isArray(value.getClass())) {
-                        if (isClass(arrayRef.getClass().getComponentType())) {
-                            if (!isSameClass(arrayRef.getClass().getComponentType(), Object.class)) {
-                                throw new ArrayStoreException("incorrect value type to be stored into an array");
-                            }
-                        } else if (isArray(arrayRef.getClass().getComponentType())) {
-                            if (!isSameClass(
-                                    arrayRef.getClass().getComponentType().getComponentType(),
-                                    value.getClass().getComponentType()
-                            )) {
-                                throw new ArrayStoreException("incorrect value type to be stored into an array");
-                            }
-                        } else if (isInterface(arrayRef.getClass().getComponentType())) {
-                            if (!value.getClass().isInstance(arrayRef.getClass().getComponentType())) {
-                                throw new ArrayStoreException("incorrect value type to be stored into an array");
-                            }
-                        }
-                    }
-
-
-                    arrayRef.set(index, value);
+                    //todo:aastore
                 }
                 break;
 
@@ -239,35 +197,35 @@ public final class CodeExecutionEngine {
                 //Load reference from local variable
                 case Mnemonic.aload: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    Object objectRef = dg.getLocalVar(index);
+                    YObject objectRef = dg.getLocalVar(index);
                     dg.push(objectRef);
                 }
                 break;
 
                 //Load reference from local variable with index 0
                 case Mnemonic.aload_0: {
-                    Object objectRef = dg.getLocalVar(0);
+                    YObject objectRef = dg.getLocalVar(0);
                     dg.push(objectRef);
                 }
                 break;
 
                 //Load reference from local variable with index 1
                 case Mnemonic.aload_1: {
-                    Object objectRef = dg.getLocalVar(1);
+                    YObject objectRef = dg.getLocalVar(1);
                     dg.push(objectRef);
                 }
                 break;
 
                 //Load reference from local variable with index 2
                 case Mnemonic.aload_2: {
-                    Object objectRef = dg.getLocalVar(2);
+                    YObject objectRef = dg.getLocalVar(2);
                     dg.push(objectRef);
                 }
                 break;
 
                 //Load reference from local variable with index 3
                 case Mnemonic.aload_3: {
-                    Object objectRef = dg.getLocalVar(3);
+                    YObject objectRef = dg.getLocalVar(3);
                     dg.push(objectRef);
                 }
                 break;
@@ -280,7 +238,7 @@ public final class CodeExecutionEngine {
 
                 //Return reference from method
                 case Mnemonic.areturn: {
-                    Object objectRef = dg.pop();
+                    YObject objectRef = dg.pop();
 
                     Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
                     //todo:check if the objectRef is corresponding to method return type;[enhance]
@@ -294,14 +252,14 @@ public final class CodeExecutionEngine {
                 case Mnemonic.arraylength: {
                     YArray arrayRef = dg.popArray();
                     Continuation.ifNullThrowNullptrException(arrayRef);
-                    dg.push(arrayRef.getLength());
+                    dg.push(YObject.derivedFrom(arrayRef.getLength()));
                 }
                 break;
 
                 //Store reference into local variable
                 case Mnemonic.astore: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    Object top = dg.pop();
+                    YObject top = dg.pop();
 
                     dg.setLocalVar(index, top);
                 }
@@ -310,7 +268,7 @@ public final class CodeExecutionEngine {
                 //Store reference into local variable
                 case Mnemonic.astore_0: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    Object top = dg.pop();
+                    YObject top = dg.pop();
 
                     dg.setLocalVar(0, top);
                 }
@@ -319,7 +277,7 @@ public final class CodeExecutionEngine {
                 //Store reference into local variable
                 case Mnemonic.astore_1: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    Object top = dg.pop();
+                    YObject top = dg.pop();
 
                     dg.setLocalVar(1, top);
                 }
@@ -328,7 +286,7 @@ public final class CodeExecutionEngine {
                 //Store reference into local variable
                 case Mnemonic.astore_2: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    YObject top = (YObject) dg.pop();
+                    YObject top = dg.pop();
 
                     dg.setLocalVar(2, top);
                 }
@@ -337,20 +295,20 @@ public final class CodeExecutionEngine {
                 //Store reference into local variable
                 case Mnemonic.astore_3: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    YObject top = (YObject) dg.pop();
+                    YObject top = dg.pop();
 
                     dg.setLocalVar(3, top);
                 }
                 break;
 
                 case Mnemonic.athrow: {
-                    YObject object = (YObject) dg.pop();
+                    YObject object = dg.pop();
 
                     Continuation.ifNullThrowNullptrException(object);
 
                     class ThrowRoutine {
                         private int handleThrow() {
-                            int handlePC = etDg.findException(programCount, object.getMetaReference().qualifiedClassName);
+                            int handlePC = etDg.findException(programCount, object.getClassName());
                             if (handlePC != -1) {
                                 Tuple3 newOp = opcodes.get(handlePC);
                                 int currentI = opcodes.indexOf(newOp);
@@ -393,12 +351,13 @@ public final class CodeExecutionEngine {
                     int value = dg.popInt();
                     int index = dg.popInt();
                     YArray array = dg.popArray();
-                    array.set(index, value);
+                    array.set(index, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.bipush: {
-                    dg.push(((Operand) cd.get3Placeholder()).get0());
+                    int x = (int) ((Operand) cd.get3Placeholder()).get0();
+                    dg.push(YObject.derivedFrom(x));
                 }
                 break;
 
@@ -413,7 +372,7 @@ public final class CodeExecutionEngine {
                     int value = dg.popInt();
                     int index = dg.popInt();
                     YArray array = dg.popArray();
-                    array.set(index, value);
+                    array.set(index, YObject.derivedFrom(value));
                 }
                 break;
 
@@ -426,26 +385,26 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.d2f: {
                     double value = dg.popDouble();
-                    dg.push((float) value);
+                    dg.push(YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.d2i: {
                     double value = dg.popDouble();
-                    dg.push((int) value);
+                    dg.push(YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.d2l: {
                     double value = dg.popDouble();
-                    dg.push((long) value);
+                    dg.push(YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.dadd: {
                     double value2 = dg.popDouble();
                     double value1 = dg.popDouble();
-                    dg.push(value1 + value2);
+                    dg.push(YObject.derivedFrom(value1 + value2));
                 }
                 break;
 
@@ -460,7 +419,7 @@ public final class CodeExecutionEngine {
                     double value = dg.popDouble();
                     int index = dg.popInt();
                     YArray array = dg.popArray();
-                    array.set(index, value);
+                    array.set(index, YObject.derivedFrom(value));
                 }
                 break;
 
@@ -471,79 +430,79 @@ public final class CodeExecutionEngine {
                     float value1$ = (float) value1;
                     float value2$ = (float) value2;
                     if (value1$ > value2$) {
-                        dg.push(0);
+                        dg.push(YObject.derivedFrom(1));
                     } else if (value1$ < value2$) {
-                        dg.push(-1);
+                        dg.push(YObject.derivedFrom(-1));
                     } else if ((Math.abs(value1$ - value2$) > 0)) {
-                        dg.push(0);
+                        dg.push(YObject.derivedFrom(0));
                     }
                 }
                 break;
 
                 case Mnemonic.dconst_0: {
-                    dg.push(0.0);
+                    dg.push(YObject.derivedFrom(0.0D));
                 }
                 break;
 
                 case Mnemonic.dconst_1: {
-                    dg.push(1.0);
+                    dg.push(YObject.derivedFrom(1.0D));
                 }
                 break;
 
                 case Mnemonic.ddiv: {
                     double value2 = dg.popDouble();
                     double value1 = dg.popDouble();
-                    dg.push(value1 / value2);
+                    dg.push(YObject.derivedFrom(value1 / value2));
                 }
                 break;
 
                 case Mnemonic.dload: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    double value = (double) dg.getLocalVar(index);
-                    dg.push(value);
+                    double value = dg.getLocalVar(index).toDouble();
+                    dg.push(YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.dload_0: {
-                    double value = (double) dg.getLocalVar(0);
-                    dg.push(value);
+                    double value = dg.getLocalVar(0).toDouble();
+                    dg.push(YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.dload_1: {
-                    double value = (double) dg.getLocalVar(1);
-                    dg.push(value);
+                    double value = dg.getLocalVar(1).toDouble();
+                    dg.push(YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.dload_2: {
-                    double value = (double) dg.getLocalVar(2);
-                    dg.push(value);
+                    double value = dg.getLocalVar(2).toDouble();
+                    dg.push(YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.dload_3: {
-                    double value = (double) dg.getLocalVar(3);
-                    dg.push(value);
+                    double value = dg.getLocalVar(3).toDouble();
+                    dg.push(YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.dmul: {
                     double value2 = dg.popDouble();
                     double value1 = dg.popDouble();
-                    dg.push(value1 * value2);
+                    dg.push(YObject.derivedFrom(value1 * value2));
                 }
 
                 case Mnemonic.dneg:{
                     double value = dg.popDouble();
-                    dg.push(-value);
+                    dg.push(YObject.derivedFrom(-value));
                 }
                 break;
 
                 case Mnemonic.drem:{
                     double value2 = dg.popDouble();
                     double value1 = dg.popDouble();
-                    dg.push(value1 % value2);
+                    dg.push(YObject.derivedFrom(value1 % value2));
                 }
                 break;
 
@@ -555,51 +514,51 @@ public final class CodeExecutionEngine {
                 case Mnemonic.dstore:{
                     double value = dg.popDouble();
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    dg.setLocalVar(index,value);
+                    dg.setLocalVar(index, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.dstore_0:{
                     double value = dg.popDouble();
-                    dg.setLocalVar(0,value);
+                    dg.setLocalVar(0, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.dstore_1:{
                     double value = dg.popDouble();
-                    dg.setLocalVar(1,value);
+                    dg.setLocalVar(1, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.dstore_2:{
                     double value = dg.popDouble();
-                    dg.setLocalVar(2,value);
+                    dg.setLocalVar(2, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.dstore_3:{
                     double value = dg.popDouble();
-                    dg.setLocalVar(3,value);
+                    dg.setLocalVar(3, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.dsub:{
                     double value2 = dg.popDouble();
                     double value1 = dg.popDouble();
-                    dg.push(value1 - value2);
+                    dg.push(YObject.derivedFrom(value1 - value2));
                 }
                 break;
 
                 case Mnemonic.dup:{
-                    Object value = dg.pop();
+                    YObject value = dg.pop();
                     dg.push(value);
                     dg.push(value);
                 }
                 break;
 
                 case Mnemonic.dup_x1:{
-                    Object value1 = dg.pop();
-                    Object value2 = dg.pop();
+                    YObject value1 = dg.pop();
+                    YObject value2 = dg.pop();
                     dg.push(value1);
                     dg.push(value2);
                     dg.push(value1);
@@ -607,8 +566,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.dup_x2:{
-                    Object value1 = dg.pop();
-                    Object value2 = dg.pop();
+                    YObject value1 = dg.pop();
+                    YObject value2 = dg.pop();
                     if (Predicate.isCategory2ComputationalType(value2)) {
                         //category 2 computational type
                         dg.push(value1);
@@ -616,7 +575,7 @@ public final class CodeExecutionEngine {
                         dg.push(value1);
                     }else{
                         //category 1 computational type
-                        Object value3 = dg.pop();
+                        YObject value3 = dg.pop();
                         dg.push(value1);
                         dg.push(value3);
                         dg.push(value2);
@@ -626,14 +585,14 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.dup2: {
-                    Object value =  dg.pop();
+                    YObject value = dg.pop();
                     if (Predicate.isCategory2ComputationalType(value)) {
                         //category 2 computational type
                         dg.push(value);
                         dg.push(value);
                     }else{
                         //category 1 computational type
-                        Object value2 =  dg.pop();
+                        YObject value2 = dg.pop();
                         dg.push(value2);
                         dg.push(value);
                         dg.push(value2);
@@ -643,17 +602,17 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.dup2_x1:{
-                    Object value1=  dg.pop();
+                    YObject value1 = dg.pop();
                     if (Predicate.isCategory2ComputationalType(value1)) {
                         //category 2 computational type
-                        Object value2 = dg.pop();
+                        YObject value2 = dg.pop();
                         dg.push(value1);
                         dg.push(value2);
                         dg.push(value1);
                     }else{
                         //category 1 computational type
-                        Object value2 =  dg.pop();
-                        Object value3 =  dg.pop();
+                        YObject value2 = dg.pop();
+                        YObject value3 = dg.pop();
                         dg.push(value2);
                         dg.push(value1);
                         dg.push(value3);
@@ -664,8 +623,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.dup2_x2:{
-                    Object value1=  dg.pop();
-                    Object value2=  dg.pop();
+                    YObject value1 = dg.pop();
+                    YObject value2 = dg.pop();
                     //Form 4
                     if (Predicate.isCategory2ComputationalType(value1) &&
                             Predicate.isCategory2ComputationalType(value2)) {
@@ -673,7 +632,7 @@ public final class CodeExecutionEngine {
                         dg.push(value2);
                         dg.push(value1);
                     }else{
-                        Object value3 = dg.pop();
+                        YObject value3 = dg.pop();
                         //Form 3
                         if (Predicate.isCategory1ComputationalType(value1) &&
                                 Predicate.isCategory1ComputationalType(value2) &&
@@ -694,7 +653,7 @@ public final class CodeExecutionEngine {
                             dg.push(value1);
                         }
                         else{
-                            Object value4 = dg.pop();
+                            YObject value4 = dg.pop();
                             //Form 1
                             if (Predicate.isCategory2ComputationalType(value1) &&
                                     Predicate.isCategory2ComputationalType(value2) &&
@@ -714,26 +673,26 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.f2d:{
                     float value = dg.popFloat();
-                    dg.push((double)value);
+                    dg.push(YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.f2i:{
                     float value = dg.popFloat();
-                    dg.push((int)value);
+                    dg.push(YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.f2l:{
                     float value = dg.popFloat();
-                    dg.push((long)value);
+                    dg.push(YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.fadd:{
                     float value2 = dg.popFloat();
                     float value1 = dg.popFloat();
-                    dg.push(value1 + value2);
+                    dg.push(YObject.derivedFrom(value1 + value2));
                 }
                 break;
 
@@ -745,10 +704,10 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.fastore:{
-                    float  value = (float)dg.pop();
+                    float value = dg.popFloat();
                     int index = dg.popInt();
                     YArray array = dg.popArray();
-                    array.set(index,value);
+                    array.set(index, YObject.derivedFrom(value));
                 }
                 break;
 
@@ -757,34 +716,34 @@ public final class CodeExecutionEngine {
                     float value2 = dg.popFloat();
                     float value1  = dg.popFloat();
                     if(value1 > value2){
-                        dg.push(1);
+                        dg.push(YObject.derivedFrom(1));
                     }else if(value1 < value2){
-                        dg.push(-1);
+                        dg.push(YObject.derivedFrom(-1));
                     }else if(Math.abs(value1 - value2) > 0){
-                        dg.push(0);
+                        dg.push(YObject.derivedFrom(0));
                     }
                 }
                 break;
 
                 case Mnemonic.fconst_0:{
-                    dg.push(0.0);
+                    dg.push(YObject.derivedFrom(0.0D));
                 }
                 break;
 
                 case Mnemonic.fconst_1:{
-                    dg.push(1.0);
+                    dg.push(YObject.derivedFrom(1.0D));
                 }
                 break;
 
                 case Mnemonic.fconst_2:{
-                    dg.push(2.0);
+                    dg.push(YObject.derivedFrom(2.0D));
                 }
                 break;
 
                 case Mnemonic.fdiv:{
                     float value2 = dg.popFloat();
                     float value1  = dg.popFloat();
-                    dg.push(value1/value2);
+                    dg.push(YObject.derivedFrom(value1 / value2));
                 }
                 break;
 
@@ -817,20 +776,20 @@ public final class CodeExecutionEngine {
                 case Mnemonic.fmul:{
                     float value2 = dg.popFloat();
                     float value1 = dg.popFloat();
-                    dg.push(value1*value2);
+                    dg.push(YObject.derivedFrom(value1 * value2));
                 }
                 break;
 
                 case Mnemonic.fneg:{
                     float value = dg.popFloat();
-                    dg.push(-value);
+                    dg.push(YObject.derivedFrom(-value));
                 }
                 break;
 
                 case Mnemonic.frem:{
                     float value2 = dg.popFloat();
                     float value1 = dg.popFloat();
-                    dg.push(value1-(value1/value2));
+                    dg.push(YObject.derivedFrom(value1 - (value1 / value2)));
                 }
                 break;
 
@@ -842,38 +801,38 @@ public final class CodeExecutionEngine {
                 case Mnemonic.fstore:{
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
                     float value = dg.popFloat();
-                    dg.setLocalVar(index, value);
+                    dg.setLocalVar(index, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.fstore_0: {
                     float value = dg.popFloat();
-                    dg.setLocalVar(0, value);
+                    dg.setLocalVar(0, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.fstore_1: {
                     float value = dg.popFloat();
-                    dg.setLocalVar(1, value);
+                    dg.setLocalVar(1, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.fstore_2: {
                     float value = dg.popFloat();
-                    dg.setLocalVar(2, value);
+                    dg.setLocalVar(2, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.fstore_3: {
                     float value = dg.popFloat();
-                    dg.setLocalVar(3, value);
+                    dg.setLocalVar(3, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.fsub: {
                     float value2 = dg.popFloat();
                     float value1 = dg.popFloat();
-                    dg.push(value1 - value2);
+                    dg.push(YObject.derivedFrom(value1 - value2));
                 }
                 break;
 
@@ -924,49 +883,49 @@ public final class CodeExecutionEngine {
                 case Mnemonic.i2b: {
                     int value = dg.popInt();
                     byte value$ = (byte) value;
-                    dg.push((int) value$);
+                    dg.push(YObject.derivedFrom(value$));
                 }
                 break;
 
                 case Mnemonic.i2c: {
                     int value = dg.popInt();
                     char value$ = (char) value;
-                    dg.push((int) value$);
+                    dg.push(YObject.derivedFrom(value$));
                 }
                 break;
 
                 case Mnemonic.i2d: {
                     int value = dg.popInt();
                     double value$ = (double) value;
-                    dg.push(value$);
+                    dg.push(YObject.derivedFrom(value$));
                 }
                 break;
 
                 case Mnemonic.i2f: {
                     int value = dg.popInt();
                     float value$ = (float) value;
-                    dg.push(value$);
+                    dg.push(YObject.derivedFrom(value$));
                 }
                 break;
 
                 case Mnemonic.i2l: {
                     int value = dg.popInt();
                     long value$ = (long) value;
-                    dg.push(value$);
+                    dg.push(YObject.derivedFrom(value$));
                 }
                 break;
 
                 case Mnemonic.i2s: {
                     int value = dg.popInt();
                     short value$ = (short) value;
-                    dg.push((int) value$);
+                    dg.push(YObject.derivedFrom(value$));
                 }
                 break;
 
                 case Mnemonic.iadd: {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
-                    dg.push(value1 + value2);
+                    dg.push(YObject.derivedFrom(value1 + value2));
                 }
                 break;
 
@@ -980,7 +939,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.iand: {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
-                    dg.push(value1 & value2);
+                    dg.push(YObject.derivedFrom(value1 & value2));
                 }
                 break;
 
@@ -988,42 +947,42 @@ public final class CodeExecutionEngine {
                     int value = dg.popInt();
                     int index = dg.popInt();
                     YArray array = dg.popArray();
-                    array.set(index, value);
+                    array.set(index, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.iconst_m1: {
-                    dg.push(-1);
+                    dg.push(YObject.derivedFrom(-1));
                 }
                 break;
 
                 case Mnemonic.iconst_0: {
-                    dg.push(0);
+                    dg.push(YObject.derivedFrom(0));
                 }
                 break;
 
                 case Mnemonic.iconst_1: {
-                    dg.push(1);
+                    dg.push(YObject.derivedFrom(1));
                 }
                 break;
 
                 case Mnemonic.iconst_2: {
-                    dg.push(2);
+                    dg.push(YObject.derivedFrom(2));
                 }
                 break;
 
                 case Mnemonic.iconst_3: {
-                    dg.push(3);
+                    dg.push(YObject.derivedFrom(3));
                 }
                 break;
 
                 case Mnemonic.iconst_4: {
-                    dg.push(4);
+                    dg.push(YObject.derivedFrom(4));
                 }
                 break;
 
                 case Mnemonic.iconst_5: {
-                    dg.push(5);
+                    dg.push(YObject.derivedFrom(5));
                 }
                 break;
 
@@ -1033,13 +992,13 @@ public final class CodeExecutionEngine {
                     if (value1 == 0) {
                         throw new ArithmeticException("the division is 0");
                     }
-                    dg.push(value1 / value2);
+                    dg.push(YObject.derivedFrom(value1 / value2));
                 }
                 break;
 
                 case Mnemonic.if_acmpeq: {
-                    YObject value2 = (YObject) dg.pop();
-                    YObject value1 = (YObject) dg.pop();
+                    YObject value2 = dg.pop();
+                    YObject value1 = dg.pop();
                     if (value1 == value2) {
                         int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
                         int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
@@ -1055,8 +1014,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.if_acmpne: {
-                    YObject value2 = (YObject) dg.pop();
-                    YObject value1 = (YObject) dg.pop();
+                    YObject value2 = dg.pop();
+                    YObject value1 = dg.pop();
                     if (value1 != value2) {
                         int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
                         int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
@@ -1270,7 +1229,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.ifnonnull: {
-                    YObject value = (YObject) dg.pop();
+                    YObject value = dg.pop();
                     if (value != null) {
                         int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
                         int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
@@ -1286,7 +1245,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.ifnull: {
-                    YObject value = (YObject) dg.pop();
+                    YObject value = dg.pop();
                     if (value == null) {
                         int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
                         int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
@@ -1304,51 +1263,51 @@ public final class CodeExecutionEngine {
                 case Mnemonic.iinc: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
                     int const$ = (int) ((Operand) cd.get3Placeholder()).get1();
-                    dg.setLocalVar(index, (int) dg.getLocalVar(index) + const$);
+                    dg.setLocalVar(index, YObject.derivedFrom(dg.getLocalVar(index).toInteger() + const$));
                 }
                 break;
 
                 case Mnemonic.iload: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    int value = (int) dg.getLocalVar(index);
-                    dg.push(value);
+                    int value = dg.getLocalVar(index).toInteger();
+                    dg.push(YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.iload_0: {
-                    int value = (int) dg.getLocalVar(0);
-                    dg.push(value);
+                    int value = dg.getLocalVar(0).toInteger();
+                    dg.push(YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.iload_1: {
-                    int value = (int) dg.getLocalVar(1);
-                    dg.push(value);
+                    int value = dg.getLocalVar(1).toInteger();
+                    dg.push(YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.iload_2: {
-                    int value = (int) dg.getLocalVar(2);
-                    dg.push(value);
+                    int value = dg.getLocalVar(2).toInteger();
+                    dg.push(YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.iload_3: {
-                    int value = (int) dg.getLocalVar(3);
-                    dg.push(value);
+                    int value = dg.getLocalVar(3).toInteger();
+                    dg.push(YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.imul: {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
-                    dg.push(value1 * value2);
+                    dg.push(YObject.derivedFrom(value1 * value2));
                 }
                 break;
 
                 case Mnemonic.ineg: {
                     int value = dg.popInt();
-                    dg.push((~value) + 1);
+                    dg.push(YObject.derivedFrom((~value) + 1));
                 }
                 break;
 
@@ -1385,7 +1344,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.ior: {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
-                    dg.push(value1 | value2);
+                    dg.push(YObject.derivedFrom(value1 | value2));
                 }
                 break;
 
@@ -1395,7 +1354,7 @@ public final class CodeExecutionEngine {
                     if (value2 == 0) {
                         throw new ArithmeticException("the division is 0");
                     }
-                    dg.push(value1 - (value1 / value2));
+                    dg.push(YObject.derivedFrom(value1 - (value1 / value2)));
                 }
                 break;
 
@@ -1407,52 +1366,52 @@ public final class CodeExecutionEngine {
                 case Mnemonic.ishl: {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
-                    dg.push(value1 << (value2 & 0x1F));
+                    dg.push(YObject.derivedFrom(value1 << (value2 & 0x1F)));
                 }
                 break;
 
                 case Mnemonic.ishr: {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
-                    dg.push(value1 >> (value2 & 0x1F));
+                    dg.push(YObject.derivedFrom(value1 >> (value2 & 0x1F)));
                 }
                 break;
 
                 case Mnemonic.istore: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
                     int value = dg.popInt();
-                    dg.setLocalVar(index, value);
+                    dg.setLocalVar(index, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.istore_0: {
                     int value = dg.popInt();
-                    dg.setLocalVar(0, value);
+                    dg.setLocalVar(0, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.istore_1: {
                     int value = dg.popInt();
-                    dg.setLocalVar(1, value);
+                    dg.setLocalVar(1, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.istore_2: {
                     int value = dg.popInt();
-                    dg.setLocalVar(2, value);
+                    dg.setLocalVar(2, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.istore_3: {
                     int value = dg.popInt();
-                    dg.setLocalVar(3, value);
+                    dg.setLocalVar(3, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.isub: {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
-                    dg.push(value1 - value2);
+                    dg.push(YObject.derivedFrom(value1 - value2));
                 }
                 break;
 
@@ -1460,9 +1419,10 @@ public final class CodeExecutionEngine {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
                     if (value1 > 0) {
-                        dg.push(value1 >> (value2 & 0x1F));
+
+                        dg.push(YObject.derivedFrom(value1 >> (value2 & 0x1F)));
                     } else if (value1 < 0) {
-                        dg.push(value1 >> (value2 & 0x1F) + (1 << ~(value2 & 0x1F)));
+                        dg.push(YObject.derivedFrom(value1 >> (value2 & 0x1F) + (1 << ~(value2 & 0x1F))));
                     }
                 }
                 break;
@@ -1470,7 +1430,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.ixor: {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
-                    dg.push(value1 ^ value2);
+                    dg.push(YObject.derivedFrom(value1 ^ value2));
 
                 }
                 break;
@@ -1483,26 +1443,26 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.l2d: {
                     long value = dg.popLong();
-                    dg.push((double) value);
+                    dg.push(YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.l2f: {
                     long value = dg.popLong();
-                    dg.push((float) value);
+                    dg.push(YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.l2i: {
                     long value = dg.popLong();
-                    dg.push((int) value);
+                    dg.push(YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.ladd: {
                     long value2 = dg.popLong();
                     long value1 = dg.popLong();
-                    dg.push(value1 + value2);
+                    dg.push(YObject.derivedFrom(value1 + value2));
                 }
                 break;
 
@@ -1516,7 +1476,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.land: {
                     long value2 = dg.popLong();
                     long value1 = dg.popLong();
-                    dg.push(value1 & value2);
+                    dg.push(YObject.derivedFrom(value1 & value2));
                 }
                 break;
 
@@ -1532,22 +1492,22 @@ public final class CodeExecutionEngine {
                     long value2 = dg.popLong();
                     long value1 = dg.popLong();
                     if (value1 > value2) {
-                        dg.push(1);
+                        dg.push(YObject.derivedFrom(1));
                     } else if (value1 == value2) {
-                        dg.push(0);
+                        dg.push(YObject.derivedFrom(0));
                     } else if (value1 < value2) {
-                        dg.push(-1);
+                        dg.push(YObject.derivedFrom(-1));
                     }
                 }
                 break;
 
                 case Mnemonic.lconst_0: {
-                    dg.push(0L);
+                    dg.push(YObject.derivedFrom(0L));
                 }
                 break;
 
                 case Mnemonic.lconst_1: {
-                    dg.push(1L);
+                    dg.push(YObject.derivedFrom(1L));
                 }
                 break;
 
@@ -1558,14 +1518,13 @@ public final class CodeExecutionEngine {
                     MetaClassConstantPool poolRef = metaClassRef.constantPool;
 
                     if (!Predicate.isNull(poolRef.findInFloat(index))) {
-                        dg.push(poolRef.findInFloat(index));
+                        dg.push(YObject.derivedFrom(poolRef.findInFloat(index)));
                     } else if (!Predicate.isNull(poolRef.findInInteger(index))) {
-                        dg.push(poolRef.findInInteger(index));
+                        dg.push(YObject.derivedFrom(poolRef.findInInteger(index)));
                     } else if (!Predicate.isNull(poolRef.findInString(index))) {
-                        dg.push(poolRef.findInString(index));
+                        dg.push(YObject.derivedFrom(poolRef.findInString(index)));
                     } else if (!Predicate.isNull(poolRef.findInClass(index))) {
-                        Class c = methodScopeRef.getMetaClass(poolRef.findInClass(index), classLoader.getClass()).classLoader;
-                        dg.push(c);
+
                     } else {
                         //todo:if not find class then load it
                         //todo: support methodtype and methodhandle
@@ -1581,14 +1540,13 @@ public final class CodeExecutionEngine {
                     MetaClassConstantPool poolRef = metaClassRef.constantPool;
 
                     if (!Predicate.isNull(poolRef.findInFloat(index))) {
-                        dg.push(poolRef.findInFloat(index));
+                        dg.push(YObject.derivedFrom(poolRef.findInFloat(index)));
                     } else if (!Predicate.isNull(poolRef.findInInteger(index))) {
-                        dg.push(poolRef.findInInteger(index));
+                        dg.push(YObject.derivedFrom(poolRef.findInInteger(index)));
                     } else if (!Predicate.isNull(poolRef.findInString(index))) {
-                        dg.push(poolRef.findInString(index));
+                        dg.push(YObject.derivedFrom(poolRef.findInString(index)));
                     } else if (!Predicate.isNull(poolRef.findInClass(index))) {
-                        Class c = methodScopeRef.getMetaClass(poolRef.findInClass(index), classLoader.getClass()).classLoader;
-                        dg.push(c);
+
                     } else {
                         //todo:if not find class then load it
                         //todo: support methodtype and methodhandle
@@ -1604,9 +1562,9 @@ public final class CodeExecutionEngine {
                     MetaClassConstantPool poolRef = metaClassRef.constantPool;
 
                     if (!Predicate.isNull(poolRef.findInLong(index))) {
-                        dg.push(poolRef.findInLong(index));
+                        dg.push(YObject.derivedFrom(poolRef.findInLong(index)));
                     } else if (!Predicate.isNull(poolRef.findInDouble(index))) {
-                        dg.push(poolRef.findInDouble(index));
+                        dg.push(YObject.derivedFrom(poolRef.findInDouble(index)));
                     } else {
                         throw new VMExecutionException("ldc_2 has a invalid constant pool entry");
                     }
@@ -1616,7 +1574,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.ldiv: {
                     long value2 = dg.popLong();
                     long value1 = dg.popLong();
-                    dg.push(value1 / value2);
+                    dg.push(YObject.derivedFrom(value1 / value2));
                 }
                 break;
 
@@ -1649,13 +1607,13 @@ public final class CodeExecutionEngine {
                 case Mnemonic.lmul: {
                     long value2 = dg.popLong();
                     long value1 = dg.popLong();
-                    dg.push(value1 * value2);
+                    dg.push(YObject.derivedFrom(value1 * value2));
                 }
                 break;
 
                 case Mnemonic.lneg: {
                     long value = dg.popLong();
-                    dg.push(-value);
+                    dg.push(YObject.derivedFrom(-value));
                 }
                 break;
 
@@ -1667,7 +1625,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.lor: {
                     long value2 = dg.popLong();
                     long value1 = dg.popLong();
-                    dg.push(value1 | value2);
+                    dg.push(YObject.derivedFrom(value1 | value2));
                 }
                 break;
 
@@ -1677,7 +1635,8 @@ public final class CodeExecutionEngine {
                     if (value1 == 0) {
                         throw new ArithmeticException("the division is 0");
                     }
-                    dg.push(value1 - (value1 / value2) * value2);
+
+                    dg.push(YObject.derivedFrom(value1 - (value1 / value2) * value2));
                 }
                 break;
 
@@ -1689,66 +1648,67 @@ public final class CodeExecutionEngine {
                 case Mnemonic.lshl: {
                     long value2 = dg.popLong();
                     long value1 = dg.popLong();
-                    dg.push(value1 << (value2 & 0x3F));
+
+                    dg.push(YObject.derivedFrom(value1 << (value2 & 0x3F)));
                 }
                 break;
 
                 case Mnemonic.lshr: {
                     long value2 = dg.popLong();
                     long value1 = dg.popLong();
-                    dg.push(value1 >> (value2 & 0x3F));
+                    dg.push(YObject.derivedFrom(value1 >> (value2 & 0x3F)));
                 }
                 break;
 
                 case Mnemonic.lstore: {
                     int index = (int) ((Operand) cd.get3Placeholder()).get0();
                     long value = dg.popLong();
-                    dg.setLocalVar(index, value);
+                    dg.setLocalVar(index, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.lstore_0: {
                     long value = dg.popLong();
-                    dg.setLocalVar(0, value);
+                    dg.setLocalVar(0, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.lstore_1: {
                     long value = dg.popLong();
-                    dg.setLocalVar(1, value);
+                    dg.setLocalVar(1, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.lstore_2: {
                     long value = dg.popLong();
-                    dg.setLocalVar(2, value);
+                    dg.setLocalVar(2, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.lstore_3: {
                     long value = dg.popLong();
-                    dg.setLocalVar(3, value);
+                    dg.setLocalVar(3, YObject.derivedFrom(value));
                 }
                 break;
 
                 case Mnemonic.lsub: {
                     long value2 = dg.popLong();
                     long value1 = dg.popLong();
-                    dg.push(value1 - value2);
+                    dg.push(YObject.derivedFrom(value1 - value2));
                 }
                 break;
 
                 case Mnemonic.lushr: {
                     int value2 = dg.popInt();
                     long value1 = dg.popLong();
-                    dg.push((value1 >> (value2 & 0x3F)) + (2L << ~(value2 & 0x3F)));
+                    dg.push(YObject.derivedFrom((value1 >> (value2 & 0x3F)) + (2L << ~(value2 & 0x3F))));
                 }
                 break;
 
                 case Mnemonic.lxor: {
                     long value2 = dg.popLong();
                     long value1 = dg.popLong();
-                    dg.push(value1 ^ value2);
+                    dg.push(YObject.derivedFrom(value1 ^ value2));
                 }
                 break;
 
@@ -1790,12 +1750,12 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.pop2: {
-                    Object value = dg.peek();
+                    YObject value = dg.peek();
                     if (Predicate.isCategory2ComputationalType(value)) {
                         dg.pop();
                     } else {
-                        Object value1 = dg.pop();
-                        Object value2 = dg.peek();
+                        YObject value1 = dg.pop();
+                        YObject value2 = dg.peek();
                         if (Predicate.isCategory1ComputationalType(value2) &&
                                 Predicate.isCategory1ComputationalType(value1)) {
                             dg.pop();
@@ -1830,8 +1790,8 @@ public final class CodeExecutionEngine {
 
                     Continuation.ifNullThrowNullptrException(array);
 
-                    short v = (short) array.get(index);
-                    dg.push(v);
+                    short value = array.get(index).toShort();
+                    dg.push(YObject.derivedFrom(value));
                 }
                 break;
 
@@ -1842,7 +1802,7 @@ public final class CodeExecutionEngine {
 
                     Continuation.ifNullThrowNullptrException(array);
 
-                    array.set(index, (short) value);
+                    array.set(index, YObject.derivedFrom((short) value));
                 }
                 break;
 
@@ -1851,16 +1811,16 @@ public final class CodeExecutionEngine {
                     int byte2 = (int) ((Operand) cd.get3Placeholder()).get0();
                     short byte$ = (short) ((byte1 <<
                             8) | byte2);
-                    dg.push((int) byte$);
+                    dg.push(YObject.derivedFrom(byte$));
                 }
                 break;
 
                 case Mnemonic.swap: {
-                    Object value1 = dg.pop();
-                    Object value2 = dg.pop();
+                    YObject value1 = dg.pop();
+                    YObject value2 = dg.pop();
                     if (Predicate.isCategory1ComputationalType(value1) &&
                             Predicate.isCategory1ComputationalType(value2)) {
-                        Object temp = value1;
+                        YObject temp = value1;
                         value1 = value2;
                         value2 = temp;
                         dg.push(value1);

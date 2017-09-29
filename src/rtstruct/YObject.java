@@ -2,9 +2,6 @@ package rtstruct;
 
 import rtstruct.meta.MetaClass;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class YObject{
     private MetaClass metaClassReference;
     private Object[] fields;
@@ -20,6 +17,52 @@ public class YObject{
     public YObject(){
         fields = new Object[1];
         metaClassReference = null;
+    }
+
+    /***************************************************************
+     *  create a array type YObject. Note that the YObject object of
+     *  the array type just store components , the length of the
+     *  array is stored at YArray object.
+     *
+     ***************************************************************/
+
+    public YObject(int dimension) {
+        fields = new Object[dimension];
+        metaClassReference = null;
+    }
+
+    /***************************************************************
+     *  create a generic object
+     *
+     ***************************************************************/
+    public YObject(MetaClass metaClass) {
+        fields = null;
+        metaClassReference = metaClass;
+    }
+
+    @SuppressWarnings("unused")
+    public static YObject derivedFrom(int x) {
+        return new YObject().asInteger(x);
+    }
+
+    @SuppressWarnings("unused")
+    public static YObject derivedFrom(long x) {
+        return new YObject().asLong(x);
+    }
+
+    @SuppressWarnings("unused")
+    public static YObject derivedFrom(double x) {
+        return new YObject().asDouble(x);
+    }
+
+    @SuppressWarnings("unused")
+    public static YObject derivedFrom(float x) {
+        return new YObject().asFloat(x);
+    }
+
+    @SuppressWarnings("unused")
+    public static YObject derivedFrom(String x) {
+        return new YObject().asString(x);
     }
 
     @SuppressWarnings("unused")
@@ -47,6 +90,12 @@ public class YObject{
     }
 
     @SuppressWarnings("unused")
+    YObject asString(String x) {
+        fields[0] = x;
+        return this;
+    }
+
+    @SuppressWarnings("unused")
     public int toInteger(){
         return (int) fields[0];
     }
@@ -67,43 +116,19 @@ public class YObject{
     }
 
     @SuppressWarnings("unused")
-    public static YObject derivedFrom(int x){
-        return new YObject().asInteger(x);
+    public short toShort() {
+        return (short) fields[0];
     }
 
-    @SuppressWarnings("unused")
-    public static YObject derivedFrom(long x){
-        return new YObject().asLong(x);
-    }
-
-    @SuppressWarnings("unused")
-    public static YObject derivedFrom(double x){
-        return new YObject().asDouble(x);
-    }
-
-    @SuppressWarnings("unused")
-    public static YObject derivedFrom(float x){
-        return new YObject().asFloat(x);
-    }
-
-    /***************************************************************
-     *  create a array type YObject. Note that the YObject object of
-     *  the array type just store components , the length of the
-     *  array is stored at YArray object.
-     *
-     ***************************************************************/
-
-    public YObject(int dimension) {
-        fields =new Object[dimension];
-        metaClassReference = null;
-    }
-
-   protected void setArrayComponent(int index,Object value){
+    protected void setArrayComponent(int index, YObject value) {
         fields[index] = value;
    }
 
-    protected Object getArrayComponent(int index){
-        return fields[index];
+    protected YObject getArrayComponent(int index) {
+        return (YObject) fields[index];
     }
 
+    public String getClassName() {
+        return metaClassReference.qualifiedClassName;
+    }
 }

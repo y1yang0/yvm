@@ -12,11 +12,11 @@ public class YArray extends YObject{
         return length;
     }
 
-    public Object get(int index) {
+    public YObject get(int index) {
         return getArrayComponent(index);
     }
 
-    public void set(int index, Object value) {
+    public void set(int index, YObject value) {
         setArrayComponent(index,value);
     }
 }
