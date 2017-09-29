@@ -1,4 +1,4 @@
-# YVM ![](public/old.png)
+# ![](https://github.com/racaljk/yvm/blob/master/public/older.png) YVM
 用Java HotSpot VM(Server)开发的Java VM,一个小小的自举,目标是完全支持JDK1.8.0,
 目前对效率没什么追求,所以代码执行引擎采用解释执行.
 
