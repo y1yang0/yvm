@@ -370,11 +370,14 @@ public final class CodeExecutionEngine {
                                 dg.push(object);
                                 handleThrow();
                             }
-                            throw new VMExecutionException("exception can not be handled");
+                            return -1;  //should not reach here
                         }
                     }
                     ThrowRoutine throwRoutine = new ThrowRoutine();
                     i = throwRoutine.handleThrow();
+                    if (i == -1) {
+                        throw new VMExecutionException("execution sequence should not reach here");
+                    }
                 }
                 break;
 

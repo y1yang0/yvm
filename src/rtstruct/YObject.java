@@ -45,6 +45,7 @@ public class YObject{
      *  create a generic object
      *
      ***************************************************************/
+    @SuppressWarnings("unchecked")
     public YObject(YClassLoader loader, MetaClass metaClass) {
         /***************************************************************
          *  get all fields of this class
