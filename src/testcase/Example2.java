@@ -1,4 +1,4 @@
-package ycloader.example;
+package testcase;
 
 /*
  * Copyright (c) 1996, 2013, Oracle and/or its affiliates. All rights reserved.
@@ -44,7 +44,7 @@ import java.util.stream.StreamSupport;
  * read request to be made of the underlying character or byte stream.  It is
  * therefore advisable to wrap a Example2 around any Reader whose read()
  * operations may be costly, such as FileReaders and InputStreamReaders.  For
- * example,
+ * testcase,
  * <p>
  * <pre>
  * Example2 in

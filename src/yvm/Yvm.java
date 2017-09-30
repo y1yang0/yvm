@@ -30,7 +30,7 @@ public final class Yvm {
                 YClassLoader loader = new YClassLoader();
                 loader.associateThread(classLoadingThread);
 
-                Tuple6 bundle = loader.loadClass("java/lang/Object");
+                Tuple6 bundle = loader.loadClass("testcase/CLinitTest");
                 MetaClass meta = loader.linkClass(bundle);
                 runtimeVM.methodScope().addMetaClass(meta);
                 loader.loadInheritanceChain(meta.superClassName);
