@@ -16,7 +16,6 @@ public class YObject{
     private MetaClass metaClassReference;
     private Object[] fields;
     private boolean fieldsInitialized;
-
     /***************************************************************
      *  create a primitive type YObject. as*() methods stuffing this
      *  object as if assignment operation.
@@ -85,6 +84,10 @@ public class YObject{
     @SuppressWarnings("unused")
     public static YObject derivedFrom(boolean x) {
         return new YObject().asBoolean(x);
+    }
+
+    public MetaClass getMetaClassReference() {
+        return metaClassReference;
     }
 
     public void initiateFields(YClassLoader loader) {
@@ -188,6 +191,10 @@ public class YObject{
 
     public YObject getField(int index) {
         return (YObject) fields[index];
+    }
+
+    public void setField(int index, YObject value) {
+        fields[index] = value;
     }
 
     public boolean isInitialized() {

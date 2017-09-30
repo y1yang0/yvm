@@ -1971,12 +1971,88 @@ public final class CodeExecutionEngine {
                     int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
                     int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
                     int index = (indexByte1 << 8) | indexByte2;
-                    //todo:putfield
+
+                    YObject value = dg.pop();
+                    YObject object = dg.pop();
+                    if (!object.isInitialized()) {
+                        object.initiateFields(classLoader);
+                    }
+
+                    Tuple3 fieldBundle = metaClassRef.constantPool.findInField(index);
+                    switch (Peel.peelDescriptor((String) fieldBundle.get3Placeholder())) {
+                        case "B":
+                            object.setField(index, YObject.derivedFrom(value.toInteger()));
+                            break;
+                        case "C":
+                            object.setField(index, YObject.derivedFrom(value.toChar()));
+                            break;
+                        case "D":
+                            object.setField(index, YObject.derivedFrom(value.toDouble()));
+                            break;
+                        case "F":
+                            object.setField(index, YObject.derivedFrom(value.toFloat()));
+                            break;
+                        case "I":
+                            object.setField(index, YObject.derivedFrom(value.toInteger()));
+                            break;
+                        case "J":
+                            object.setField(index, YObject.derivedFrom(value.toLong()));
+                            break;
+                        case "S":
+                            object.setField(index, YObject.derivedFrom(value.toInteger()));
+                            break;
+                        case "Z":
+                            object.setField(index, YObject.derivedFrom(value.toBoolean()));
+                            break;
+                        default:
+                            object.setField(index, value);
+                            break;
+                    }
                 }
                 break;
 
                 case Mnemonic.putstatic: {
-                    //todo:putstatic
+                    int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                    int index = (indexByte1 << 8) | indexByte2;
+
+
+                    YObject value = dg.pop();
+                    YObject staticVar = metaClassRef.getStaticVariable().get(index).get5Placeholder();
+                    if (!staticVar.isInitialized()) {
+                        staticVar.initiateFields(classLoader);
+                    }
+
+                    Tuple3 fieldBundle = metaClassRef.constantPool.findInField(index);
+                    switch (Peel.peelDescriptor((String) fieldBundle.get3Placeholder())) {
+                        case "B":
+                            staticVar.setField(index, YObject.derivedFrom(value.toInteger()));
+                            break;
+                        case "C":
+                            staticVar.setField(index, YObject.derivedFrom(value.toChar()));
+                            break;
+                        case "D":
+                            staticVar.setField(index, YObject.derivedFrom(value.toDouble()));
+                            break;
+                        case "F":
+                            staticVar.setField(index, YObject.derivedFrom(value.toFloat()));
+                            break;
+                        case "I":
+                            staticVar.setField(index, YObject.derivedFrom(value.toInteger()));
+                            break;
+                        case "J":
+                            staticVar.setField(index, YObject.derivedFrom(value.toLong()));
+                            break;
+                        case "S":
+                            staticVar.setField(index, YObject.derivedFrom(value.toInteger()));
+                            break;
+                        case "Z":
+                            staticVar.setField(index, YObject.derivedFrom(value.toBoolean()));
+                            break;
+                        default:
+                            staticVar.setField(index, value);
+                            break;
+                    }
                 }
                 break;
 

@@ -299,6 +299,14 @@ public class MetaClassConstantPool {
         return null;
     }
 
+    public Tuple3 findInField(int index) {
+        Tuple3 a = refKind.get(index);
+        if (!Predicate.isNull(a)) {
+            return a;
+        }
+        return null;
+    }
+
     public Collection<String> getClassNames() {
         return classes.values();
     }
