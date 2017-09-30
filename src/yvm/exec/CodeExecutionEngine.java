@@ -53,7 +53,7 @@ public final class CodeExecutionEngine {
     }
 
     @SuppressWarnings("unchecked")
-    public void executeCLinit() {
+    public void executeMethod(String methodName) {
         if (!ignited) {
             throw new VMExecutionException("code execution engine is not ready");
         }
@@ -64,10 +64,10 @@ public final class CodeExecutionEngine {
                 MetaClassMethod.StackRequirement,                        //stack requirement for this method
                 ArrayList<MetaClassMethod.ExceptionTable>,               //method exception tables,they are differ from checked exception in function signature
                 MetaClassMethod.MethodExtension>                         //method related attributes,it would be use for future vm version,there just ignore them
-                clinit = metaClassRef.methods.findMethod("<clinit>");
+                clinit = metaClassRef.methods.findMethod(methodName);
 
-        if (Predicate.isNull(clinit) || Predicate.strNotEqual(clinit.get1Placeholder(), "<clinit>")) {
-            return;
+        if (Predicate.isNull(clinit) || Predicate.strNotEqual(clinit.get1Placeholder(), methodName)) {
+            throw new VMExecutionException("method not found");
         }
 
         int maxLocals = clinit.get4Placeholder().maxLocals;
@@ -83,7 +83,7 @@ public final class CodeExecutionEngine {
             allocateStackFrame(maxLocals, maxStack);
             Opcode op = new Opcode(clinit.get3Placeholder());
             op.codes2Opcodes();
-            //op.debug(metaClassRef.qualifiedClassName + " clinit");
+            op.debug(metaClassRef.qualifiedClassName + " clinit");
             //codeExecution(op,exceptionTable,isSynchronized);
 
         } catch (ClassInitializingException ignored) {
@@ -1408,6 +1408,7 @@ public final class CodeExecutionEngine {
                 }
                 break;
 
+                //Invoke dynamic method
                 case Mnemonic.invokedynamic: {
                     //todo:invokedymaic
                 }
@@ -1424,6 +1425,28 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.invokestatic: {
+                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                    int index = (indexByte1 << 8) | indexByte2;
+
+                    Tuple3 symbolicReference = metaClassRef.constantPool.findInSymbolicReference(index);
+
+                    String methodBelongingClass = symbolicReference.get1Placeholder().toString();
+                    if (!methodScopeRef.existClass(methodBelongingClass, classLoader.getClass())) {
+                        YClassLoader loader = new YClassLoader();
+                        loader.associateThread(thread);
+                        try {
+                            Tuple6 bundle = loader.loadClass(methodBelongingClass);
+                            MetaClass meta = loader.linkClass(bundle);
+                            thread.runtimeVM().methodScope().addMetaClass(meta);
+                            loader.loadInheritanceChain(meta.superClassName);
+                            loader.initializeClass(meta);
+                        } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
+                            throw new VMExecutionException("can not load class" + Peel.peelDescriptor(methodBelongingClass)
+                                    + " while executing anewarray opcode");
+                        }
+                    }
+
                     //todo:invokestatic
                 }
                 break;
@@ -1717,11 +1740,11 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.lookupswitch: {
                     int defaultGoto = ((TableSwitchOperand) cd.get3Placeholder()).get0();
-                    HashMap<Integer, Integer> jumpOffsets = ((TableSwitchOperand) cd.get3Placeholder()).get1();
+                    HashMap<Integer, Integer> matchOffsetPairs = ((LookupSwitchOperand) cd.get3Placeholder()).get1();
                     int index = dg.popInt();
                     int newAddress = -1;
-                    if (jumpOffsets.keySet().contains(index)) {
-                        newAddress = jumpOffsets.get(index);
+                    if (matchOffsetPairs.keySet().contains(index)) {
+                        newAddress = matchOffsetPairs.get(index);
                     } else {
                         newAddress = programCount + defaultGoto;
                     }
@@ -1731,7 +1754,6 @@ public final class CodeExecutionEngine {
                         throw new VMExecutionException("incorrect address to go");
                     }
                     i = --currentI;
-                    //todo:lookupswitch
                 }
                 break;
 
@@ -1994,7 +2016,7 @@ public final class CodeExecutionEngine {
                         object.initiateFields(classLoader);
                     }
 
-                    Tuple3 fieldBundle = metaClassRef.constantPool.findInField(index);
+                    Tuple3 fieldBundle = metaClassRef.constantPool.findInSymbolicReference(index);
                     switch (Peel.peelDescriptor((String) fieldBundle.get3Placeholder())) {
                         case "B":
                             object.setField(index, YObject.derivedFrom(value.toInteger()));
@@ -2039,7 +2061,7 @@ public final class CodeExecutionEngine {
                         staticVar.initiateFields(classLoader);
                     }
 
-                    Tuple3 fieldBundle = metaClassRef.constantPool.findInField(index);
+                    Tuple3 fieldBundle = metaClassRef.constantPool.findInSymbolicReference(index);
                     switch (Peel.peelDescriptor((String) fieldBundle.get3Placeholder())) {
                         case "B":
                             staticVar.setField(index, YObject.derivedFrom(value.toInteger()));

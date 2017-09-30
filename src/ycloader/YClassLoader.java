@@ -119,7 +119,7 @@ public class YClassLoader {
     public void initializeClass(MetaClass meta) throws ClassInitializingException {
         CodeExecutionEngine engine = new CodeExecutionEngine();
         engine.ignite(meta,YClassLoader.this);
-        engine.executeCLinit();
+        engine.executeMethod("<clinit>");
     }
 
     private void verify(Tuple6<ConstantPoolObject, InterfacesObject,

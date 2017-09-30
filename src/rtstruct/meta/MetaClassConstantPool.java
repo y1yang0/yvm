@@ -299,8 +299,16 @@ public class MetaClassConstantPool {
         return null;
     }
 
-    public Tuple3 findInField(int index) {
+    public Tuple3 findInSymbolicReference(int index) {
         Tuple3 a = refKind.get(index);
+        if (!Predicate.isNull(a)) {
+            return a;
+        }
+        return null;
+    }
+
+    public Tuple3 findInCallSite(int index) {
+        Tuple3 a = invokeDynamics.get(index);
         if (!Predicate.isNull(a)) {
             return a;
         }
