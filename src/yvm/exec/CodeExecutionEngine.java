@@ -22,6 +22,7 @@ import yvm.auxil.Predicate;
 import yvm.constant.NewArrayType;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -215,7 +216,7 @@ public final class CodeExecutionEngine {
 
                 //Load reference from local variable
                 case Mnemonic.aload: {
-                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
                     YObject objectRef = dg.getLocalVar(index);
                     dg.push(objectRef);
                 }
@@ -251,8 +252,8 @@ public final class CodeExecutionEngine {
 
                 //Create new array of reference
                 case Mnemonic.anewarray: {
-                    int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                    int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                     int count = dg.popInt();
 
                     int index = (indexByte1 << 8) |
@@ -314,7 +315,7 @@ public final class CodeExecutionEngine {
 
                 //Store reference into local variable
                 case Mnemonic.astore: {
-                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
                     YObject top = dg.pop();
 
                     dg.setLocalVar(index, top);
@@ -323,7 +324,7 @@ public final class CodeExecutionEngine {
 
                 //Store reference into local variable
                 case Mnemonic.astore_0: {
-                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
                     YObject top = dg.pop();
 
                     dg.setLocalVar(0, top);
@@ -332,7 +333,7 @@ public final class CodeExecutionEngine {
 
                 //Store reference into local variable
                 case Mnemonic.astore_1: {
-                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
                     YObject top = dg.pop();
 
                     dg.setLocalVar(1, top);
@@ -341,7 +342,7 @@ public final class CodeExecutionEngine {
 
                 //Store reference into local variable
                 case Mnemonic.astore_2: {
-                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
                     YObject top = dg.pop();
 
                     dg.setLocalVar(2, top);
@@ -350,7 +351,7 @@ public final class CodeExecutionEngine {
 
                 //Store reference into local variable
                 case Mnemonic.astore_3: {
-                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
                     YObject top = dg.pop();
 
                     dg.setLocalVar(3, top);
@@ -415,7 +416,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.bipush: {
-                    int x = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int x = ((GenericOperand) cd.get3Placeholder()).get0();
                     dg.push(YObject.derivedFrom(x));
                 }
                 break;
@@ -514,7 +515,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.dload: {
-                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
                     double value = dg.getLocalVar(index).toDouble();
                     dg.push(YObject.derivedFrom(value));
                 }
@@ -577,7 +578,7 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.dstore:{
                     double value = dg.popDouble();
-                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
                     dg.setLocalVar(index, YObject.derivedFrom(value));
                 }
                 break;
@@ -812,7 +813,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.fload:{
-                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
                     dg.push(dg.getLocalVar(index));
                 }
                 break;
@@ -870,7 +871,7 @@ public final class CodeExecutionEngine {
                 }
 
                 case Mnemonic.fstore:{
-                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
                     float value = dg.popFloat();
                     dg.setLocalVar(index, YObject.derivedFrom(value));
                 }
@@ -909,8 +910,8 @@ public final class CodeExecutionEngine {
 
                 //Fetch field from object
                 case Mnemonic.getfield: {
-                    int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                    int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                     int index = (indexByte1 << 8) | indexByte2;
 
                     YObject object = dg.pop();
@@ -924,8 +925,8 @@ public final class CodeExecutionEngine {
 
                 //Get static field from class
                 case Mnemonic.getstatic: {
-                    int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                    int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                     int index = (indexByte1 << 8) | indexByte2;
 
                     YObject staticVar = metaClassRef.getStaticVariable().get(index).get5Placeholder();
@@ -938,15 +939,15 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.goto$: {
-                    int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                    int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                    int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                     int branchOffset = (branchByte1 << 8) | branchByte2;
                     Tuple3 newOp = opcodes.get(branchOffset);
                     int currentI = opcodes.indexOf(newOp);
                     if (currentI == -1) {
                         throw new VMExecutionException("incorrect address to go");
                     }
-                    i = currentI;
+                    i = --currentI;
                 }
                 break;
 
@@ -956,10 +957,10 @@ public final class CodeExecutionEngine {
                     factors limit the size of a method to 65535 bytes . This limit may
                     be raised in a future release of the Java Virtual Machine.
                      */
-                    int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                    int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
-                    int branchByte3 = (int) ((Operand) cd.get3Placeholder()).get2();
-                    int branchByte4 = (int) ((Operand) cd.get3Placeholder()).get3();
+                    int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                    int branchByte3 = ((GenericOperand) cd.get3Placeholder()).get2();
+                    int branchByte4 = ((GenericOperand) cd.get3Placeholder()).get3();
                     int branchOffset = (branchByte1 << 24) | (branchByte2 << 16)
                             | (branchByte3 << 8) | branchByte4;
                     Tuple3 newOp = opcodes.get(branchOffset);
@@ -967,7 +968,7 @@ public final class CodeExecutionEngine {
                     if (currentI == -1) {
                         throw new VMExecutionException("incorrect address to go");
                     }
-                    i = currentI;
+                    i = --currentI;
                 }
                 break;
 
@@ -1091,15 +1092,15 @@ public final class CodeExecutionEngine {
                     YObject value2 = dg.pop();
                     YObject value1 = dg.pop();
                     if (value1 == value2) {
-                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
                             throw new VMExecutionException("incorrect address to go");
                         }
-                        i = currentI;
+                        i = --currentI;
                     }
                 }
                 break;
@@ -1108,15 +1109,15 @@ public final class CodeExecutionEngine {
                     YObject value2 = dg.pop();
                     YObject value1 = dg.pop();
                     if (value1 != value2) {
-                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
                             throw new VMExecutionException("incorrect address to go");
                         }
-                        i = currentI;
+                        i = --currentI;
                     }
                 }
                 break;
@@ -1125,15 +1126,15 @@ public final class CodeExecutionEngine {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
                     if (value1 == value2) {
-                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
                             throw new VMExecutionException("incorrect address to go");
                         }
-                        i = currentI;
+                        i = --currentI;
                     }
                 }
                 break;
@@ -1142,15 +1143,15 @@ public final class CodeExecutionEngine {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
                     if (value1 != value2) {
-                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
                             throw new VMExecutionException("incorrect address to go");
                         }
-                        i = currentI;
+                        i = --currentI;
                     }
                 }
                 break;
@@ -1159,15 +1160,15 @@ public final class CodeExecutionEngine {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
                     if (value1 < value2) {
-                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
                             throw new VMExecutionException("incorrect address to go");
                         }
-                        i = currentI;
+                        i = --currentI;
                     }
                 }
                 break;
@@ -1176,15 +1177,15 @@ public final class CodeExecutionEngine {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
                     if (value1 >= value2) {
-                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
                             throw new VMExecutionException("incorrect address to go");
                         }
-                        i = currentI;
+                        i = --currentI;
                     }
                 }
                 break;
@@ -1193,15 +1194,15 @@ public final class CodeExecutionEngine {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
                     if (value1 > value2) {
-                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
                             throw new VMExecutionException("incorrect address to go");
                         }
-                        i = currentI;
+                        i = --currentI;
                     }
                 }
                 break;
@@ -1210,15 +1211,15 @@ public final class CodeExecutionEngine {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
                     if (value1 <= value2) {
-                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
                             throw new VMExecutionException("incorrect address to go");
                         }
-                        i = currentI;
+                        i = --currentI;
                     }
                 }
                 break;
@@ -1226,15 +1227,15 @@ public final class CodeExecutionEngine {
                 case Mnemonic.ifeq: {
                     int value = dg.popInt();
                     if (value == 0) {
-                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
                             throw new VMExecutionException("incorrect address to go");
                         }
-                        i = currentI;
+                        i = --currentI;
                     }
                 }
                 break;
@@ -1242,15 +1243,15 @@ public final class CodeExecutionEngine {
                 case Mnemonic.ifne: {
                     int value = dg.popInt();
                     if (value != 0) {
-                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
                             throw new VMExecutionException("incorrect address to go");
                         }
-                        i = currentI;
+                        i = --currentI;
                     }
                 }
                 break;
@@ -1258,15 +1259,15 @@ public final class CodeExecutionEngine {
                 case Mnemonic.iflt: {
                     int value = dg.popInt();
                     if (value < 0) {
-                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
                             throw new VMExecutionException("incorrect address to go");
                         }
-                        i = currentI;
+                        i = --currentI;
                     }
                 }
                 break;
@@ -1274,15 +1275,15 @@ public final class CodeExecutionEngine {
                 case Mnemonic.ifge: {
                     int value = dg.popInt();
                     if (value >= 0) {
-                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
                             throw new VMExecutionException("incorrect address to go");
                         }
-                        i = currentI;
+                        i = --currentI;
                     }
                 }
                 break;
@@ -1290,15 +1291,15 @@ public final class CodeExecutionEngine {
                 case Mnemonic.ifgt: {
                     int value = dg.popInt();
                     if (value > 0) {
-                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
                             throw new VMExecutionException("incorrect address to go");
                         }
-                        i = currentI;
+                        i = --currentI;
                     }
                 }
                 break;
@@ -1306,15 +1307,15 @@ public final class CodeExecutionEngine {
                 case Mnemonic.ifle: {
                     int value = dg.popInt();
                     if (value <= 0) {
-                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
                             throw new VMExecutionException("incorrect address to go");
                         }
-                        i = currentI;
+                        i = --currentI;
                     }
                 }
                 break;
@@ -1322,15 +1323,15 @@ public final class CodeExecutionEngine {
                 case Mnemonic.ifnonnull: {
                     YObject value = dg.pop();
                     if (value != null) {
-                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
                             throw new VMExecutionException("incorrect address to go");
                         }
-                        i = currentI;
+                        i = --currentI;
                     }
                 }
                 break;
@@ -1338,28 +1339,28 @@ public final class CodeExecutionEngine {
                 case Mnemonic.ifnull: {
                     YObject value = dg.pop();
                     if (value == null) {
-                        int branchByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                        int branchByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
                         if (currentI == -1) {
                             throw new VMExecutionException("incorrect address to go");
                         }
-                        i = currentI;
+                        i = --currentI;
                     }
                 }
                 break;
 
                 case Mnemonic.iinc: {
-                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
-                    int const$ = (int) ((Operand) cd.get3Placeholder()).get1();
+                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int const$ = ((GenericOperand) cd.get3Placeholder()).get1();
                     dg.setLocalVar(index, YObject.derivedFrom(dg.getLocalVar(index).toInteger() + const$));
                 }
                 break;
 
                 case Mnemonic.iload: {
-                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
                     int value = dg.getLocalVar(index).toInteger();
                     dg.push(YObject.derivedFrom(value));
                 }
@@ -1475,7 +1476,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.istore: {
-                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
                     int value = dg.popInt();
                     dg.setLocalVar(index, YObject.derivedFrom(value));
                 }
@@ -1610,7 +1611,7 @@ public final class CodeExecutionEngine {
 
                 //Push item from run-time constant pool
                 case Mnemonic.ldc: {
-                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
 
                     MetaClassConstantPool poolRef = metaClassRef.constantPool;
 
@@ -1630,8 +1631,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.ldc_w: {
-                    int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                    int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get0();
                     int index = (indexByte1 << 8) | indexByte2;
 
                     MetaClassConstantPool poolRef = metaClassRef.constantPool;
@@ -1652,8 +1653,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.ldc2_w: {
-                    int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                    int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get0();
                     int index = (indexByte1 << 8) | indexByte2;
 
                     MetaClassConstantPool poolRef = metaClassRef.constantPool;
@@ -1676,7 +1677,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.lload: {
-                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
                     dg.push(dg.getLocalVar(index));
                 }
                 break;
@@ -1715,6 +1716,21 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.lookupswitch: {
+                    int defaultGoto = ((TableSwitchOperand) cd.get3Placeholder()).get0();
+                    HashMap<Integer, Integer> jumpOffsets = ((TableSwitchOperand) cd.get3Placeholder()).get1();
+                    int index = dg.popInt();
+                    int newAddress = -1;
+                    if (jumpOffsets.keySet().contains(index)) {
+                        newAddress = jumpOffsets.get(index);
+                    } else {
+                        newAddress = programCount + defaultGoto;
+                    }
+                    Tuple3 newOp = opcodes.get(newAddress);
+                    int currentI = opcodes.indexOf(newOp);
+                    if (currentI == -1) {
+                        throw new VMExecutionException("incorrect address to go");
+                    }
+                    i = --currentI;
                     //todo:lookupswitch
                 }
                 break;
@@ -1764,7 +1780,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.lstore: {
-                    int index = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
                     long value = dg.popLong();
                     dg.setLocalVar(index, YObject.derivedFrom(value));
                 }
@@ -1826,9 +1842,9 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.multianewarray: {
-                    int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                    int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
-                    int dimensions = (int) ((Operand) cd.get3Placeholder()).get2();
+                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                    int dimensions = ((GenericOperand) cd.get3Placeholder()).get2();
                     int index = (indexByte1 << 8) |
                             indexByte2;
 
@@ -1867,8 +1883,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.new$: {
-                    int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                    int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                     int count = dg.popInt();
 
                     int index = (indexByte1 << 8) |
@@ -1898,7 +1914,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.newarray: {
-                    int aType = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int aType = ((GenericOperand) cd.get3Placeholder()).get0();
                     int count = dg.popInt();
 
                     YArray array = new YArray(count);
@@ -1968,8 +1984,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.putfield: {
-                    int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                    int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                     int index = (indexByte1 << 8) | indexByte2;
 
                     YObject value = dg.pop();
@@ -2012,8 +2028,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.putstatic: {
-                    int indexByte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                    int indexByte2 = (int) ((Operand) cd.get3Placeholder()).get1();
+                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                     int index = (indexByte1 << 8) | indexByte2;
 
 
@@ -2092,8 +2108,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.sipush: {
-                    int byte1 = (int) ((Operand) cd.get3Placeholder()).get0();
-                    int byte2 = (int) ((Operand) cd.get3Placeholder()).get0();
+                    int byte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int byte2 = ((GenericOperand) cd.get3Placeholder()).get0();
                     short byte$ = (short) ((byte1 <<
                             8) | byte2);
                     dg.push(YObject.derivedFrom(byte$));
@@ -2119,7 +2135,21 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.tableswitch: {
-                    //todo:tableswitch
+                    int defaultGoto = ((TableSwitchOperand) cd.get3Placeholder()).get0();
+                    HashMap<Integer, Integer> jumpOffsets = ((TableSwitchOperand) cd.get3Placeholder()).get1();
+                    int index = dg.popInt();
+                    int newAddress = -1;
+                    if (jumpOffsets.keySet().contains(index)) {
+                        newAddress = jumpOffsets.get(index);
+                    } else {
+                        newAddress = programCount + defaultGoto;
+                    }
+                    Tuple3 newOp = opcodes.get(newAddress);
+                    int currentI = opcodes.indexOf(newOp);
+                    if (currentI == -1) {
+                        throw new VMExecutionException("incorrect address to go");
+                    }
+                    i = --currentI;
                 }
                 break;
 
