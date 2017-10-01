@@ -5,6 +5,8 @@ import runtime.RuntimeVM;
 import runtime.YThread;
 import runtime.meta.MetaClass;
 import ycloader.YClassLoader;
+import ycloader.adt.u2;
+import ycloader.dataobject.*;
 import ycloader.exception.ClassInitializingException;
 import ycloader.exception.ClassLinkingException;
 import ycloader.exception.ClassLoadingException;
@@ -30,7 +32,10 @@ public final class Yvm {
                 YClassLoader loader = new YClassLoader();
                 loader.associateThread(classLoadingThread);
 
-                Tuple6 bundle = loader.loadClass("java/math/BigInteger");
+                Tuple6<ConstantPoolObject, InterfacesObject,
+                        FieldObject, MethodObject,
+                        ClassFileAttributeObject, u2[]>
+                        bundle = loader.loadClass("java/math/BigInteger");
                 MetaClass meta = loader.linkClass(bundle);
                 runtimeVM.methodScope().addMetaClass(meta);
                 loader.loadInheritanceChain(meta.superClassName);
