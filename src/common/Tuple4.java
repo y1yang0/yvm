@@ -1,18 +1,16 @@
-package yvm.adt;
+package common;
 
-public class Tuple5<_TypeA, _TypeB, _TypeC, _TypeD, _TypeE> {
+public class Tuple4<_TypeA, _TypeB, _TypeC, _TypeD> {
     private _TypeA a;
     private _TypeB b;
     private _TypeC c;
     private _TypeD d;
-    private _TypeE e;
 
-    public Tuple5(_TypeA a, _TypeB b, _TypeC c, _TypeD d, _TypeE e) {
+    public Tuple4(_TypeA a, _TypeB b, _TypeC c, _TypeD d) {
         this.a = a;
         this.b = b;
         this.c = c;
         this.d = d;
-        this.e = e;
     }
 
     public _TypeA get1Placeholder() {
@@ -31,8 +29,6 @@ public class Tuple5<_TypeA, _TypeB, _TypeC, _TypeD, _TypeE> {
         return d;
     }
 
-    public _TypeE get5Placeholder() {
-        return e;
-    }
 
 }
+

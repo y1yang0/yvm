@@ -1,8 +1,8 @@
-package rtstruct.meta;
+package runtime.meta;
 
-import rtstruct.YObject;
+import common.Tuple5;
+import runtime.YObject;
 import ycloader.adt.attribute.Attribute;
-import yvm.adt.Tuple5;
 
 import java.util.HashMap;
 import java.util.Map;

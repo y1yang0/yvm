@@ -1,6 +1,6 @@
 package yvm.exec;
 
-import rtstruct.rtexception.VMExecutionException;
+import runtime.rtexception.VMExecutionException;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;

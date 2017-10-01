@@ -1,8 +1,9 @@
 package ycloader;
 
-import rtstruct.YMethodScope;
-import rtstruct.YThread;
-import rtstruct.meta.*;
+import common.Tuple6;
+import runtime.YMethodScope;
+import runtime.YThread;
+import runtime.meta.*;
 import ycloader.adt.u2;
 import ycloader.adt.u4;
 import ycloader.constant.ClassAccessProperty;
@@ -11,7 +12,6 @@ import ycloader.exception.ClassInitializingException;
 import ycloader.exception.ClassLinkingException;
 import ycloader.exception.ClassLoadingException;
 import ycloader.security.FormatChecking;
-import yvm.adt.Tuple6;
 import yvm.auxil.Peel;
 import yvm.exec.CodeExecutionEngine;
 

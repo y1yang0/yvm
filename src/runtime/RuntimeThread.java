@@ -1,6 +1,6 @@
-package rtstruct;
+package runtime;
 
-import rtstruct.ystack.YStack;
+import runtime.ystack.YStack;
 
 public class RuntimeThread {
     private int programCounter = Integer.MIN_VALUE;

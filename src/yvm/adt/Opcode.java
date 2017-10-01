@@ -1,5 +1,6 @@
 package yvm.adt;
 
+import common.Tuple3;
 import ycloader.adt.u1;
 import ycloader.exception.ClassInitializingException;
 

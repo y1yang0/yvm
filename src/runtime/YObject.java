@@ -1,13 +1,13 @@
-package rtstruct;
+package runtime;
 
-import rtstruct.meta.MetaClass;
-import rtstruct.rtexception.VMExecutionException;
+import common.Tuple4;
+import common.Tuple6;
+import runtime.meta.MetaClass;
+import runtime.rtexception.VMExecutionException;
 import ycloader.YClassLoader;
 import ycloader.exception.ClassInitializingException;
 import ycloader.exception.ClassLinkingException;
 import ycloader.exception.ClassLoadingException;
-import yvm.adt.Tuple4;
-import yvm.adt.Tuple6;
 import yvm.auxil.Peel;
 
 import java.util.Map;

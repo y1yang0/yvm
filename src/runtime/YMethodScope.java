@@ -1,6 +1,6 @@
-package rtstruct;
+package runtime;
 
-import rtstruct.meta.MetaClass;
+import runtime.meta.MetaClass;
 
 import java.util.ArrayList;
 

@@ -1,4 +1,4 @@
-package rtstruct;
+package runtime;
 
 public class YArray extends YObject{
     private int length;

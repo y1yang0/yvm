@@ -1,6 +1,6 @@
 package yvm.auxil;
 
-import rtstruct.rtexception.VMExecutionException;
+import runtime.rtexception.VMExecutionException;
 
 import java.util.ArrayList;
 import java.util.regex.Matcher;

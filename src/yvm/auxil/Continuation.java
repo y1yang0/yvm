@@ -1,10 +1,10 @@
 package yvm.auxil;
 
-import rtstruct.YArray;
+import runtime.YArray;
 
 import java.util.concurrent.locks.Lock;
 
-import static yvm.auxil.Predicate.inRange;
+import static common.Predicate.inRange;
 
 public class Continuation {
     public static void ifNullThrowNullptrException(Object object){

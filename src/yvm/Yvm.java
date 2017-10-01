@@ -1,13 +1,13 @@
 package yvm;
 
-import rtstruct.RuntimeVM;
-import rtstruct.YThread;
-import rtstruct.meta.MetaClass;
+import common.Tuple6;
+import runtime.RuntimeVM;
+import runtime.YThread;
+import runtime.meta.MetaClass;
 import ycloader.YClassLoader;
 import ycloader.exception.ClassInitializingException;
 import ycloader.exception.ClassLinkingException;
 import ycloader.exception.ClassLoadingException;
-import yvm.adt.Tuple6;
 
 public final class Yvm {
     private RuntimeVM runtimeVM;

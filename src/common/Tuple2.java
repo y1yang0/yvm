@@ -1,4 +1,4 @@
-package yvm.adt;
+package common;
 
 public class Tuple2<_TypeA, _TypeB> {
     private _TypeA a;

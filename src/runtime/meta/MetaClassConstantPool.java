@@ -1,11 +1,11 @@
-package rtstruct.meta;
+package runtime.meta;
 
+import common.Predicate;
+import common.Tuple2;
+import common.Tuple3;
 import ycloader.adt.constantpool.*;
 import ycloader.dataobject.ConstantPoolObject;
 import ycloader.exception.ClassLinkingException;
-import yvm.adt.Tuple2;
-import yvm.adt.Tuple3;
-import yvm.auxil.Predicate;
 
 import java.util.ArrayList;
 import java.util.Collection;

@@ -1,6 +1,6 @@
-package rtstruct.ystack;
+package runtime.ystack;
 
-import rtstruct.YObject;
+import runtime.YObject;
 
 import java.util.ArrayList;
 import java.util.Stack;

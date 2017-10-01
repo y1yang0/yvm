@@ -1,14 +1,14 @@
-package rtstruct.meta;
+package runtime.meta;
 
-import rtstruct.YObject;
+import common.Tuple4;
+import common.Tuple5;
+import runtime.YObject;
 import ycloader.adt.attribute.Attribute;
 import ycloader.adt.field.FieldInfo;
 import ycloader.dataobject.ConstantPoolObject;
 import ycloader.dataobject.FieldObject;
 import yvm.adt.DebugExtension;
 import yvm.adt.Resolvable;
-import yvm.adt.Tuple4;
-import yvm.adt.Tuple5;
 import yvm.constant.MetaClassConstant;
 
 import java.util.ArrayList;

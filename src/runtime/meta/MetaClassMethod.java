@@ -1,5 +1,6 @@
-package rtstruct.meta;
+package runtime.meta;
 
+import common.Tuple6;
 import ycloader.adt.attribute.Attribute;
 import ycloader.adt.attribute.CodeAttribute;
 import ycloader.adt.field.FieldInfo;
@@ -7,7 +8,6 @@ import ycloader.adt.u1;
 import ycloader.dataobject.ConstantPoolObject;
 import ycloader.dataobject.MethodObject;
 import yvm.adt.Resolvable;
-import yvm.adt.Tuple6;
 
 import java.util.ArrayList;
 import java.util.HashMap;

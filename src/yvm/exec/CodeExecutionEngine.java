@@ -1,15 +1,18 @@
 package yvm.exec;
 
-import rtstruct.YArray;
-import rtstruct.YMethodScope;
-import rtstruct.YObject;
-import rtstruct.YThread;
-import rtstruct.meta.MetaClass;
-import rtstruct.meta.MetaClassConstantPool;
-import rtstruct.meta.MetaClassMethod;
-import rtstruct.rtexception.VMExecutionException;
-import rtstruct.ystack.YStack;
-import rtstruct.ystack.YStackFrame;
+import common.Predicate;
+import common.Tuple3;
+import common.Tuple6;
+import runtime.YArray;
+import runtime.YMethodScope;
+import runtime.YObject;
+import runtime.YThread;
+import runtime.meta.MetaClass;
+import runtime.meta.MetaClassConstantPool;
+import runtime.meta.MetaClassMethod;
+import runtime.rtexception.VMExecutionException;
+import runtime.ystack.YStack;
+import runtime.ystack.YStackFrame;
 import ycloader.YClassLoader;
 import ycloader.adt.u1;
 import ycloader.constant.ClassAccessProperty;
@@ -19,7 +22,6 @@ import ycloader.exception.ClassLoadingException;
 import yvm.adt.*;
 import yvm.auxil.Continuation;
 import yvm.auxil.Peel;
-import yvm.auxil.Predicate;
 import yvm.constant.NewArrayType;
 
 import java.util.ArrayList;
@@ -53,44 +55,7 @@ public final class CodeExecutionEngine {
         ignited = true;
     }
 
-    private void invokeMethod(YObject[] args, Tuple6<String, String, u1[], MetaClassMethod.StackRequirement,
-            ArrayList<MetaClassMethod.ExceptionTable>, MetaClassMethod.MethodExtension> method) {
-        int newMethodMaxLocals = method.get4Placeholder().maxLocals;
-        int newMethodMaxStack = method.get4Placeholder().maxStack;
-        boolean newMethodIsSynchronized = method.get6Placeholder().isSynchronized;
-        ArrayList<MetaClassMethod.ExceptionTable> newMethodExceptionTable = method.get5Placeholder();
-        try {
-            allocateStackFrame(newMethodMaxLocals, newMethodMaxStack);
-            //if arguments are existed
-            if (args != null) {
-                for (int p = args.length - 1, s = 1; p >= 0; p--, s++) {
-                    pushToLocalVariableStack(s, args[p]);
-                }
-            }
-            Opcode newMethodOp = new Opcode(method.get3Placeholder());
-            newMethodOp.codes2Opcodes();
-            newMethodOp.debug("#Invoke::" + method.get1Placeholder() + "#");
-            codeExecution(newMethodOp, newMethodExceptionTable, newMethodIsSynchronized);
-        } catch (ClassInitializingException ignored) {
-            throw new VMExecutionException("failed to invoke  " + method + " method");
-        }
-    }
 
-    private void loadClassIfAbsent(String className) {
-        if (!methodScopeRef.existClass(className, classLoader.getClass())) {
-            YClassLoader loader = new YClassLoader();
-            loader.associateThread(thread);
-            try {
-                Tuple6 bundle = loader.loadClass(className);
-                MetaClass meta = loader.linkClass(bundle);
-                thread.runtimeVM().methodScope().addMetaClass(meta);
-                loader.loadInheritanceChain(meta.superClassName);
-                loader.initializeClass(meta);
-            } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
-                throw new VMExecutionException("can not load class" + className);
-            }
-        }
-    }
 
     @SuppressWarnings("unchecked")
     public void executeMethod(String methodName) {
@@ -1580,10 +1545,10 @@ public final class CodeExecutionEngine {
 
                     Tuple3 symbolicReference = metaClassRef.constantPool.findInSymbolicReference(index);
 
-                    String methodBelongingClass = symbolicReference.get1Placeholder().toString();
+                    String symbolicReferenceMethodBelongingClass = symbolicReference.get1Placeholder().toString();
                     String methodName = symbolicReference.get2Placeholder().toString();
 
-                    loadClassIfAbsent(methodBelongingClass);
+                    loadClassIfAbsent(symbolicReferenceMethodBelongingClass);
 
                     Tuple6<String,                                                   //method name
                             String,                                                  //method descriptor
@@ -1591,7 +1556,7 @@ public final class CodeExecutionEngine {
                             MetaClassMethod.StackRequirement,                        //stack requirement for this method
                             ArrayList<MetaClassMethod.ExceptionTable>,               //method exception tables,they are differ from checked exception in function signature
                             MetaClassMethod.MethodExtension>                         //method related attributes,it would be use for future vm version,there just ignore them
-                            newMethodBundle = methodScopeRef.getMetaClass(methodBelongingClass, classLoader.getClass()).methods.findMethod(methodName);
+                            newMethodBundle = methodScopeRef.getMetaClass(symbolicReferenceMethodBelongingClass, classLoader.getClass()).methods.findMethod(methodName);
                     if (Predicate.isNull(newMethodBundle) || Predicate.strNotEqual(newMethodBundle.get1Placeholder(), methodName)) {
                         //there are different from executeMethod(), any method invocation in opcode should be existed in method scope area
                         throw new VMExecutionException("method " + methodName + "invocation can not continue");
@@ -1603,7 +1568,7 @@ public final class CodeExecutionEngine {
                     boolean isNative = newMethodBundle.get6Placeholder().isNative;
 
                     if (!isStatic && isAbstract) {
-                        throw new VMExecutionException("the method " + methodName + "in class " + methodBelongingClass + " is not a static method");
+                        throw new VMExecutionException("the method " + methodName + "in class " + symbolicReferenceMethodBelongingClass + " is not a static method");
                     }
 
                     if (!isNative) {
@@ -2372,5 +2337,44 @@ public final class CodeExecutionEngine {
 
     private void pushToLocalVariableStack(int index, YObject object) {
         thread.runtimeThread().stack().currentFrame().setLocalVariable(index, object);
+    }
+
+    private void invokeMethod(YObject[] args, Tuple6<String, String, u1[], MetaClassMethod.StackRequirement,
+            ArrayList<MetaClassMethod.ExceptionTable>, MetaClassMethod.MethodExtension> method) {
+        int newMethodMaxLocals = method.get4Placeholder().maxLocals;
+        int newMethodMaxStack = method.get4Placeholder().maxStack;
+        boolean newMethodIsSynchronized = method.get6Placeholder().isSynchronized;
+        ArrayList<MetaClassMethod.ExceptionTable> newMethodExceptionTable = method.get5Placeholder();
+        try {
+            allocateStackFrame(newMethodMaxLocals, newMethodMaxStack);
+            //if arguments are existed
+            if (args != null) {
+                for (int p = args.length - 1, s = 1; p >= 0; p--, s++) {
+                    pushToLocalVariableStack(s, args[p]);
+                }
+            }
+            Opcode newMethodOp = new Opcode(method.get3Placeholder());
+            newMethodOp.codes2Opcodes();
+            newMethodOp.debug("#Invoke::" + method.get1Placeholder() + "#");
+            codeExecution(newMethodOp, newMethodExceptionTable, newMethodIsSynchronized);
+        } catch (ClassInitializingException ignored) {
+            throw new VMExecutionException("failed to invoke  " + method + " method");
+        }
+    }
+
+    private void loadClassIfAbsent(String className) {
+        if (!methodScopeRef.existClass(className, classLoader.getClass())) {
+            YClassLoader loader = new YClassLoader();
+            loader.associateThread(thread);
+            try {
+                Tuple6 bundle = loader.loadClass(className);
+                MetaClass meta = loader.linkClass(bundle);
+                thread.runtimeVM().methodScope().addMetaClass(meta);
+                loader.loadInheritanceChain(meta.superClassName);
+                loader.initializeClass(meta);
+            } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
+                throw new VMExecutionException("can not load class" + className);
+            }
+        }
     }
 }

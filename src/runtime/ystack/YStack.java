@@ -1,4 +1,4 @@
-package rtstruct.ystack;
+package runtime.ystack;
 
 import java.util.Stack;
 

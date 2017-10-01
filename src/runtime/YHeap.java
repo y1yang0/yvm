@@ -1,4 +1,4 @@
-package rtstruct;
+package runtime;
 
 import java.util.ArrayList;
 

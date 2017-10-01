@@ -1,6 +1,6 @@
-package yvm.auxil;
+package common;
 
-import rtstruct.YArray;
+import runtime.YArray;
 
 public class Predicate {
     public static <_T> boolean isNull(_T obj) {
@@ -21,23 +21,6 @@ public class Predicate {
 
     public static boolean isClass(Class x) {
         return x.isLocalClass() || x.isMemberClass() || x.isAnonymousClass();
-    }
-
-    public static boolean isSameClass(Class a, Class b) {
-        if (isClass(a) && isClass(b)) {
-            if (a == b && a.getClassLoader() == b.getClassLoader()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public static boolean isInterface(Class x) {
-        return x.isInterface();
-    }
-
-    public static boolean isArray(Class x) {
-        return x.isArray();
     }
 
     public static boolean isCategory1ComputationalType(Object x) {

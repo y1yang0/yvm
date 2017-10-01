@@ -1,4 +1,4 @@
-package rtstruct.meta;
+package runtime.meta;
 
 import ycloader.adt.u2;
 import ycloader.dataobject.ConstantPoolObject;

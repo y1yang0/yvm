@@ -1,4 +1,4 @@
-package rtstruct;
+package runtime;
 
 public class RuntimeVM {
     private YHeap heap;
