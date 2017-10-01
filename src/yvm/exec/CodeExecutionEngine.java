@@ -53,7 +53,7 @@ public final class CodeExecutionEngine {
         ignited = true;
     }
 
-    private void invokeMethod(Tuple6<String, String, u1[], MetaClassMethod.StackRequirement,
+    private void invokeMethod(YObject[] args, Tuple6<String, String, u1[], MetaClassMethod.StackRequirement,
             ArrayList<MetaClassMethod.ExceptionTable>, MetaClassMethod.MethodExtension> method) {
         int newMethodMaxLocals = method.get4Placeholder().maxLocals;
         int newMethodMaxStack = method.get4Placeholder().maxStack;
@@ -61,12 +61,34 @@ public final class CodeExecutionEngine {
         ArrayList<MetaClassMethod.ExceptionTable> newMethodExceptionTable = method.get5Placeholder();
         try {
             allocateStackFrame(newMethodMaxLocals, newMethodMaxStack);
+            //if arguments are existed
+            if (args != null) {
+                for (int p = args.length - 1, s = 1; p >= 0; p--, s++) {
+                    pushToLocalVariableStack(s, args[p]);
+                }
+            }
             Opcode newMethodOp = new Opcode(method.get3Placeholder());
             newMethodOp.codes2Opcodes();
             newMethodOp.debug("#Invoke::" + method.get1Placeholder() + "#");
             codeExecution(newMethodOp, newMethodExceptionTable, newMethodIsSynchronized);
         } catch (ClassInitializingException ignored) {
             throw new VMExecutionException("failed to invoke  " + method + " method");
+        }
+    }
+
+    private void loadClassIfAbsent(String className) {
+        if (!methodScopeRef.existClass(className, classLoader.getClass())) {
+            YClassLoader loader = new YClassLoader();
+            loader.associateThread(thread);
+            try {
+                Tuple6 bundle = loader.loadClass(className);
+                MetaClass meta = loader.linkClass(bundle);
+                thread.runtimeVM().methodScope().addMetaClass(meta);
+                loader.loadInheritanceChain(meta.superClassName);
+                loader.initializeClass(meta);
+            } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
+                throw new VMExecutionException("can not load class" + className);
+            }
         }
     }
 
@@ -96,7 +118,7 @@ public final class CodeExecutionEngine {
                 throw new VMExecutionException("method " + methodName + " not found");
             }
         }
-        invokeMethod(methodBundle);
+        invokeMethod(null, methodBundle);
 
     }
 
@@ -266,20 +288,7 @@ public final class CodeExecutionEngine {
                             indexByte2;
 
                     String[] classes = (String[]) metaClassRef.constantPool.getClassNames().toArray();
-                    if (!methodScopeRef.existClass(classes[index], classLoader.getClass())) {
-                        YClassLoader loader = new YClassLoader();
-                        loader.associateThread(thread);
-                        try {
-                            Tuple6 bundle = loader.loadClass(classes[index]);
-                            MetaClass meta = loader.linkClass(bundle);
-                            thread.runtimeVM().methodScope().addMetaClass(meta);
-                            loader.loadInheritanceChain(meta.superClassName);
-                            loader.initializeClass(meta);
-                        } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
-                            throw new VMExecutionException("can not load class" + Peel.peelFieldDescriptor(classes[index])
-                                    + " while executing anewarray opcode");
-                        }
-                    }
+                    loadClassIfAbsent(classes[index]);
 
                     YArray array = new YArray(count);
                     for (int t = 0; t < count; t++) {
@@ -1436,20 +1445,7 @@ public final class CodeExecutionEngine {
                     String symbolicReferenceBelongingClassName = symbolicReference.get1Placeholder().toString();
                     String methodName = symbolicReference.get2Placeholder().toString();
 
-                    if (!methodScopeRef.existClass(symbolicReferenceBelongingClassName, classLoader.getClass())) {
-                        YClassLoader loader = new YClassLoader();
-                        loader.associateThread(thread);
-                        try {
-                            Tuple6 bundle = loader.loadClass(symbolicReferenceBelongingClassName);
-                            MetaClass meta = loader.linkClass(bundle);
-                            thread.runtimeVM().methodScope().addMetaClass(meta);
-                            loader.loadInheritanceChain(meta.superClassName);
-                            loader.initializeClass(meta);
-                        } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
-                            throw new VMExecutionException("can not load class" + Peel.peelFieldDescriptor(symbolicReferenceBelongingClassName)
-                                    + " while executing anewarray opcode");
-                        }
-                    }
+                    loadClassIfAbsent(symbolicReferenceBelongingClassName);
 
                     Tuple6<String,                                                   //method name
                             String,                                                  //method descriptor
@@ -1510,23 +1506,11 @@ public final class CodeExecutionEngine {
                          ***************************************************************/
                         if (actualInvokingMethod.get2Placeholder().equals(methodDescriptor)
                                 && actualInvokingMethod.get1Placeholder().equals(methodName)) {
+
                             stack.popFrame();
-                            int newMethodMaxLocals = actualInvokingMethod.get4Placeholder().maxLocals;
-                            int newMethodMaxStack = actualInvokingMethod.get4Placeholder().maxStack;
-                            boolean newMethodIsSynchronized = actualInvokingMethod.get6Placeholder().isSynchronized;
-                            ArrayList<MetaClassMethod.ExceptionTable> newMethodExceptionTable = actualInvokingMethod.get5Placeholder();
-                            try {
-                                allocateStackFrame(newMethodMaxLocals, newMethodMaxStack);
-                                for (int p = args.length - 1, s = 1; p >= 0; p--, s++) {
-                                    pushToLocalVariableStack(s, args[p]);
-                                }
-                                Opcode newMethodOp = new Opcode(actualInvokingMethod.get3Placeholder());
-                                newMethodOp.codes2Opcodes();
-                                newMethodOp.debug(methodScopeRef.getMetaClass(actualMethodInvocationClass.qualifiedClassName, classLoader.getClass()).qualifiedClassName + methodName);
-                                codeExecution(newMethodOp, newMethodExceptionTable, newMethodIsSynchronized);
-                            } catch (ClassInitializingException ignored) {
-                                throw new VMExecutionException("failed to convert binary code to opcodes in executing " + methodName + " method");
-                            }
+
+                            invokeMethod(args, actualInvokingMethod);
+
                         } else if (actualMethodInvocationClass.isClass == true &&
                                 actualMethodInvocationClass.superClassName != null) {
                             /***************************************************************
@@ -1541,33 +1525,14 @@ public final class CodeExecutionEngine {
                              ***************************************************************/
                             class MethodInvocationRoutine {
                                 public void recursiveSearch(MetaClass c, String methodName, String methodDesc) {
-                                    Tuple6<                                             //
-                                            String,                                     //method name
-                                            String,                                     //method descriptor
-                                            u1[],                                       //method codes
-                                            MetaClassMethod.StackRequirement,           //stack requirement for this method
-                                            ArrayList<MetaClassMethod.ExceptionTable>,  //method exception tables,they are differ from checked exception in function signature
-                                            MetaClassMethod.MethodExtension             //it would be change frequently, so there we create a flexible class to store data
-                                            > trailMethods = c.methods.findMethod(methodName);
+                                    Tuple6 trailMethods = c.methods.findMethod(methodName);
                                     if (!Predicate.isNull(trailMethods)) {
-                                        if (trailMethods.get1Placeholder().equals(methodName) && trailMethods.get2Placeholder().equals(methodDesc)) {
+                                        if (trailMethods.get1Placeholder().equals(methodName)
+                                                && trailMethods.get2Placeholder().equals(methodDesc)) {
+                                            //pop current stack frame
                                             stack.popFrame();
-                                            int newMethodMaxLocals = trailMethods.get4Placeholder().maxLocals;
-                                            int newMethodMaxStack = trailMethods.get4Placeholder().maxStack;
-                                            boolean newMethodIsSynchronized = trailMethods.get6Placeholder().isSynchronized;
-                                            ArrayList<MetaClassMethod.ExceptionTable> newMethodExceptionTable = trailMethods.get5Placeholder();
-                                            try {
-                                                allocateStackFrame(newMethodMaxLocals, newMethodMaxStack);
-                                                for (int p = args.length - 1, s = 1; p >= 0; p--, s++) {
-                                                    pushToLocalVariableStack(s, args[p]);
-                                                }
-                                                Opcode newMethodOp = new Opcode(trailMethods.get3Placeholder());
-                                                newMethodOp.codes2Opcodes();
-                                                newMethodOp.debug("recursive search in method invocation chain:" + trailMethods.get1Placeholder());
-                                                codeExecution(newMethodOp, newMethodExceptionTable, newMethodIsSynchronized);
-                                            } catch (ClassInitializingException ignored) {
-                                                throw new VMExecutionException("failed to convert binary code to opcodes in executing " + methodName + " method");
-                                            }
+                                            //invoke method with args
+                                            invokeMethod(args, trailMethods);
                                         } else {
                                             recursiveSearch(methodScopeRef.getMetaClass(c.superClassName, classLoader.getClass()), methodName, methodDesc);
                                         }
@@ -1584,32 +1549,12 @@ public final class CodeExecutionEngine {
                              *  to be invoked.
                              *
                              ***************************************************************/
-                            Tuple6<                                             //
-                                    String,                                     //method name
-                                    String,                                     //method descriptor
-                                    u1[],                                       //method codes
-                                    MetaClassMethod.StackRequirement,           //stack requirement for this method
-                                    ArrayList<MetaClassMethod.ExceptionTable>,  //method exception tables,they are differ from checked exception in function signature
-                                    MetaClassMethod.MethodExtension             //it would be change frequently, so there we create a flexible class to store data
-                                    > trailMethods = methodScopeRef.getMetaClass("java/lang/Object", classLoader.getClass()).methods.findMethod(methodName);
+                            Tuple6 trailMethods = methodScopeRef.getMetaClass("java/lang/Object", classLoader.getClass()).methods.findMethod(methodName);
                             if (!Predicate.isNull(trailMethods) && trailMethods.get2Placeholder().equals(methodDescriptor)) {
+                                //pop current stack frame
                                 stack.popFrame();
-                                int newMethodMaxLocals = trailMethods.get4Placeholder().maxLocals;
-                                int newMethodMaxStack = trailMethods.get4Placeholder().maxStack;
-                                boolean newMethodIsSynchronized = trailMethods.get6Placeholder().isSynchronized;
-                                ArrayList<MetaClassMethod.ExceptionTable> newMethodExceptionTable = trailMethods.get5Placeholder();
-                                try {
-                                    allocateStackFrame(newMethodMaxLocals, newMethodMaxStack);
-                                    for (int p = args.length - 1, s = 1; p >= 0; p--, s++) {
-                                        pushToLocalVariableStack(s, args[p]);
-                                    }
-                                    Opcode newMethodOp = new Opcode(trailMethods.get3Placeholder());
-                                    newMethodOp.codes2Opcodes();
-                                    newMethodOp.debug("recursive search in method invocation chain:" + trailMethods.get1Placeholder());
-                                    codeExecution(newMethodOp, newMethodExceptionTable, newMethodIsSynchronized);
-                                } catch (ClassInitializingException ignored) {
-                                    throw new VMExecutionException("failed to convert binary code to opcodes in executing " + methodName + " method");
-                                }
+                                //invoke method with args
+                                invokeMethod(args, trailMethods);
                             }
                         }
                     } else if (actualMethodInvocationClass.isClass == false) {
@@ -1618,6 +1563,7 @@ public final class CodeExecutionEngine {
                          *  this method if all of above clauses were dismatch
                          *
                          ***************************************************************/
+                        //todo:continue...
                     } else {
                         throw new VMExecutionException("can not find actual invoking method");
                     }
@@ -1637,20 +1583,7 @@ public final class CodeExecutionEngine {
                     String methodBelongingClass = symbolicReference.get1Placeholder().toString();
                     String methodName = symbolicReference.get2Placeholder().toString();
 
-                    if (!methodScopeRef.existClass(methodBelongingClass, classLoader.getClass())) {
-                        YClassLoader loader = new YClassLoader();
-                        loader.associateThread(thread);
-                        try {
-                            Tuple6 bundle = loader.loadClass(methodBelongingClass);
-                            MetaClass meta = loader.linkClass(bundle);
-                            thread.runtimeVM().methodScope().addMetaClass(meta);
-                            loader.loadInheritanceChain(meta.superClassName);
-                            loader.initializeClass(meta);
-                        } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
-                            throw new VMExecutionException("can not load class" + Peel.peelFieldDescriptor(methodBelongingClass)
-                                    + " while executing anewarray opcode");
-                        }
-                    }
+                    loadClassIfAbsent(methodBelongingClass);
 
                     Tuple6<String,                                                   //method name
                             String,                                                  //method descriptor
@@ -1697,24 +1630,10 @@ public final class CodeExecutionEngine {
                     for (int f = 0; f < methodParameter.size(); f++) {
                         args[f] = dg.pop();
                     }
-                    stack.popFrame();
-                    int newMethodMaxLocals = newMethodBundle.get4Placeholder().maxLocals;
-                    int newMethodMaxStack = newMethodBundle.get4Placeholder().maxStack;
-                    boolean newMethodIsSynchronized = newMethodBundle.get6Placeholder().isSynchronized;
-                    ArrayList<MetaClassMethod.ExceptionTable> newMethodExceptionTable = newMethodBundle.get5Placeholder();
-                    try {
-                        allocateStackFrame(newMethodMaxLocals, newMethodMaxStack);
-                        for (int p = args.length - 1, s = 1; p >= 0; p--, s++) {
-                            pushToLocalVariableStack(s, args[p]);
-                        }
-                        Opcode newMethodOp = new Opcode(newMethodBundle.get3Placeholder());
-                        newMethodOp.codes2Opcodes();
-                        newMethodOp.debug(methodScopeRef.getMetaClass(methodBelongingClass, classLoader.getClass()).qualifiedClassName + methodName);
-                        codeExecution(newMethodOp, newMethodExceptionTable, newMethodIsSynchronized);
-                    } catch (ClassInitializingException ignored) {
-                        throw new VMExecutionException("failed to convert binary code to opcodes in executing " + methodName + " method");
-                    }
 
+                    stack.popFrame();
+
+                    invokeMethod(args, newMethodBundle);
                 }
                 break;
 
@@ -2138,20 +2057,7 @@ public final class CodeExecutionEngine {
                             indexByte2;
 
                     String[] classes = (String[]) metaClassRef.constantPool.getClassNames().toArray();
-                    if (!methodScopeRef.existClass(classes[index], classLoader.getClass())) {
-                        YClassLoader loader = new YClassLoader();
-                        loader.associateThread(thread);
-                        try {
-                            Tuple6 bundle = loader.loadClass(classes[index]);
-                            MetaClass meta = loader.linkClass(bundle);
-                            thread.runtimeVM().methodScope().addMetaClass(meta);
-                            loader.loadInheritanceChain(meta.superClassName);
-                            loader.initializeClass(meta);
-                        } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
-                            throw new VMExecutionException("can not load class" + Peel.peelFieldDescriptor(classes[index])
-                                    + " while executing anewarray opcode");
-                        }
-                    }
+                    loadClassIfAbsent(classes[index]);
 
                     YArray array = new YArray(dimensions);
                     for (int t = 0; t < array.getLength(); t++) {
@@ -2180,20 +2086,7 @@ public final class CodeExecutionEngine {
                             indexByte2;
 
                     String[] classes = (String[]) metaClassRef.constantPool.getClassNames().toArray();
-                    if (!methodScopeRef.existClass(classes[index], classLoader.getClass())) {
-                        YClassLoader loader = new YClassLoader();
-                        loader.associateThread(thread);
-                        try {
-                            Tuple6 bundle = loader.loadClass(classes[index]);
-                            MetaClass meta = loader.linkClass(bundle);
-                            thread.runtimeVM().methodScope().addMetaClass(meta);
-                            loader.loadInheritanceChain(meta.superClassName);
-                            loader.initializeClass(meta);
-                        } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
-                            throw new VMExecutionException("can not load class" + Peel.peelFieldDescriptor(classes[index])
-                                    + " while executing anewarray opcode");
-                        }
-                    }
+                    loadClassIfAbsent(classes[index]);
 
                     YObject object = new YObject(methodScopeRef.getMetaClass(classes[index], classLoader.getClass()));
                     object.initiateFields(classLoader);
