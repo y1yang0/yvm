@@ -94,4 +94,13 @@ public class Peel {
         return nameSequences;
     }
 
+    public static int getArrayDimension(String arrayDesc) {
+        int count = 0;
+        for (int i = 0; i < arrayDesc.length(); i++) {
+            if (arrayDesc.charAt(i) == '[')
+                count++;
+        }
+        return count;
+    }
+
 }

@@ -67,7 +67,9 @@ public final class CodeExecutionEngine {
                 clinit = metaClassRef.methods.findMethod(methodName);
 
         if (Predicate.isNull(clinit) || Predicate.strNotEqual(clinit.get1Placeholder(), methodName)) {
-            throw new VMExecutionException("method not found");
+            if (!methodName.equals("<clinit>")) {
+                throw new VMExecutionException("method " + methodName + " not found");
+            }
         }
 
         int maxLocals = clinit.get4Placeholder().maxLocals;
@@ -1449,11 +1451,17 @@ public final class CodeExecutionEngine {
                         }
                     }
 
-                    Tuple6 methodBundle = methodScopeRef.getMetaClass(methodBelongingClass, classLoader.getClass()).methods.findMethod(methodName);
-                    boolean isStatic = ((MetaClassMethod.MethodExtension) methodBundle.get5Placeholder()).isStatic;
-                    boolean isAbstract = ((MetaClassMethod.MethodExtension) methodBundle.get5Placeholder()).isAbstract;
-                    boolean isSynchronizedMethod = ((MetaClassMethod.MethodExtension) methodBundle.get5Placeholder()).isSynchronized;
-                    boolean isNative = ((MetaClassMethod.MethodExtension) methodBundle.get5Placeholder()).isNative;
+                    Tuple6<String,                                                   //method name
+                            String,                                                  //method descriptor
+                            u1[],                                                    //method codes
+                            MetaClassMethod.StackRequirement,                        //stack requirement for this method
+                            ArrayList<MetaClassMethod.ExceptionTable>,               //method exception tables,they are differ from checked exception in function signature
+                            MetaClassMethod.MethodExtension>                         //method related attributes,it would be use for future vm version,there just ignore them
+                            newMethodBundle = methodScopeRef.getMetaClass(methodBelongingClass, classLoader.getClass()).methods.findMethod(methodName);
+                    boolean isStatic = newMethodBundle.get6Placeholder().isStatic;
+                    boolean isAbstract = newMethodBundle.get6Placeholder().isAbstract;
+                    boolean isSynchronizedMethod = newMethodBundle.get6Placeholder().isSynchronized;
+                    boolean isNative = newMethodBundle.get6Placeholder().isNative;
 
                     if (!isStatic && isAbstract) {
                         throw new VMExecutionException("the method " + methodName + "in class " + methodBelongingClass + " is not a static method");
@@ -1475,9 +1483,36 @@ public final class CodeExecutionEngine {
                         }
                     }
 
-                    String methodDescriptor = methodBundle.get2Placeholder().toString();
+                    String methodDescriptor = newMethodBundle.get2Placeholder();
+                    ArrayList<String> methodReturnType = Peel.peelFieldDescriptor(Peel.peelMethodDescriptorParameter(methodDescriptor)[1]);
+                    ArrayList<String> methodParameter = Peel.peelFieldDescriptor(Peel.peelMethodDescriptorParameter(methodDescriptor)[0]);
 
-                    //todo:invokestatic
+                    YObject[] args = new YObject[methodParameter.size()];
+                    for (int f = 0; f < methodParameter.size(); f++) {
+                        args[f] = dg.pop();
+                    }
+                    stack.popFrame();
+
+
+                    if (Predicate.isNull(newMethodBundle) || Predicate.strNotEqual(newMethodBundle.get1Placeholder(), methodName)) {
+                        //there are different from executeMethod(), any method invocation in opcode should be existed in method scope area
+                        throw new VMExecutionException("method " + methodName + "invocation can not continue");
+                    }
+
+                    int newMethodMaxLocals = newMethodBundle.get4Placeholder().maxLocals;
+                    int newMethodMaxStack = newMethodBundle.get4Placeholder().maxStack;
+                    boolean newMethodIsSynchronized = newMethodBundle.get6Placeholder().isSynchronized;
+                    ArrayList<MetaClassMethod.ExceptionTable> newMethodExceptionTable = newMethodBundle.get5Placeholder();
+                    try {
+                        allocateStackFrame(newMethodMaxLocals, newMethodMaxStack);
+                        Opcode newMethodOp = new Opcode(newMethodBundle.get3Placeholder());
+                        newMethodOp.codes2Opcodes();
+                        newMethodOp.debug(methodScopeRef.getMetaClass(methodBelongingClass, classLoader.getClass()).qualifiedClassName + methodName);
+                        codeExecution(newMethodOp, newMethodExceptionTable, newMethodIsSynchronized);
+                    } catch (ClassInitializingException ignored) {
+                        throw new VMExecutionException("failed to convert binary code to opcodes in executing " + methodName + " method");
+                    }
+
                 }
                 break;
 
