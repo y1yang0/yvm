@@ -83,11 +83,11 @@ public final class CodeExecutionEngine {
             allocateStackFrame(maxLocals, maxStack);
             Opcode op = new Opcode(clinit.get3Placeholder());
             op.codes2Opcodes();
-            op.debug(metaClassRef.qualifiedClassName + " clinit");
+            op.debug(metaClassRef.qualifiedClassName + methodName);
             //codeExecution(op,exceptionTable,isSynchronized);
 
         } catch (ClassInitializingException ignored) {
-            throw new VMExecutionException("failed to convert binary code to opcodes in executing <clinit> method");
+            throw new VMExecutionException("failed to convert binary code to opcodes in executing " + methodName + " method");
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         }
@@ -270,7 +270,7 @@ public final class CodeExecutionEngine {
                             loader.loadInheritanceChain(meta.superClassName);
                             loader.initializeClass(meta);
                         } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
-                            throw new VMExecutionException("can not load class" + Peel.peelDescriptor(classes[index])
+                            throw new VMExecutionException("can not load class" + Peel.peelFieldDescriptor(classes[index])
                                     + " while executing anewarray opcode");
                         }
                     }
@@ -1432,6 +1432,8 @@ public final class CodeExecutionEngine {
                     Tuple3 symbolicReference = metaClassRef.constantPool.findInSymbolicReference(index);
 
                     String methodBelongingClass = symbolicReference.get1Placeholder().toString();
+                    String methodName = symbolicReference.get2Placeholder().toString();
+
                     if (!methodScopeRef.existClass(methodBelongingClass, classLoader.getClass())) {
                         YClassLoader loader = new YClassLoader();
                         loader.associateThread(thread);
@@ -1442,10 +1444,38 @@ public final class CodeExecutionEngine {
                             loader.loadInheritanceChain(meta.superClassName);
                             loader.initializeClass(meta);
                         } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
-                            throw new VMExecutionException("can not load class" + Peel.peelDescriptor(methodBelongingClass)
+                            throw new VMExecutionException("can not load class" + Peel.peelFieldDescriptor(methodBelongingClass)
                                     + " while executing anewarray opcode");
                         }
                     }
+
+                    Tuple6 methodBundle = methodScopeRef.getMetaClass(methodBelongingClass, classLoader.getClass()).methods.findMethod(methodName);
+                    boolean isStatic = ((MetaClassMethod.MethodExtension) methodBundle.get5Placeholder()).isStatic;
+                    boolean isAbstract = ((MetaClassMethod.MethodExtension) methodBundle.get5Placeholder()).isAbstract;
+                    boolean isSynchronizedMethod = ((MetaClassMethod.MethodExtension) methodBundle.get5Placeholder()).isSynchronized;
+                    boolean isNative = ((MetaClassMethod.MethodExtension) methodBundle.get5Placeholder()).isNative;
+
+                    if (!isStatic && isAbstract) {
+                        throw new VMExecutionException("the method " + methodName + "in class " + methodBelongingClass + " is not a static method");
+                    }
+
+                    if (!isNative) {
+                        if (isSynchronizedMethod) {
+                            //todo:If the method is synchronized, the monitor associated with the
+                            //resolved Class object is entered or reentered as if by execution of
+                            //a monitorenter instruction (§monitorenter) in the current thread.
+                        }
+
+                    } else {
+                        //todo: if the method is native, call native function instead
+                        if (isSynchronizedMethod) {
+                            //todo:If the method is synchronized, the monitor associated with the
+                            //resolved Class object is entered or reentered as if by execution of
+                            //a monitorenter instruction (§monitorenter) in the current thread.
+                        }
+                    }
+
+                    String methodDescriptor = methodBundle.get2Placeholder().toString();
 
                     //todo:invokestatic
                 }
@@ -1881,7 +1911,7 @@ public final class CodeExecutionEngine {
                             loader.loadInheritanceChain(meta.superClassName);
                             loader.initializeClass(meta);
                         } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
-                            throw new VMExecutionException("can not load class" + Peel.peelDescriptor(classes[index])
+                            throw new VMExecutionException("can not load class" + Peel.peelFieldDescriptor(classes[index])
                                     + " while executing anewarray opcode");
                         }
                     }
@@ -1923,7 +1953,7 @@ public final class CodeExecutionEngine {
                             loader.loadInheritanceChain(meta.superClassName);
                             loader.initializeClass(meta);
                         } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
-                            throw new VMExecutionException("can not load class" + Peel.peelDescriptor(classes[index])
+                            throw new VMExecutionException("can not load class" + Peel.peelFieldDescriptor(classes[index])
                                     + " while executing anewarray opcode");
                         }
                     }
@@ -2017,7 +2047,7 @@ public final class CodeExecutionEngine {
                     }
 
                     Tuple3 fieldBundle = metaClassRef.constantPool.findInSymbolicReference(index);
-                    switch (Peel.peelDescriptor((String) fieldBundle.get3Placeholder())) {
+                    switch (Peel.peelFieldDescriptor((String) fieldBundle.get3Placeholder())) {
                         case "B":
                             object.setField(index, YObject.derivedFrom(value.toInteger()));
                             break;
@@ -2062,7 +2092,7 @@ public final class CodeExecutionEngine {
                     }
 
                     Tuple3 fieldBundle = metaClassRef.constantPool.findInSymbolicReference(index);
-                    switch (Peel.peelDescriptor((String) fieldBundle.get3Placeholder())) {
+                    switch (Peel.peelFieldDescriptor((String) fieldBundle.get3Placeholder())) {
                         case "B":
                             staticVar.setField(index, YObject.derivedFrom(value.toInteger()));
                             break;

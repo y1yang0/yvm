@@ -11,7 +11,7 @@ public class YStackFrame {
 
     public YStackFrame() {
         vars = new ArrayList<>();
-        operands = new Stack();
+        operands = new Stack<>();
     }
 
     public void allocateSize(int maxStack, int maxLocal) {

@@ -13,6 +13,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+class MethodAccessProperty {
+    public static final int ACC_SYNCHRONIZED = 0x0020;
+    public static final int ACC_STATIC = 0x0008;
+    public static final int ACC_ABSTRACT = 0x0400;
+    public static final int ACC_NATIVE = 0x0100;
+}
+
 public class MetaClassMethod implements Resolvable<MethodObject> {
     private
     Map<Integer,                                //method index at constant pool
@@ -63,8 +70,10 @@ public class MetaClassMethod implements Resolvable<MethodObject> {
 
             MethodExtension extension = new MethodExtension();
             extension.attrs = r.getAttributes();
-            extension.isSynchronized = (allMethods.get(i).accessFlags.getValue() & 0x0020) == 20;
-
+            extension.isSynchronized = getFlag(allMethods.get(i).accessFlags.getValue(), MethodAccessProperty.ACC_SYNCHRONIZED);
+            extension.isStatic = getFlag(allMethods.get(i).accessFlags.getValue(), MethodAccessProperty.ACC_STATIC);
+            extension.isAbstract = getFlag(allMethods.get(i).accessFlags.getValue(), MethodAccessProperty.ACC_ABSTRACT);
+            extension.isNative = getFlag(allMethods.get(i).accessFlags.getValue(), MethodAccessProperty.ACC_NATIVE);
             StackRequirement sr = new StackRequirement();
 
             ArrayList<MetaClassMethod.ExceptionTable> table = new ArrayList<>();
@@ -100,6 +109,19 @@ public class MetaClassMethod implements Resolvable<MethodObject> {
         }
     }
 
+    private boolean getFlag(int value, int flag) {
+        switch (flag) {
+            case MethodAccessProperty.ACC_ABSTRACT:
+                return (value & MethodAccessProperty.ACC_ABSTRACT) == 400;
+            case MethodAccessProperty.ACC_STATIC:
+                return (value & MethodAccessProperty.ACC_STATIC) == 8;
+            case MethodAccessProperty.ACC_SYNCHRONIZED:
+                return (value & MethodAccessProperty.ACC_SYNCHRONIZED) == 20;
+            case MethodAccessProperty.ACC_NATIVE:
+                return (value & MethodAccessProperty.ACC_NATIVE) == 100;
+        }
+        return false;
+    }
     public class StackRequirement {
         public int maxStack;
         public int maxLocals;
@@ -115,5 +137,8 @@ public class MetaClassMethod implements Resolvable<MethodObject> {
     public class MethodExtension {
         public ArrayList<Attribute> attrs;
         public boolean isSynchronized;
+        public boolean isStatic;
+        public boolean isAbstract;
+        public boolean isNative;
     }
 }

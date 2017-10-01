@@ -22,7 +22,7 @@ public class Peel {
         return -1;
     }
 
-    public static String peelDescriptor(String qualifiedClassName) {
+    public static String peelFieldDescriptor(String qualifiedClassName) {
         qualifiedClassName = qualifiedClassName.replaceAll("^\\[*L{0,1}", "");
         qualifiedClassName = qualifiedClassName.replaceAll(";", "");
         switch (qualifiedClassName) {
@@ -47,8 +47,15 @@ public class Peel {
         }
     }
 
-
     public static void main(String[] args) {
-        System.out.println(peelDescriptor("java/lang/ClassLoader.class"));
+        System.out.println(peelFieldDescriptor("java/lang/ClassLoader.class"));
+    }
+
+    public String[] peelMethodDescriptorParameter(String methodDescriptor) {
+        int leftBracket = methodDescriptor.indexOf('(');
+        int rightBracket = methodDescriptor.indexOf(')');
+        String parameterDescriptor = methodDescriptor.substring(leftBracket, rightBracket);
+        Pattern pattern = Pattern.compile("\\(\\)(V)|([B|C|D|F|I|J|S|Z]{1})|(L(.*);)|(\\[+([B|C|D|F|I|J|S|Z]{1}|L(.*);))");
+
     }
 }
