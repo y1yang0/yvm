@@ -24,6 +24,7 @@ public class YObject{
      *  they can create a YObject object representing primitive type
      *
      ***************************************************************/
+    @SuppressWarnings("unused")
     public YObject(){
         fields = new Object[1];
         metaClassReference = null;
@@ -36,6 +37,7 @@ public class YObject{
      *
      ***************************************************************/
 
+    @SuppressWarnings("unused")
     public YObject(int dimension) {
         fields = new Object[dimension];
         metaClassReference = null;
@@ -45,7 +47,7 @@ public class YObject{
      *  create a generic object
      *
      ***************************************************************/
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("unused")
     public YObject(MetaClass metaClass) {
         metaClassReference = metaClass;
         fields = null;
@@ -86,10 +88,12 @@ public class YObject{
         return new YObject().asBoolean(x);
     }
 
+    @SuppressWarnings("unused")
     public MetaClass getMetaClassReference() {
         return metaClassReference;
     }
 
+    @SuppressWarnings("unused")
     public void initiateFields(YClassLoader loader) {
         /***************************************************************
          *  get all fields of this class
@@ -189,14 +193,17 @@ public class YObject{
         fieldsInitialized = true;
     }
 
+    @SuppressWarnings("unused")
     public YObject getField(int index) {
         return (YObject) fields[index];
     }
 
+    @SuppressWarnings("unused")
     public void setField(int index, YObject value) {
         fields[index] = value;
     }
 
+    @SuppressWarnings("unused")
     public boolean isInitialized() {
         return fieldsInitialized;
     }
@@ -280,15 +287,17 @@ public class YObject{
         return (char) fields[0];
     }
 
-
-    public void setArrayComponent(int index, YObject value) {
+    @SuppressWarnings("unused")
+    void setArrayComponent(int index, YObject value) {
         fields[index] = value;
     }
 
-    public YObject getArrayComponent(int index) {
+    @SuppressWarnings("unused")
+    YObject getArrayComponent(int index) {
         return (YObject) fields[index];
     }
 
+    @SuppressWarnings("unused")
     public String getClassName() {
         return metaClassReference.qualifiedClassName;
     }
