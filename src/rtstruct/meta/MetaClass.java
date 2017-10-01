@@ -16,8 +16,8 @@ public class MetaClass {
     public MetaClassInterface interfaces;
     public MetaClassConstantPool constantPool;
     public MetaClassMethod methods;
+    public boolean isClass;
     private Map<Integer, Tuple5<String, String, Integer, Attribute[], YObject>> staticVars;
-    //private boolean isClass;
     //private Class classReference;
 
     public MetaClass() {

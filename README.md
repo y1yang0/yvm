@@ -15,6 +15,7 @@
 - [x] MetaClass去掉getter,setter
 - [ ] Javadoc注释
 - [ ] 支持synchronized临界
+- [ ] 支持wide指令
 
 # Implementation Details
 要想一个人完成Java虚拟机不是一件容易的事情，有很多交叉引用的数据需要合理的安排，需要自己设计运行时各种数据的表示

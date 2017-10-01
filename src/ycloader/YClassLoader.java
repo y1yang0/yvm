@@ -5,6 +5,7 @@ import rtstruct.YThread;
 import rtstruct.meta.*;
 import ycloader.adt.u2;
 import ycloader.adt.u4;
+import ycloader.constant.ClassAccessProperty;
 import ycloader.dataobject.*;
 import ycloader.exception.ClassInitializingException;
 import ycloader.exception.ClassLinkingException;
@@ -152,6 +153,7 @@ public class YClassLoader {
 
         meta.superClassName = cp.getClassName(bundle.get6Placeholder()[2].getValue());
         meta.accessFlag = bundle.get6Placeholder()[0].getValue();
+        meta.isClass = (ClassAccessProperty.ACC_INTERFACE & meta.accessFlag) != 200;
 
         MetaClassInterface resolvedInterface = new MetaClassInterface();
         resolvedInterface.resolve(inter, cp);

@@ -33,4 +33,8 @@ public class YMethodScope {
         }
         return false;
     }
+
+    public ArrayList<MetaClass> getAllClasses() {
+        return metas;
+    }
 }

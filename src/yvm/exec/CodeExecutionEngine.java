@@ -12,6 +12,7 @@ import rtstruct.ystack.YStack;
 import rtstruct.ystack.YStackFrame;
 import ycloader.YClassLoader;
 import ycloader.adt.u1;
+import ycloader.constant.ClassAccessProperty;
 import ycloader.exception.ClassInitializingException;
 import ycloader.exception.ClassLinkingException;
 import ycloader.exception.ClassLoadingException;
@@ -1421,11 +1422,209 @@ public final class CodeExecutionEngine {
                 }
                 break;
 
+                //Invoke instance method; special handling for superclass, private, and instance initialization method invocations
                 case Mnemonic.invokespecial: {
+                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                    int index = (indexByte1 << 8) | indexByte2;
+
+                    Tuple3 symbolicReference = metaClassRef.constantPool.findInSymbolicReference(index);
+
+                    String symbolicReferenceBelongingClassName = symbolicReference.get1Placeholder().toString();
+                    String methodName = symbolicReference.get2Placeholder().toString();
+
+                    if (!methodScopeRef.existClass(symbolicReferenceBelongingClassName, classLoader.getClass())) {
+                        YClassLoader loader = new YClassLoader();
+                        loader.associateThread(thread);
+                        try {
+                            Tuple6 bundle = loader.loadClass(symbolicReferenceBelongingClassName);
+                            MetaClass meta = loader.linkClass(bundle);
+                            thread.runtimeVM().methodScope().addMetaClass(meta);
+                            loader.loadInheritanceChain(meta.superClassName);
+                            loader.initializeClass(meta);
+                        } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
+                            throw new VMExecutionException("can not load class" + Peel.peelFieldDescriptor(symbolicReferenceBelongingClassName)
+                                    + " while executing anewarray opcode");
+                        }
+                    }
+
+                    Tuple6<String,                                                   //method name
+                            String,                                                  //method descriptor
+                            u1[],                                                    //method codes
+                            MetaClassMethod.StackRequirement,                        //stack requirement for this method
+                            ArrayList<MetaClassMethod.ExceptionTable>,               //method exception tables,they are differ from checked exception in function signature
+                            MetaClassMethod.MethodExtension>                         //method related attributes,it would be use for future vm version,there just ignore them
+                            methodBundle = methodScopeRef.getMetaClass(symbolicReferenceBelongingClassName, classLoader.getClass()).methods.findMethod(methodName);
+                    if (Predicate.isNull(methodBundle) || Predicate.strNotEqual(methodBundle.get1Placeholder(), methodName)) {
+                        //there are different from executeMethod(), any method invocation in opcode should be existed in method scope area
+                        throw new VMExecutionException("method " + methodName + "invocation can not continue");
+                    }
+
+                    boolean isProtected = methodBundle.get6Placeholder().isProtected;
+                    boolean isSynchronizedMethod = methodBundle.get6Placeholder().isSynchronized;
+                    boolean isNative = methodBundle.get6Placeholder().isNative;
+
+                    String methodDescriptor = methodBundle.get2Placeholder();
+                    ArrayList<String> methodReturnType = Peel.peelFieldDescriptor(Peel.peelMethodDescriptorParameter(methodDescriptor)[1]);
+                    ArrayList<String> methodParameter = Peel.peelFieldDescriptor(Peel.peelMethodDescriptorParameter(methodDescriptor)[0]);
+
+                    YObject[] args = new YObject[methodParameter.size()];
+                    for (int f = 0; f < methodParameter.size(); f++) {
+                        args[f] = dg.pop();
+                        //todo:check if they are corresponding to method parameter type and descriptor
+                    }
+                    YObject objectRef = dg.pop();
+
+                    if (isProtected) {
+                        //todo:check if it was declared in the same runtime package
+                    }
+
+                    MetaClass actualMethodInvocationClass = null;
+                    if (Predicate.strNotEqual(methodName, "<clinit>")) {
+                        if (methodScopeRef.getMetaClass(symbolicReferenceBelongingClassName, classLoader.getClass()).isClass == true
+                                && Predicate.strEqual(symbolicReferenceBelongingClassName, metaClassRef.superClassName)
+                                && (methodScopeRef.getMetaClass(symbolicReferenceBelongingClassName, classLoader.getClass()).accessFlag & ClassAccessProperty.ACC_SUPER) == 20) {
+                            actualMethodInvocationClass = methodScopeRef.getMetaClass(metaClassRef.superClassName, classLoader.getClass());
+                        }
+                    } else {
+                        actualMethodInvocationClass = methodScopeRef.getMetaClass(symbolicReferenceBelongingClassName, classLoader.getClass());
+                    }
+
+                    Tuple6<                                             //
+                            String,                                     //method name
+                            String,                                     //method descriptor
+                            u1[],                                       //method codes
+                            MetaClassMethod.StackRequirement,           //stack requirement for this method
+                            ArrayList<MetaClassMethod.ExceptionTable>,  //method exception tables,they are differ from checked exception in function signature
+                            MetaClassMethod.MethodExtension             //it would be change frequently, so there we create a flexible class to store data
+                            > actualInvokingMethod = actualMethodInvocationClass.methods.findMethod(methodName);
+                    if (!Predicate.isNull(actualInvokingMethod)) {
+                        /***************************************************************
+                         *  If C(actualMethodInvocationClass) contains a declaration for
+                         *  an instance method with the same name and descriptor as the
+                         *  resolved method, then it is the method to be invoked.
+                         *
+                         ***************************************************************/
+                        if (actualInvokingMethod.get2Placeholder().equals(methodDescriptor)
+                                && actualInvokingMethod.get1Placeholder().equals(methodName)) {
+                            stack.popFrame();
+                            int newMethodMaxLocals = actualInvokingMethod.get4Placeholder().maxLocals;
+                            int newMethodMaxStack = actualInvokingMethod.get4Placeholder().maxStack;
+                            boolean newMethodIsSynchronized = actualInvokingMethod.get6Placeholder().isSynchronized;
+                            ArrayList<MetaClassMethod.ExceptionTable> newMethodExceptionTable = actualInvokingMethod.get5Placeholder();
+                            try {
+                                allocateStackFrame(newMethodMaxLocals, newMethodMaxStack);
+                                for (int p = args.length - 1, s = 1; p >= 0; p--, s++) {
+                                    pushToLocalVariableStack(s, args[p]);
+                                }
+                                Opcode newMethodOp = new Opcode(actualInvokingMethod.get3Placeholder());
+                                newMethodOp.codes2Opcodes();
+                                newMethodOp.debug(methodScopeRef.getMetaClass(actualMethodInvocationClass.qualifiedClassName, classLoader.getClass()).qualifiedClassName + methodName);
+                                codeExecution(newMethodOp, newMethodExceptionTable, newMethodIsSynchronized);
+                            } catch (ClassInitializingException ignored) {
+                                throw new VMExecutionException("failed to convert binary code to opcodes in executing " + methodName + " method");
+                            }
+                        } else if (actualMethodInvocationClass.isClass == true &&
+                                actualMethodInvocationClass.superClassName != null) {
+                            /***************************************************************
+                             *  Otherwise, if C is a class and has a superclass, a search for
+                             *  a declaration of an instance method with the same name
+                             *  and descriptor as the resolved method is performed, starting
+                             *  with the direct superclass of C and continuing with the direct
+                             *  superclass of that class, and so forth, until a match is found or
+                             *  no further superclasses exist. If a match is found, then it is the
+                             *  method to be invoked.
+                             *
+                             ***************************************************************/
+                            class MethodInvocationRoutine {
+                                public void recursiveSearch(MetaClass c, String methodName, String methodDesc) {
+                                    Tuple6<                                             //
+                                            String,                                     //method name
+                                            String,                                     //method descriptor
+                                            u1[],                                       //method codes
+                                            MetaClassMethod.StackRequirement,           //stack requirement for this method
+                                            ArrayList<MetaClassMethod.ExceptionTable>,  //method exception tables,they are differ from checked exception in function signature
+                                            MetaClassMethod.MethodExtension             //it would be change frequently, so there we create a flexible class to store data
+                                            > trailMethods = c.methods.findMethod(methodName);
+                                    if (!Predicate.isNull(trailMethods)) {
+                                        if (trailMethods.get1Placeholder().equals(methodName) && trailMethods.get2Placeholder().equals(methodDesc)) {
+                                            stack.popFrame();
+                                            int newMethodMaxLocals = trailMethods.get4Placeholder().maxLocals;
+                                            int newMethodMaxStack = trailMethods.get4Placeholder().maxStack;
+                                            boolean newMethodIsSynchronized = trailMethods.get6Placeholder().isSynchronized;
+                                            ArrayList<MetaClassMethod.ExceptionTable> newMethodExceptionTable = trailMethods.get5Placeholder();
+                                            try {
+                                                allocateStackFrame(newMethodMaxLocals, newMethodMaxStack);
+                                                for (int p = args.length - 1, s = 1; p >= 0; p--, s++) {
+                                                    pushToLocalVariableStack(s, args[p]);
+                                                }
+                                                Opcode newMethodOp = new Opcode(trailMethods.get3Placeholder());
+                                                newMethodOp.codes2Opcodes();
+                                                newMethodOp.debug("recursive search in method invocation chain:" + trailMethods.get1Placeholder());
+                                                codeExecution(newMethodOp, newMethodExceptionTable, newMethodIsSynchronized);
+                                            } catch (ClassInitializingException ignored) {
+                                                throw new VMExecutionException("failed to convert binary code to opcodes in executing " + methodName + " method");
+                                            }
+                                        } else {
+                                            recursiveSearch(methodScopeRef.getMetaClass(c.superClassName, classLoader.getClass()), methodName, methodDesc);
+                                        }
+                                    } else {
+                                        throw new VMExecutionException("can not find actual invoking method");
+                                    }
+                                }
+                            }
+                            MethodInvocationRoutine routine = new MethodInvocationRoutine();
+                            routine.recursiveSearch(actualMethodInvocationClass, methodName, methodDescriptor);
+                        } else if (actualMethodInvocationClass.isClass == false) {
+                            /***************************************************************
+                             *  Otherwise, if C is an interface and the class Object contains a
+                             *  declaration of a public instance method with the same name
+                             *  and descriptor as the resolved method, then it is the method
+                             *  to be invoked.
+                             *
+                             ***************************************************************/
+                            Tuple6<                                             //
+                                    String,                                     //method name
+                                    String,                                     //method descriptor
+                                    u1[],                                       //method codes
+                                    MetaClassMethod.StackRequirement,           //stack requirement for this method
+                                    ArrayList<MetaClassMethod.ExceptionTable>,  //method exception tables,they are differ from checked exception in function signature
+                                    MetaClassMethod.MethodExtension             //it would be change frequently, so there we create a flexible class to store data
+                                    > trailMethods = methodScopeRef.getMetaClass("java/lang/Object", classLoader.getClass()).methods.findMethod(methodName);
+                            if (!Predicate.isNull(trailMethods) && trailMethods.get2Placeholder().equals(methodDescriptor)) {
+                                stack.popFrame();
+                                int newMethodMaxLocals = trailMethods.get4Placeholder().maxLocals;
+                                int newMethodMaxStack = trailMethods.get4Placeholder().maxStack;
+                                boolean newMethodIsSynchronized = trailMethods.get6Placeholder().isSynchronized;
+                                ArrayList<MetaClassMethod.ExceptionTable> newMethodExceptionTable = trailMethods.get5Placeholder();
+                                try {
+                                    allocateStackFrame(newMethodMaxLocals, newMethodMaxStack);
+                                    for (int p = args.length - 1, s = 1; p >= 0; p--, s++) {
+                                        pushToLocalVariableStack(s, args[p]);
+                                    }
+                                    Opcode newMethodOp = new Opcode(trailMethods.get3Placeholder());
+                                    newMethodOp.codes2Opcodes();
+                                    newMethodOp.debug("recursive search in method invocation chain:" + trailMethods.get1Placeholder());
+                                    codeExecution(newMethodOp, newMethodExceptionTable, newMethodIsSynchronized);
+                                } catch (ClassInitializingException ignored) {
+                                    throw new VMExecutionException("failed to convert binary code to opcodes in executing " + methodName + " method");
+                                }
+                            }
+                        }
+                    } else {
+                        /***************************************************************
+                         *  at last, we throw an exception to warn that we can not invoke
+                         *  this method if all of above clauses were dismatch
+                         *
+                         ***************************************************************/
+                        throw new VMExecutionException("can not find actual invoking method");
+                    }
+
                     //todo:invokespecial
                 }
                 break;
 
+                //Invoke a class (static) method
                 case Mnemonic.invokestatic: {
                     int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
                     int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
@@ -1458,6 +1657,11 @@ public final class CodeExecutionEngine {
                             ArrayList<MetaClassMethod.ExceptionTable>,               //method exception tables,they are differ from checked exception in function signature
                             MetaClassMethod.MethodExtension>                         //method related attributes,it would be use for future vm version,there just ignore them
                             newMethodBundle = methodScopeRef.getMetaClass(methodBelongingClass, classLoader.getClass()).methods.findMethod(methodName);
+                    if (Predicate.isNull(newMethodBundle) || Predicate.strNotEqual(newMethodBundle.get1Placeholder(), methodName)) {
+                        //there are different from executeMethod(), any method invocation in opcode should be existed in method scope area
+                        throw new VMExecutionException("method " + methodName + "invocation can not continue");
+                    }
+
                     boolean isStatic = newMethodBundle.get6Placeholder().isStatic;
                     boolean isAbstract = newMethodBundle.get6Placeholder().isAbstract;
                     boolean isSynchronizedMethod = newMethodBundle.get6Placeholder().isSynchronized;
@@ -1492,19 +1696,15 @@ public final class CodeExecutionEngine {
                         args[f] = dg.pop();
                     }
                     stack.popFrame();
-
-
-                    if (Predicate.isNull(newMethodBundle) || Predicate.strNotEqual(newMethodBundle.get1Placeholder(), methodName)) {
-                        //there are different from executeMethod(), any method invocation in opcode should be existed in method scope area
-                        throw new VMExecutionException("method " + methodName + "invocation can not continue");
-                    }
-
                     int newMethodMaxLocals = newMethodBundle.get4Placeholder().maxLocals;
                     int newMethodMaxStack = newMethodBundle.get4Placeholder().maxStack;
                     boolean newMethodIsSynchronized = newMethodBundle.get6Placeholder().isSynchronized;
                     ArrayList<MetaClassMethod.ExceptionTable> newMethodExceptionTable = newMethodBundle.get5Placeholder();
                     try {
                         allocateStackFrame(newMethodMaxLocals, newMethodMaxStack);
+                        for (int p = args.length - 1, s = 1; p >= 0; p--, s++) {
+                            pushToLocalVariableStack(s, args[p]);
+                        }
                         Opcode newMethodOp = new Opcode(newMethodBundle.get3Placeholder());
                         newMethodOp.codes2Opcodes();
                         newMethodOp.debug(methodScopeRef.getMetaClass(methodBelongingClass, classLoader.getClass()).qualifiedClassName + methodName);
@@ -2273,5 +2473,9 @@ public final class CodeExecutionEngine {
         YStackFrame frame = new YStackFrame();
         frame.allocateSize(maxStack, maxLocals);
         thread.runtimeThread().stack().pushFrame(frame);
+    }
+
+    private void pushToLocalVariableStack(int index, YObject object) {
+        thread.runtimeThread().stack().currentFrame().setLocalVariable(index, object);
     }
 }
