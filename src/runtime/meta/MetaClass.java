@@ -18,7 +18,6 @@ public class MetaClass {
     public MetaClassMethod methods;
     public boolean isClass;
     private Map<Integer, Tuple5<String, String, Integer, Attribute[], YObject>> staticVars;
-    //private Class classReference;
 
     public MetaClass() {
         staticVars = new HashMap<>();

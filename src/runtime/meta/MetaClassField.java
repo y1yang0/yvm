@@ -8,7 +8,6 @@ import ycloader.adt.field.FieldInfo;
 import ycloader.dataobject.ConstantPoolObject;
 import ycloader.dataobject.FieldObject;
 import yvm.adt.DebugExtension;
-import yvm.adt.Resolvable;
 import yvm.constant.MetaClassConstant;
 
 import java.util.ArrayList;

@@ -217,5 +217,4 @@ public interface Mnemonic {
     int breakpoint = 202;
     int impdep1 = 254;
     int impdep2 = 255;
-
 }

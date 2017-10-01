@@ -1,10 +1,7 @@
 package yvm.exec;
 
 import common.*;
-import runtime.YArray;
-import runtime.YMethodScope;
-import runtime.YObject;
-import runtime.YThread;
+import runtime.*;
 import runtime.meta.MetaClass;
 import runtime.meta.MetaClassConstantPool;
 import runtime.meta.MetaClassMethod;
@@ -208,7 +205,7 @@ public final class CodeExecutionEngine {
                     int index = (indexByte1 << 8) |
                             indexByte2;
 
-                    String[] classes = (String[]) metaClassRef.constantPool.getClassNames().toArray();
+                    String[] classes = (String[]) constantPool().getClassNames().toArray();
                     loadClassIfAbsent(classes[index]);
 
                     YArray array = new YArray(count);
@@ -219,7 +216,7 @@ public final class CodeExecutionEngine {
                     }
 
                     //add to runtime virtual machine heap section
-                    thread.runtimeVM().heap().addToArrayArea(array);
+                    runtimeHeap().addToArrayArea(array);
                     //push reference to operand stackRef
                     dg.pushArray(array);
 
@@ -371,7 +368,52 @@ public final class CodeExecutionEngine {
                 }
                 break;
 
+                //Check whether object is of given type
                 case Mnemonic.checkcast: {
+                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                    YObject object = dg.pop();
+
+                    int index = (indexByte1 << 8) |
+                            indexByte2;
+
+                    if (object != null) {
+                        String resolveClass = constantPool().findInClass(index);
+                        loadClassIfAbsent(resolveClass);
+                        MetaClass metaClass = methodScopeRef.getMetaClass(resolveClass, classLoader.getClass());
+
+                        //If S is an ordinary (nonarray) class
+                        if (object.getMetaClassReference().isClass && !Predicate.isArray(object.getMetaClassReference().qualifiedClassName)) {
+                            if (!Predicate.isSameClass(object.getMetaClassReference(), metaClass)
+                                    && !methodScopeRef.isSubclass(metaClass, object.getMetaClassReference(), classLoader.getClass()))
+                                throw new ClassCastException("the object can not match the given type");
+                        }
+                        //If S is an interface type
+                        else if (!object.getMetaClassReference().isClass) {
+                            if (metaClass.isClass) {
+                                if (!metaClass.qualifiedClassName.equals("java/lang/Object")) {
+                                    throw new ClassCastException("the object can not match the given type");
+                                } else {
+                                    if (!Predicate.isSameClass(object.getMetaClassReference(), metaClass)
+                                            && !object.getMetaClassReference().interfaces.getInterfaceNames().contains(metaClass.qualifiedClassName)) {
+                                        throw new ClassCastException("the object can not match the given type");
+                                    }
+                                }
+                            }
+                        }
+                        //If S is a class representing the array type SC[]
+                        else if (object.getMetaClassReference().isClass && Predicate.isArray(object.getMetaClassReference().qualifiedClassName)) {
+                            if (metaClass.isClass && !Predicate.isArray(metaClass.qualifiedClassName)) {
+                                if (!metaClass.qualifiedClassName.equals("java/lang/Object")) {
+                                    throw new ClassCastException("the object can not match the given type");
+                                }
+                            } else if (!metaClass.isClass && !Predicate.isArray(metaClass.qualifiedClassName)) {
+                                //todo:continue...
+                            } else if (!metaClass.isClass && Predicate.isArray(metaClass.qualifiedClassName)) {
+                                //todo:continue...
+                            }
+                        }
+                    }
                     //todo:checkcast
                 }
                 break;
@@ -1358,7 +1400,7 @@ public final class CodeExecutionEngine {
                     int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                     int index = (indexByte1 << 8) | indexByte2;
 
-                    Tuple3 symbolicReference = metaClassRef.constantPool.findInSymbolicReference(index);
+                    Tuple3 symbolicReference = constantPool().findInSymbolicReference(index);
 
                     String symbolicReferenceBelongingClassName = symbolicReference.get1Placeholder().toString();
                     String methodName = symbolicReference.get2Placeholder().toString();
@@ -1496,7 +1538,7 @@ public final class CodeExecutionEngine {
                     int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
                     int index = (indexByte1 << 8) | indexByte2;
 
-                    Tuple3 symbolicReference = metaClassRef.constantPool.findInSymbolicReference(index);
+                    Tuple3 symbolicReference = constantPool().findInSymbolicReference(index);
 
                     String symbolicReferenceMethodBelongingClass = symbolicReference.get1Placeholder().toString();
                     String methodName = symbolicReference.get2Placeholder().toString();
@@ -1739,7 +1781,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.ldc: {
                     int index = ((GenericOperand) cd.get3Placeholder()).get0();
 
-                    MetaClassConstantPool poolRef = metaClassRef.constantPool;
+                    MetaClassConstantPool poolRef = constantPool();
 
                     if (!Predicate.isNull(poolRef.findInFloat(index))) {
                         dg.push(YObject.derivedFrom(poolRef.findInFloat(index)));
@@ -1761,7 +1803,7 @@ public final class CodeExecutionEngine {
                     int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get0();
                     int index = (indexByte1 << 8) | indexByte2;
 
-                    MetaClassConstantPool poolRef = metaClassRef.constantPool;
+                    MetaClassConstantPool poolRef = constantPool();
 
                     if (!Predicate.isNull(poolRef.findInFloat(index))) {
                         dg.push(YObject.derivedFrom(poolRef.findInFloat(index)));
@@ -1783,7 +1825,7 @@ public final class CodeExecutionEngine {
                     int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get0();
                     int index = (indexByte1 << 8) | indexByte2;
 
-                    MetaClassConstantPool poolRef = metaClassRef.constantPool;
+                    MetaClassConstantPool poolRef = constantPool();
 
                     if (!Predicate.isNull(poolRef.findInLong(index))) {
                         dg.push(YObject.derivedFrom(poolRef.findInLong(index)));
@@ -1972,7 +2014,7 @@ public final class CodeExecutionEngine {
                     int index = (indexByte1 << 8) |
                             indexByte2;
 
-                    String[] classes = (String[]) metaClassRef.constantPool.getClassNames().toArray();
+                    String[] classes = (String[]) constantPool().getClassNames().toArray();
                     loadClassIfAbsent(classes[index]);
 
                     YArray array = new YArray(dimensions);
@@ -1987,7 +2029,7 @@ public final class CodeExecutionEngine {
                     }
 
                     //add to runtime virtual machine heap section
-                    thread.runtimeVM().heap().addToArrayArea(array);
+                    runtimeHeap().addToArrayArea(array);
                     //push reference to operand stackRef
                     dg.pushArray(array);
                 }
@@ -2001,12 +2043,12 @@ public final class CodeExecutionEngine {
                     int index = (indexByte1 << 8) |
                             indexByte2;
 
-                    String[] classes = (String[]) metaClassRef.constantPool.getClassNames().toArray();
+                    String[] classes = (String[]) constantPool().getClassNames().toArray();
                     loadClassIfAbsent(classes[index]);
 
                     YObject object = new YObject(methodScopeRef.getMetaClass(classes[index], classLoader.getClass()));
                     object.initiateFields(classLoader);
-                    thread.runtimeVM().heap().addToObjectArea(object);
+                    runtimeHeap().addToObjectArea(object);
                     dg.push(object);
                 }
                 break;
@@ -2050,7 +2092,7 @@ public final class CodeExecutionEngine {
                     }
 
                     //add to runtime virtual machine heap section
-                    thread.runtimeVM().heap().addToArrayArea(array);
+                    runtimeHeap().addToArrayArea(array);
                     //push reference to operand stackRef
                     dg.pushArray(array);
                 }
@@ -2092,7 +2134,7 @@ public final class CodeExecutionEngine {
                         object.initiateFields(classLoader);
                     }
 
-                    Tuple3 fieldBundle = metaClassRef.constantPool.findInSymbolicReference(index);
+                    Tuple3 fieldBundle = constantPool().findInSymbolicReference(index);
                     switch (Peel.peelFieldDescriptor((String) fieldBundle.get3Placeholder()).get(0)) {
                         case "java/lang/Byte":
                             object.setField(index, YObject.derivedFrom(value.toInteger()));
@@ -2137,7 +2179,7 @@ public final class CodeExecutionEngine {
                         staticVar.initiateFields(classLoader);
                     }
 
-                    Tuple3 fieldBundle = metaClassRef.constantPool.findInSymbolicReference(index);
+                    Tuple3 fieldBundle = constantPool().findInSymbolicReference(index);
                     switch (Peel.peelFieldDescriptor((String) fieldBundle.get3Placeholder()).get(0)) {
                         case "java/lang/Byte":
                             staticVar.setField(index, YObject.derivedFrom(value.toInteger()));
@@ -2279,6 +2321,14 @@ public final class CodeExecutionEngine {
         Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
     }
 
+    private YHeap runtimeHeap() {
+        return thread.runtimeVM().heap();
+    }
+
+    private MetaClassConstantPool constantPool() {
+        return metaClassRef.constantPool;
+    }
+
     private void destroyStackFrame() {
         thread.runtimeThread().stack().currentFrame().clearOperand();
         thread.runtimeThread().stack().currentFrame().clearLocalVar();
@@ -2319,6 +2369,10 @@ public final class CodeExecutionEngine {
     }
 
     private void loadClassIfAbsent(String className) {
+        className = Peel.peelFieldDescriptor(className).get(0);
+        if (Predicate.isArray(className)) {
+            className = className.replaceAll("\\[", "");
+        }
         if (!methodScopeRef.existClass(className, classLoader.getClass())) {
             YClassLoader loader = new YClassLoader();
             loader.associateThread(thread);

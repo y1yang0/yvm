@@ -7,7 +7,6 @@ import ycloader.adt.field.FieldInfo;
 import ycloader.adt.u1;
 import ycloader.dataobject.ConstantPoolObject;
 import ycloader.dataobject.MethodObject;
-import yvm.adt.Resolvable;
 
 import java.util.ArrayList;
 import java.util.HashMap;

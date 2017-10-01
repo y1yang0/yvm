@@ -1,4 +1,4 @@
-# ![](https://github.com/racaljk/yvm/blob/master/public/older.png) Ynottry Virtual Machine
+# ![](https://github.com/racaljk/yvm/blob/master/public/older.png) YVM
 用Java HotSpot VM(Server)开发的Java VM,一个小小的自举,目标是完全支持JDK1.8.0,
 目前对效率没什么追求,所以代码执行引擎采用解释执行.
 
@@ -16,6 +16,7 @@
 - [ ] Javadoc注释
 - [ ] 支持synchronized临界
 - [ ] 支持wide指令
+- [ ] 单元测试
 
 # Implementation Details
 要想一个人完成Java虚拟机不是一件容易的事情，有很多交叉引用的数据需要合理的安排，需要自己设计运行时各种数据的表示
@@ -29,7 +30,7 @@
 + `invokedynamic`是用于支持动态类型语言的Opcode，但是离目前能运行的Goal还有一段时间，所以
 暂时不支持，但是我觉得挺有意思的，以后一定会添加上(runtime data已经获取了，只是opcode没有实现)
 + 浮点值在NaN/infinity等极值下的计算会造成VM crash，日后修复
-+ 用户在`*.class`中自定义的Attributes不会保留到运行时
++ 对于高级用户，需要注意在`*.class`中自定义的Attributes不会保留到运行时
 
 # License
 采用MIT协议发布

@@ -1,6 +1,7 @@
 package common;
 
 import runtime.YArray;
+import runtime.meta.MetaClass;
 
 public class Predicate {
     public static <_T> boolean isNull(_T obj) {
@@ -19,8 +20,12 @@ public class Predicate {
         return index >= 0 && arr.getLength() > index;
     }
 
-    public static boolean isClass(Class x) {
-        return x.isLocalClass() || x.isMemberClass() || x.isAnonymousClass();
+    public static boolean isArray(String desc) {
+        return desc.contains("[");
+    }
+
+    public static boolean isSameClass(MetaClass a, MetaClass b) {
+        return a.qualifiedClassName.equals(b.qualifiedClassName);
     }
 
     public static boolean isCategory1ComputationalType(Object x) {

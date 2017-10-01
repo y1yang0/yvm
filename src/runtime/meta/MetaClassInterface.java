@@ -3,8 +3,8 @@ package runtime.meta;
 import ycloader.adt.u2;
 import ycloader.dataobject.ConstantPoolObject;
 import ycloader.dataobject.InterfacesObject;
-import yvm.adt.Resolvable;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,5 +22,9 @@ public class MetaClassInterface implements Resolvable<InterfacesObject> {
             String name = cp.at(index).toString();
             interfaceMap.put(index, name);
         }
+    }
+
+    public Collection<String> getInterfaceNames() {
+        return interfaceMap.values();
     }
 }

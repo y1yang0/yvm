@@ -1,5 +1,6 @@
 package runtime;
 
+import common.Predicate;
 import runtime.meta.MetaClass;
 
 import java.util.ArrayList;
@@ -29,6 +30,18 @@ public class YMethodScope {
         for (MetaClass m : metas) {
             if (m.classLoader == classLoader && m.qualifiedClassName.equals(className)) {
                 return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean isSubclass(MetaClass a, MetaClass sub, Class classLoader) {
+        if (!Predicate.isNull(sub.superClassName)) {
+            if (sub.superClassName.equals(a.qualifiedClassName)
+                    && getMetaClass(sub.superClassName, classLoader).classLoader == a.classLoader) {
+                return true;
+            } else {
+                isSubclass(a, getMetaClass(sub.superClassName, classLoader), classLoader);
             }
         }
         return false;
