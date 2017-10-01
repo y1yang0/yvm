@@ -136,21 +136,21 @@ public class YObject{
                     .getStartupThread()
                     .runtimeVM()
                     .methodScope()
-                    .existClass(Peel.peelFieldDescriptor(((Tuple4) bundle).get2Placeholder().toString()), loader.getClass())) {
+                    .existClass(Peel.peelFieldDescriptor(((Tuple4) bundle).get2Placeholder().toString()).get(0), loader.getClass())) {
                 try {
-                    Tuple6 bundle1 = loader.loadClass(Peel.peelFieldDescriptor(((Tuple4) bundle).get2Placeholder().toString()));
+                    Tuple6 bundle1 = loader.loadClass(Peel.peelFieldDescriptor(((Tuple4) bundle).get2Placeholder().toString()).get(0));
                     MetaClass meta = loader.linkClass(bundle1);
                     loader.getStartupThread().runtimeVM().methodScope().addMetaClass(meta);
                     loader.loadInheritanceChain(meta.superClassName);
                     loader.initializeClass(meta);
                 } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
-                    throw new VMExecutionException("can not load class" + Peel.peelFieldDescriptor(Peel.peelFieldDescriptor(((Tuple4) bundle).get2Placeholder().toString()))
+                    throw new VMExecutionException("can not load class" + Peel.peelFieldDescriptor(Peel.peelFieldDescriptor(((Tuple4) bundle).get2Placeholder().toString()).get(0))
                             + " while executing anewarray opcode");
                 }
             }
 
             //if is a primitive type, assign a default value, or create a new instance
-            switch (Peel.peelFieldDescriptor(((Tuple4) bundle).get2Placeholder().toString())) {
+            switch (Peel.peelFieldDescriptor(((Tuple4) bundle).get2Placeholder().toString()).get(0)) {
                 case "java/lang/Byte":
                 case "java/lang/Short":
                 case "java/lang/Long":
@@ -176,7 +176,7 @@ public class YObject{
                                     .methodScope()
                                     .getMetaClass(
                                             Peel.peelFieldDescriptor(
-                                                    ((Tuple4) bundle).get2Placeholder().toString()),
+                                                    ((Tuple4) bundle).get2Placeholder().toString()).get(0),
                                             loader.getClass()));
                     break;
             }

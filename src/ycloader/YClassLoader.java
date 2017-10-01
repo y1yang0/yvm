@@ -197,7 +197,7 @@ public class YClassLoader {
             throws ClassLoadingException, ClassLinkingException, ClassInitializingException {
         Collection<String> classes = metaClass.constantPool.getClassNames();
         for (String aClass : classes) {
-            String peeledClass = Peel.peelFieldDescriptor(aClass);
+            String peeledClass = Peel.peelFieldDescriptor(aClass).get(0);
             if (!threadRef.runtimeVM().methodScope().existClass(peeledClass, this.getClass())) {
                 Tuple6 bundle = loadClass(peeledClass);
                 MetaClass meta = linkClass(bundle);

@@ -2047,29 +2047,29 @@ public final class CodeExecutionEngine {
                     }
 
                     Tuple3 fieldBundle = metaClassRef.constantPool.findInSymbolicReference(index);
-                    switch (Peel.peelFieldDescriptor((String) fieldBundle.get3Placeholder())) {
-                        case "B":
+                    switch (Peel.peelFieldDescriptor((String) fieldBundle.get3Placeholder()).get(0)) {
+                        case "java/lang/Byte":
                             object.setField(index, YObject.derivedFrom(value.toInteger()));
                             break;
-                        case "C":
+                        case "java/lang/Character":
                             object.setField(index, YObject.derivedFrom(value.toChar()));
                             break;
-                        case "D":
+                        case "java/lang/Double":
                             object.setField(index, YObject.derivedFrom(value.toDouble()));
                             break;
-                        case "F":
+                        case "java/lang/Float":
                             object.setField(index, YObject.derivedFrom(value.toFloat()));
                             break;
-                        case "I":
+                        case "java/lang/Integer":
                             object.setField(index, YObject.derivedFrom(value.toInteger()));
                             break;
-                        case "J":
+                        case "java/lang/Long":
                             object.setField(index, YObject.derivedFrom(value.toLong()));
                             break;
-                        case "S":
+                        case "java/lang/Short":
                             object.setField(index, YObject.derivedFrom(value.toInteger()));
                             break;
-                        case "Z":
+                        case "java/lang/Boolean":
                             object.setField(index, YObject.derivedFrom(value.toBoolean()));
                             break;
                         default:
@@ -2092,29 +2092,29 @@ public final class CodeExecutionEngine {
                     }
 
                     Tuple3 fieldBundle = metaClassRef.constantPool.findInSymbolicReference(index);
-                    switch (Peel.peelFieldDescriptor((String) fieldBundle.get3Placeholder())) {
-                        case "B":
+                    switch (Peel.peelFieldDescriptor((String) fieldBundle.get3Placeholder()).get(0)) {
+                        case "java/lang/Byte":
                             staticVar.setField(index, YObject.derivedFrom(value.toInteger()));
                             break;
-                        case "C":
+                        case "java/lang/Character":
                             staticVar.setField(index, YObject.derivedFrom(value.toChar()));
                             break;
-                        case "D":
+                        case "java/lang/Double":
                             staticVar.setField(index, YObject.derivedFrom(value.toDouble()));
                             break;
-                        case "F":
+                        case "java/lang/Float":
                             staticVar.setField(index, YObject.derivedFrom(value.toFloat()));
                             break;
-                        case "I":
+                        case "java/lang/Integer":
                             staticVar.setField(index, YObject.derivedFrom(value.toInteger()));
                             break;
-                        case "J":
+                        case "java/lang/Long":
                             staticVar.setField(index, YObject.derivedFrom(value.toLong()));
                             break;
-                        case "S":
+                        case "java/lang/Short":
                             staticVar.setField(index, YObject.derivedFrom(value.toInteger()));
                             break;
-                        case "Z":
+                        case "java/lang/Boolean":
                             staticVar.setField(index, YObject.derivedFrom(value.toBoolean()));
                             break;
                         default:
