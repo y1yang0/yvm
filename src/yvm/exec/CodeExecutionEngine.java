@@ -1,8 +1,6 @@
 package yvm.exec;
 
-import common.Predicate;
-import common.Tuple3;
-import common.Tuple6;
+import common.*;
 import runtime.YArray;
 import runtime.YMethodScope;
 import runtime.YObject;
@@ -26,6 +24,7 @@ import yvm.constant.NewArrayType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -39,7 +38,6 @@ public final class CodeExecutionEngine {
     private YMethodScope methodScopeRef;
     @ValueRequired
     private YClassLoader classLoader;
-
     private boolean ignited;
     private Lock methodLock;
 
@@ -54,8 +52,6 @@ public final class CodeExecutionEngine {
         this.thread = loader.getStartupThread();
         ignited = true;
     }
-
-
 
     @SuppressWarnings("unchecked")
     public void executeMethod(String methodName) {
@@ -73,7 +69,7 @@ public final class CodeExecutionEngine {
         Tuple6<String,                                                   //method name
                 String,                                                  //method descriptor
                 u1[],                                                    //method codes
-                MetaClassMethod.StackRequirement,                        //stack requirement for this method
+                MetaClassMethod.StackRequirement,                        //stackRef requirement for this method
                 ArrayList<MetaClassMethod.ExceptionTable>,               //method exception tables,they are differ from checked exception in function signature
                 MetaClassMethod.MethodExtension>                         //method related attributes,it would be use for future vm version,there just ignore them
                 methodBundle = metaClassRef.methods.findMethod(methodName);
@@ -90,42 +86,13 @@ public final class CodeExecutionEngine {
     @SuppressWarnings({"unchecked","unused"})
     private void codeExecution(Opcode op, ArrayList<MetaClassMethod.ExceptionTable> exceptionTable, boolean isSynchronized) {
         /***************************************************************
-         *  get current thread stack reference, and create a convenient
+         *  get current thread stackRef reference, and create a convenient
          *  operator class <ConvenientDelegate> to execute push/pop of
-         *  stack operations
+         *  stackRef operations
          *
          ***************************************************************/
         YStack stack = thread.runtimeThread().stack();
-        class ConvenientDelegate {
-            private void clear() {
-                stack.currentFrame().clearOperand();
-            }
-            private YObject peek() {
-                return  stack.currentFrame().peekOperand();
-            }
-            private YObject pop() {
-                return  stack.currentFrame().popOperand();
-            }
-            private void push(YObject object) {
-                stack.currentFrame().pushOperand(object);
-            }
-            private void setLocalVar(int index,YObject value){
-                stack.currentFrame().setLocalVariable(index,value);
-            }
-            private YObject getLocalVar(int index){
-                return  stack.currentFrame().getLocalVariable(index);
-            }
-            private int popInt(){return stack.currentFrame().popOperand().toInteger();}
-            private double popDouble(){return  stack.currentFrame().popOperand().toDouble();}
-            private long popLong(){return stack.currentFrame().popOperand().toLong();}
-            private float popFloat(){return  stack.currentFrame().popOperand().toFloat();}
-            private YArray popArray(){return (YArray) stack.currentFrame().popOperand();}
-
-            private void pushArray(YArray array) {
-                stack.currentFrame().pushOperand(array);
-            }
-        }
-        ConvenientDelegate dg = new ConvenientDelegate();//use a convenient delegate class to wrap stack operations
+        ConvenientDelegate dg = new ConvenientDelegate();
 
 
         /***************************************************************
@@ -154,18 +121,7 @@ public final class CodeExecutionEngine {
          *  method
          *
          ***************************************************************/
-        class ConvenientExceptionTableDelegate {
-            private int findException(int programCounter, String x) {
-                for (MetaClassMethod.ExceptionTable CatchType : exceptionTable) {
-                    if (CatchType.catchTypeName.equals(x) && CatchType.startPC <= programCounter
-                            && CatchType.endPC >= programCounter) {
-                        return CatchType.handlePC;
-                    }
-                }
-                return -1;
-            }
-        }
-        ConvenientExceptionTableDelegate etDg = new ConvenientExceptionTableDelegate();
+        ConvenientExceptionTableDelegate etDg = new ConvenientExceptionTableDelegate(exceptionTable);
 
 
         /***************************************************************
@@ -264,7 +220,7 @@ public final class CodeExecutionEngine {
 
                     //add to runtime virtual machine heap section
                     thread.runtimeVM().heap().addToArrayArea(array);
-                    //push reference to operand stack
+                    //push reference to operand stackRef
                     dg.pushArray(array);
 
                 }
@@ -278,8 +234,7 @@ public final class CodeExecutionEngine {
                     Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
                     //todo:check if the objectRef is corresponding to method return type;[enhance]
 
-                    dg.clear();
-                    stack.popFrame();
+                    destroyStackFrame();
                     stack.currentFrame().pushOperand(objectRef);
                     return;
                 }
@@ -550,8 +505,7 @@ public final class CodeExecutionEngine {
 
                     Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
                     //todo:check if the objectRef is corresponding to method return type;[enhance]
-                    dg.clear();
-                    stack.popFrame();
+                    destroyStackFrame();
                     stack.currentFrame().pushOperand(YObject.derivedFrom(value));
                     return;
                 }
@@ -844,8 +798,7 @@ public final class CodeExecutionEngine {
 
                     Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
                     //todo:check if the objectRef is corresponding to method return type;[enhance]
-                    dg.clear();
-                    stack.popFrame();
+                    destroyStackFrame();
                     stack.currentFrame().pushOperand(YObject.derivedFrom(value));
                     return;
                 }
@@ -1415,7 +1368,7 @@ public final class CodeExecutionEngine {
                     Tuple6<String,                                                   //method name
                             String,                                                  //method descriptor
                             u1[],                                                    //method codes
-                            MetaClassMethod.StackRequirement,                        //stack requirement for this method
+                            MetaClassMethod.StackRequirement,                        //stackRef requirement for this method
                             ArrayList<MetaClassMethod.ExceptionTable>,               //method exception tables,they are differ from checked exception in function signature
                             MetaClassMethod.MethodExtension>                         //method related attributes,it would be use for future vm version,there just ignore them
                             methodBundle = methodScopeRef.getMetaClass(symbolicReferenceBelongingClassName, classLoader.getClass()).methods.findMethod(methodName);
@@ -1458,7 +1411,7 @@ public final class CodeExecutionEngine {
                             String,                                     //method name
                             String,                                     //method descriptor
                             u1[],                                       //method codes
-                            MetaClassMethod.StackRequirement,           //stack requirement for this method
+                            MetaClassMethod.StackRequirement,           //stackRef requirement for this method
                             ArrayList<MetaClassMethod.ExceptionTable>,  //method exception tables,they are differ from checked exception in function signature
                             MetaClassMethod.MethodExtension             //it would be change frequently, so there we create a flexible class to store data
                             > actualInvokingMethod = actualMethodInvocationClass.methods.findMethod(methodName);
@@ -1472,7 +1425,7 @@ public final class CodeExecutionEngine {
                         if (actualInvokingMethod.get2Placeholder().equals(methodDescriptor)
                                 && actualInvokingMethod.get1Placeholder().equals(methodName)) {
 
-                            stack.popFrame();
+                            destroyStackFrame();
 
                             invokeMethod(args, actualInvokingMethod);
 
@@ -1494,8 +1447,8 @@ public final class CodeExecutionEngine {
                                     if (!Predicate.isNull(trailMethods)) {
                                         if (trailMethods.get1Placeholder().equals(methodName)
                                                 && trailMethods.get2Placeholder().equals(methodDesc)) {
-                                            //pop current stack frame
-                                            stack.popFrame();
+                                            //pop current stackRef frame
+                                            destroyStackFrame();
                                             //invoke method with args
                                             invokeMethod(args, trailMethods);
                                         } else {
@@ -1516,8 +1469,8 @@ public final class CodeExecutionEngine {
                              ***************************************************************/
                             Tuple6 trailMethods = methodScopeRef.getMetaClass("java/lang/Object", classLoader.getClass()).methods.findMethod(methodName);
                             if (!Predicate.isNull(trailMethods) && trailMethods.get2Placeholder().equals(methodDescriptor)) {
-                                //pop current stack frame
-                                stack.popFrame();
+                                //pop current stackRef frame
+                                destroyStackFrame();
                                 //invoke method with args
                                 invokeMethod(args, trailMethods);
                             }
@@ -1553,7 +1506,7 @@ public final class CodeExecutionEngine {
                     Tuple6<String,                                                   //method name
                             String,                                                  //method descriptor
                             u1[],                                                    //method codes
-                            MetaClassMethod.StackRequirement,                        //stack requirement for this method
+                            MetaClassMethod.StackRequirement,                        //stackRef requirement for this method
                             ArrayList<MetaClassMethod.ExceptionTable>,               //method exception tables,they are differ from checked exception in function signature
                             MetaClassMethod.MethodExtension>                         //method related attributes,it would be use for future vm version,there just ignore them
                             newMethodBundle = methodScopeRef.getMetaClass(symbolicReferenceMethodBelongingClass, classLoader.getClass()).methods.findMethod(methodName);
@@ -1596,7 +1549,7 @@ public final class CodeExecutionEngine {
                         args[f] = dg.pop();
                     }
 
-                    stack.popFrame();
+                    destroyStackFrame();
 
                     invokeMethod(args, newMethodBundle);
                 }
@@ -1629,8 +1582,7 @@ public final class CodeExecutionEngine {
 
                     Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
                     //todo:check if the objectRef is corresponding to method return type;[enhance]
-                    dg.clear();
-                    stack.popFrame();
+                    destroyStackFrame();
                     stack.currentFrame().pushOperand(YObject.derivedFrom(value));
                     return;
                 }
@@ -1931,8 +1883,7 @@ public final class CodeExecutionEngine {
 
                     Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
                     //todo:check if the objectRef is corresponding to method return type;[enhance]
-                    dg.clear();
-                    stack.popFrame();
+                    destroyStackFrame();
                     stack.currentFrame().pushOperand(YObject.derivedFrom(value));
                     return;
                 }
@@ -2037,7 +1988,7 @@ public final class CodeExecutionEngine {
 
                     //add to runtime virtual machine heap section
                     thread.runtimeVM().heap().addToArrayArea(array);
-                    //push reference to operand stack
+                    //push reference to operand stackRef
                     dg.pushArray(array);
                 }
                 break;
@@ -2100,7 +2051,7 @@ public final class CodeExecutionEngine {
 
                     //add to runtime virtual machine heap section
                     thread.runtimeVM().heap().addToArrayArea(array);
-                    //push reference to operand stack
+                    //push reference to operand stackRef
                     dg.pushArray(array);
                 }
                 break;
@@ -2227,8 +2178,7 @@ public final class CodeExecutionEngine {
                 case Mnemonic.return$: {
                     Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
                     //todo:check if the objectRef is corresponding to method return type;[enhance]
-                    dg.clear();
-                    stack.popFrame();
+                    destroyStackFrame();
                     return;
                 }
 
@@ -2329,6 +2279,12 @@ public final class CodeExecutionEngine {
         Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
     }
 
+    private void destroyStackFrame() {
+        thread.runtimeThread().stack().currentFrame().clearOperand();
+        thread.runtimeThread().stack().currentFrame().clearLocalVar();
+        thread.runtimeThread().stack().popFrame();
+    }
+
     private void allocateStackFrame(int maxLocals, int maxStack) {
         YStackFrame frame = new YStackFrame();
         frame.allocateSize(maxStack, maxLocals);
@@ -2375,6 +2331,80 @@ public final class CodeExecutionEngine {
             } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
                 throw new VMExecutionException("can not load class" + className);
             }
+        }
+    }
+
+    private class ConvenientDelegate {
+        private YStack stackRef;
+
+        ConvenientDelegate() {
+            stackRef = thread.runtimeThread().stack();
+        }
+
+        private void clear() {
+            stackRef.currentFrame().clearOperand();
+        }
+
+        private YObject peek() {
+            return stackRef.currentFrame().peekOperand();
+        }
+
+        private YObject pop() {
+            return stackRef.currentFrame().popOperand();
+        }
+
+        private void push(YObject object) {
+            stackRef.currentFrame().pushOperand(object);
+        }
+
+        private void setLocalVar(int index, YObject value) {
+            stackRef.currentFrame().setLocalVariable(index, value);
+        }
+
+        private YObject getLocalVar(int index) {
+            return stackRef.currentFrame().getLocalVariable(index);
+        }
+
+        private int popInt() {
+            return stackRef.currentFrame().popOperand().toInteger();
+        }
+
+        private double popDouble() {
+            return stackRef.currentFrame().popOperand().toDouble();
+        }
+
+        private long popLong() {
+            return stackRef.currentFrame().popOperand().toLong();
+        }
+
+        private float popFloat() {
+            return stackRef.currentFrame().popOperand().toFloat();
+        }
+
+        private YArray popArray() {
+            return (YArray) stackRef.currentFrame().popOperand();
+        }
+
+        private void pushArray(YArray array) {
+            stackRef.currentFrame().pushOperand(array);
+        }
+    }
+
+    class ConvenientExceptionTableDelegate {
+        private List<MetaClassMethod.ExceptionTable> exceptionTable;
+
+        ConvenientExceptionTableDelegate(List<MetaClassMethod.ExceptionTable> exceptionTable) {
+            this.exceptionTable = exceptionTable;
+        }
+
+        private int findException(int programCounter, String x) {
+            for (MetaClassMethod.ExceptionTable CatchType : exceptionTable) {
+                if (CatchType.catchTypeName.equals(x) && CatchType.startPC <= programCounter
+                        && CatchType.endPC >= programCounter) {
+                    return CatchType.handlePC;
+                }
+            }
+            return -1;
         }
     }
 }

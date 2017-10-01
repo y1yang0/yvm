@@ -1,4 +1,4 @@
-package yvm.exec;
+package common;
 
 import runtime.rtexception.VMExecutionException;
 

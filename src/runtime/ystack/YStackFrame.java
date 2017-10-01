@@ -42,4 +42,8 @@ public class YStackFrame {
     public void clearOperand() {
         operands.clear();
     }
+
+    public void clearLocalVar() {
+        vars.clear();
+    }
 }
