@@ -31,6 +31,7 @@ public class Peel {
         System.out.println(peelFieldDescriptor("I[[DJFLjava/util/ArrayList;[[Ljava/util/ArrayList;Ljava/lang/String;"));
         System.out.println(peelFieldDescriptor("[II[II"));
         System.out.println(peelFieldDescriptor("V"));
+        System.out.println(0x1234 & 0x0200);
     }
 
     public static String[] peelMethodDescriptorParameter(String methodDescriptor) {

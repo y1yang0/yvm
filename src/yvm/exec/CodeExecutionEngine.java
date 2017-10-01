@@ -53,11 +53,35 @@ public final class CodeExecutionEngine {
         ignited = true;
     }
 
+    private void invokeMethod(Tuple6<String, String, u1[], MetaClassMethod.StackRequirement,
+            ArrayList<MetaClassMethod.ExceptionTable>, MetaClassMethod.MethodExtension> method) {
+        int newMethodMaxLocals = method.get4Placeholder().maxLocals;
+        int newMethodMaxStack = method.get4Placeholder().maxStack;
+        boolean newMethodIsSynchronized = method.get6Placeholder().isSynchronized;
+        ArrayList<MetaClassMethod.ExceptionTable> newMethodExceptionTable = method.get5Placeholder();
+        try {
+            allocateStackFrame(newMethodMaxLocals, newMethodMaxStack);
+            Opcode newMethodOp = new Opcode(method.get3Placeholder());
+            newMethodOp.codes2Opcodes();
+            newMethodOp.debug("#Invoke::" + method.get1Placeholder() + "#");
+            codeExecution(newMethodOp, newMethodExceptionTable, newMethodIsSynchronized);
+        } catch (ClassInitializingException ignored) {
+            throw new VMExecutionException("failed to invoke  " + method + " method");
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public void executeMethod(String methodName) {
         if (!ignited) {
             throw new VMExecutionException("code execution engine is not ready");
         }
+
+        try {
+            ValueChecker.safeCheck(this.getClass(), this);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+
 
         Tuple6<String,                                                   //method name
                 String,                                                  //method descriptor
@@ -65,35 +89,14 @@ public final class CodeExecutionEngine {
                 MetaClassMethod.StackRequirement,                        //stack requirement for this method
                 ArrayList<MetaClassMethod.ExceptionTable>,               //method exception tables,they are differ from checked exception in function signature
                 MetaClassMethod.MethodExtension>                         //method related attributes,it would be use for future vm version,there just ignore them
-                clinit = metaClassRef.methods.findMethod(methodName);
+                methodBundle = metaClassRef.methods.findMethod(methodName);
 
-        if (Predicate.isNull(clinit) || Predicate.strNotEqual(clinit.get1Placeholder(), methodName)) {
+        if (Predicate.isNull(methodBundle) || Predicate.strNotEqual(methodBundle.get1Placeholder(), methodName)) {
             if (!methodName.equals("<clinit>")) {
                 throw new VMExecutionException("method " + methodName + " not found");
             }
         }
-
-        int maxLocals = clinit.get4Placeholder().maxLocals;
-        int maxStack = clinit.get4Placeholder().maxStack;
-        boolean isSynchronized = clinit.get6Placeholder().isSynchronized;
-        ArrayList<MetaClassMethod.ExceptionTable> exceptionTable = clinit.get5Placeholder();
-
-
-
-        try {
-            ValueChecker.safeCheck(this.getClass(), this);
-
-            allocateStackFrame(maxLocals, maxStack);
-            Opcode op = new Opcode(clinit.get3Placeholder());
-            op.codes2Opcodes();
-            op.debug(metaClassRef.qualifiedClassName + methodName);
-            //codeExecution(op,exceptionTable,isSynchronized);
-
-        } catch (ClassInitializingException ignored) {
-            throw new VMExecutionException("failed to convert binary code to opcodes in executing " + methodName + " method");
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        }
+        invokeMethod(methodBundle);
 
     }
 
@@ -1483,7 +1486,7 @@ public final class CodeExecutionEngine {
                     if (Predicate.strNotEqual(methodName, "<clinit>")) {
                         if (methodScopeRef.getMetaClass(symbolicReferenceBelongingClassName, classLoader.getClass()).isClass == true
                                 && Predicate.strEqual(symbolicReferenceBelongingClassName, metaClassRef.superClassName)
-                                && (methodScopeRef.getMetaClass(symbolicReferenceBelongingClassName, classLoader.getClass()).accessFlag & ClassAccessProperty.ACC_SUPER) == 20) {
+                                && (methodScopeRef.getMetaClass(symbolicReferenceBelongingClassName, classLoader.getClass()).accessFlag & ClassAccessProperty.ACC_SUPER) == 2) {
                             actualMethodInvocationClass = methodScopeRef.getMetaClass(metaClassRef.superClassName, classLoader.getClass());
                         }
                     } else {
@@ -1568,8 +1571,6 @@ public final class CodeExecutionEngine {
                                         } else {
                                             recursiveSearch(methodScopeRef.getMetaClass(c.superClassName, classLoader.getClass()), methodName, methodDesc);
                                         }
-                                    } else {
-                                        throw new VMExecutionException("can not find actual invoking method");
                                     }
                                 }
                             }
@@ -1611,12 +1612,13 @@ public final class CodeExecutionEngine {
                                 }
                             }
                         }
-                    } else {
+                    } else if (actualMethodInvocationClass.isClass == false) {
                         /***************************************************************
                          *  at last, we throw an exception to warn that we can not invoke
                          *  this method if all of above clauses were dismatch
                          *
                          ***************************************************************/
+                    } else {
                         throw new VMExecutionException("can not find actual invoking method");
                     }
 
