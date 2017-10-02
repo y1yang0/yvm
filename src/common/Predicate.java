@@ -56,4 +56,5 @@ public class Predicate {
         }
         return false;
     }
+
 }

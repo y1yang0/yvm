@@ -31,7 +31,7 @@ public class Peel {
         System.out.println(peelFieldDescriptor("I[[DJFLjava/util/ArrayList;[[Ljava/util/ArrayList;Ljava/lang/String;"));
         System.out.println(peelFieldDescriptor("[II[II"));
         System.out.println(peelFieldDescriptor("V"));
-        System.out.println(0x1234 & 0x0200);
+        System.out.println(peelFieldDescriptor("java/lang/Object"));
     }
 
     public static String[] peelMethodDescriptorParameter(String methodDescriptor) {
@@ -47,11 +47,13 @@ public class Peel {
     }
 
     public static ArrayList<String> peelFieldDescriptor(String qualifiedClassNameSequence) {
+        ArrayList<String> nameSequences = new ArrayList<>();
+
         if (qualifiedClassNameSequence.equals("")) {
-            return null;
+            return nameSequences;
         }
 
-        ArrayList<String> nameSequences = new ArrayList<>();
+
 
         Pattern pattern = Pattern.compile("(\\[*[BCDFIJSZV])|(\\[*(?=L)[A-Za-z0-9$/]*)(?:;)");
         Matcher matcher = pattern.matcher(qualifiedClassNameSequence);

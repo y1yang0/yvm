@@ -20,11 +20,11 @@ import yvm.auxil.Peel;
 import yvm.constant.NewArrayType;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
 
 public final class CodeExecutionEngine {
     @ValueRequired
@@ -37,8 +37,10 @@ public final class CodeExecutionEngine {
     private YClassLoader classLoader;
     private boolean ignited;
     private Lock methodLock;
+    private ConditionMachine conds;
 
     public CodeExecutionEngine() {
+        conds = new ConditionMachine();
         ignited = false;
     }
 
@@ -1383,7 +1385,60 @@ public final class CodeExecutionEngine {
                 }
                 break;
 
+                //Invoke interface method
                 case Mnemonic.invokeinterface: {
+                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                    int count = ((GenericOperand) cd.get3Placeholder()).get2();
+                    int zero = ((GenericOperand) cd.get3Placeholder()).get3();
+                    int index = (indexByte1 << 8) | indexByte2;
+                    if (zero != 0 || count == 0) {
+                        throw new VMExecutionException("the specified position operand of opcode <invokeinterface> had a invalid value");
+                    }
+
+                    Tuple3 symbolicReference = constantPool().findInSymbolicReference(index);
+
+                    String symbolicReferenceBelongingClassName = symbolicReference.get1Placeholder().toString();
+                    String methodName = symbolicReference.get2Placeholder().toString();
+
+                    loadClassIfAbsent(symbolicReferenceBelongingClassName);
+
+                    Tuple6<String,                                                   //method name
+                            String,                                                  //method descriptor
+                            u1[],                                                    //method codes
+                            MetaClassMethod.StackRequirement,                        //stackRef requirement for this method
+                            ArrayList<MetaClassMethod.ExceptionTable>,               //method exception tables,they are differ from checked exception in function signature
+                            MetaClassMethod.MethodExtension>                         //method related attributes,it would be use for future vm version,there just ignore them
+                            methodBundle = methodScopeRef.getMetaClass(symbolicReferenceBelongingClassName, classLoader.getClass()).methods.findMethod(methodName);
+                    if (Predicate.isNull(methodBundle) || Predicate.strNotEqual(methodBundle.get1Placeholder(), methodName)) {
+                        //there are different from executeMethod(), any method invocation in opcode should be existed in method scope area
+                        throw new VMExecutionException("method " + methodName + "invocation can not continue");
+                    }
+
+                    boolean isProtected = methodBundle.get6Placeholder().isProtected;
+                    boolean isSynchronizedMethod = methodBundle.get6Placeholder().isSynchronized;
+                    boolean isNative = methodBundle.get6Placeholder().isNative;
+
+                    String methodDescriptor = methodBundle.get2Placeholder();
+                    ArrayList<String> methodReturnType = Peel.peelFieldDescriptor(Peel.peelMethodDescriptorParameter(methodDescriptor)[1]);
+                    ArrayList<String> methodParameter = Peel.peelFieldDescriptor(Peel.peelMethodDescriptorParameter(methodDescriptor)[0]);
+
+                    YObject[] args = new YObject[methodParameter.size()];
+                    for (int f = 0; f < methodParameter.size(); f++) {
+                        args[f] = dg.pop();
+                        //todo:check if they are corresponding to method parameter type and descriptor
+                    }
+                    YObject objectRef = dg.pop();
+
+
+                    Tuple6<                                             //
+                            String,                                     //method name
+                            String,                                     //method descriptor
+                            u1[],                                       //method codes
+                            MetaClassMethod.StackRequirement,           //stackRef requirement for this method
+                            ArrayList<MetaClassMethod.ExceptionTable>,  //method exception tables,they are differ from checked exception in function signature
+                            MetaClassMethod.MethodExtension             //it would be change frequently, so there we create a flexible class to store data
+                            > actualInvokingMethod = objectRef.getMetaClassReference().methods.findMethod(methodName);
                     //todo:invokeinterface
                 }
                 break;
@@ -1510,19 +1565,45 @@ public final class CodeExecutionEngine {
                                 //invoke method with args
                                 invokeMethod(args, trailMethods);
                             }
+                        } else if (actualMethodInvocationClass.isClass == false) {
+                            /***************************************************************
+                             *  Otherwise, if there is exactly one maximally-specific method
+                             *  (§5.4.3.3) in the superinterfaces of C that matches the resolved
+                             *  method's name and descriptor and is not abstract, then it is
+                             *  the method to be invoked.
+                             *
+                             ***************************************************************/
+                            Collection<String> allSuperInterfaces = actualMethodInvocationClass.interfaces.getInterfaceNames();
+                            for (String x : allSuperInterfaces) {
+                                loadClassIfAbsent(x);
+                                Tuple6<                                             //
+                                        String,                                     //method name
+                                        String,                                     //method descriptor
+                                        u1[],                                       //method codes
+                                        MetaClassMethod.StackRequirement,           //stack requirement for this method
+                                        ArrayList<MetaClassMethod.ExceptionTable>,  //method exception tables,they are differ from checked exception in function signature
+                                        MetaClassMethod.MethodExtension             //it would be change frequently, so there we create a flexible class to store data
+                                        > m = methodScopeRef.getMetaClass(x, classLoader.getClass()).methods.findMethod(methodName);
+                                if (!Predicate.isNull(m)) {
+                                    conds.shouldTrue(m.get1Placeholder().equals(methodName))
+                                            .shouldTrue(m.get2Placeholder().equals(methodDescriptor))
+                                            .shouldFalse(m.get6Placeholder().isPrivate)
+                                            .shouldFalse(m.get6Placeholder().isStatic);
+                                    if (conds.yield() == true) {
+                                        invokeMethod(args, m);
+                                    }
+                                }
+                            }
+
                         }
-                    } else if (actualMethodInvocationClass.isClass == false) {
+                    } else {
                         /***************************************************************
                          *  at last, we throw an exception to warn that we can not invoke
                          *  this method if all of above clauses were dismatch
                          *
                          ***************************************************************/
-                        //todo:continue...
-                    } else {
                         throw new VMExecutionException("can not find actual invoking method");
                     }
-
-                    //todo:invokespecial
                 }
                 break;
 
@@ -1536,7 +1617,6 @@ public final class CodeExecutionEngine {
 
                     String symbolicReferenceMethodBelongingClass = symbolicReference.get1Placeholder().toString();
                     String methodName = symbolicReference.get2Placeholder().toString();
-
                     loadClassIfAbsent(symbolicReferenceMethodBelongingClass);
 
                     Tuple6<String,                                                   //method name
@@ -1786,6 +1866,7 @@ public final class CodeExecutionEngine {
                     } else if (!Predicate.isNull(poolRef.findInClass(index))) {
 
                     } else {
+                        //todo:ldc
                         //todo:if not find class then load it
                         //todo: support methodtype and methodhandle
                     }
@@ -1808,6 +1889,7 @@ public final class CodeExecutionEngine {
                     } else if (!Predicate.isNull(poolRef.findInClass(index))) {
 
                     } else {
+                        //todo:ldc_w
                         //todo:if not find class then load it
                         //todo: support methodtype and methodhandle
                     }
@@ -2408,7 +2490,6 @@ public final class CodeExecutionEngine {
     }
 
     private void loadClassIfAbsent(String className) {
-        className = Peel.peelFieldDescriptor(className).get(0);
         if (Predicate.isArray(className)) {
             className = className.replaceAll("\\[", "");
         }

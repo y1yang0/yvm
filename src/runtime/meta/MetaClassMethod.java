@@ -77,6 +77,7 @@ public class MetaClassMethod implements Resolvable<MethodObject> {
             extension.isAbstract = getFlag(allMethods.get(i).accessFlags.getValue(), MethodAccessProperty.ACC_ABSTRACT);
             extension.isNative = getFlag(allMethods.get(i).accessFlags.getValue(), MethodAccessProperty.ACC_NATIVE);
             extension.isProtected = getFlag(allMethods.get(i).accessFlags.getValue(), MethodAccessProperty.ACC_PROTECTED);
+            extension.isPrivate = getFlag(allMethods.get(i).accessFlags.getValue(), MethodAccessProperty.ACC_PRIVATE);
             StackRequirement sr = new StackRequirement();
 
             ArrayList<MetaClassMethod.ExceptionTable> table = new ArrayList<>();
@@ -124,6 +125,8 @@ public class MetaClassMethod implements Resolvable<MethodObject> {
                 return (value & MethodAccessProperty.ACC_NATIVE) == 100;
             case MethodAccessProperty.ACC_PROTECTED:
                 return (value & MethodAccessProperty.ACC_PROTECTED) == 4;
+            case MethodAccessProperty.ACC_PRIVATE:
+                return (value & MethodAccessProperty.ACC_PRIVATE) == 2;
         }
         return false;
     }
@@ -146,5 +149,6 @@ public class MetaClassMethod implements Resolvable<MethodObject> {
         public boolean isAbstract;
         public boolean isNative;
         public boolean isProtected;
+        public boolean isPrivate;
     }
 }
