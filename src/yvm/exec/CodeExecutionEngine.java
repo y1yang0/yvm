@@ -86,12 +86,12 @@ public final class CodeExecutionEngine {
     private void codeExecution(Opcode op, ArrayList<MetaClassMethod.ExceptionTable> exceptionTable, boolean isSynchronized) {
         /***************************************************************
          *  get current thread stackRef reference, and create a convenient
-         *  operator class <ConvenientDelegate> to execute push/pop of
+         *  operator class <Auxiliary> to execute push/pop of
          *  stackRef operations
          *
          ***************************************************************/
         YStack stack = thread.runtimeThread().stack();
-        ConvenientDelegate dg = new ConvenientDelegate();
+        Auxiliary dg = new Auxiliary();
 
 
         /***************************************************************
@@ -129,10 +129,10 @@ public final class CodeExecutionEngine {
          ***************************************************************/
 
         for (int i = 0; i < opcodes.size(); i++) {
-            Tuple3 cd = opcodes.get(i);
-            int programCount = (Integer) cd.get1Placeholder();
+            Tuple3 singleOpcode = opcodes.get(i);
+            int programCount = (Integer) singleOpcode.get1Placeholder();
             thread.runtimeThread().pc(programCount);
-            switch ((Integer) cd.get2Placeholder()) {
+            switch ((Integer) singleOpcode.get2Placeholder()) {
 
                 //Load reference from array
                 case Mnemonic.aaload: {
@@ -164,7 +164,7 @@ public final class CodeExecutionEngine {
 
                 //Load reference from local variable
                 case Mnemonic.aload: {
-                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int index = dg.get0FromGenericOperand(singleOpcode);
                     YObject objectRef = dg.getLocalVar(index);
                     dg.push(objectRef);
                 }
@@ -200,8 +200,8 @@ public final class CodeExecutionEngine {
 
                 //Create new array of reference
                 case Mnemonic.anewarray: {
-                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                    int indexByte1 = dg.get0FromGenericOperand(singleOpcode);
+                    int indexByte2 = dg.get1FromGenericOperand(singleOpcode);
                     int count = dg.popInt();
 
                     int index = (indexByte1 << 8) |
@@ -249,7 +249,7 @@ public final class CodeExecutionEngine {
 
                 //Store reference into local variable
                 case Mnemonic.astore: {
-                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int index = dg.get0FromGenericOperand(singleOpcode);
                     YObject top = dg.pop();
 
                     dg.setLocalVar(index, top);
@@ -258,7 +258,7 @@ public final class CodeExecutionEngine {
 
                 //Store reference into local variable
                 case Mnemonic.astore_0: {
-                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int index = dg.get0FromGenericOperand(singleOpcode);
                     YObject top = dg.pop();
 
                     dg.setLocalVar(0, top);
@@ -267,7 +267,7 @@ public final class CodeExecutionEngine {
 
                 //Store reference into local variable
                 case Mnemonic.astore_1: {
-                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int index = dg.get0FromGenericOperand(singleOpcode);
                     YObject top = dg.pop();
 
                     dg.setLocalVar(1, top);
@@ -276,7 +276,7 @@ public final class CodeExecutionEngine {
 
                 //Store reference into local variable
                 case Mnemonic.astore_2: {
-                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int index = dg.get0FromGenericOperand(singleOpcode);
                     YObject top = dg.pop();
 
                     dg.setLocalVar(2, top);
@@ -285,7 +285,7 @@ public final class CodeExecutionEngine {
 
                 //Store reference into local variable
                 case Mnemonic.astore_3: {
-                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int index = dg.get0FromGenericOperand(singleOpcode);
                     YObject top = dg.pop();
 
                     dg.setLocalVar(3, top);
@@ -350,7 +350,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.bipush: {
-                    int x = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int x = dg.get0FromGenericOperand(singleOpcode);
                     dg.push(YObject.derivedFrom(x));
                 }
                 break;
@@ -372,8 +372,8 @@ public final class CodeExecutionEngine {
 
                 //Check whether object is of given type
                 case Mnemonic.checkcast: {
-                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                    int indexByte1 = dg.get0FromGenericOperand(singleOpcode);
+                    int indexByte2 = dg.get1FromGenericOperand(singleOpcode);
                     YObject object = dg.pop();
 
                     int index = (indexByte1 << 8) |
@@ -468,7 +468,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.dload: {
-                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int index = dg.get0FromGenericOperand(singleOpcode);
                     double value = dg.getLocalVar(index).toDouble();
                     dg.push(YObject.derivedFrom(value));
                 }
@@ -530,7 +530,7 @@ public final class CodeExecutionEngine {
 
                 case Mnemonic.dstore:{
                     double value = dg.popDouble();
-                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int index = dg.get0FromGenericOperand(singleOpcode);
                     dg.setLocalVar(index, YObject.derivedFrom(value));
                 }
                 break;
@@ -765,7 +765,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.fload:{
-                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int index = dg.get0FromGenericOperand(singleOpcode);
                     dg.push(dg.getLocalVar(index));
                 }
                 break;
@@ -822,7 +822,7 @@ public final class CodeExecutionEngine {
                 }
 
                 case Mnemonic.fstore:{
-                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int index = dg.get0FromGenericOperand(singleOpcode);
                     float value = dg.popFloat();
                     dg.setLocalVar(index, YObject.derivedFrom(value));
                 }
@@ -861,8 +861,8 @@ public final class CodeExecutionEngine {
 
                 //Fetch field from object
                 case Mnemonic.getfield: {
-                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                    int indexByte1 = dg.get0FromGenericOperand(singleOpcode);
+                    int indexByte2 = dg.get1FromGenericOperand(singleOpcode);
                     int index = (indexByte1 << 8) | indexByte2;
 
                     YObject object = dg.pop();
@@ -876,8 +876,8 @@ public final class CodeExecutionEngine {
 
                 //Get static field from class
                 case Mnemonic.getstatic: {
-                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                    int indexByte1 = dg.get0FromGenericOperand(singleOpcode);
+                    int indexByte2 = dg.get1FromGenericOperand(singleOpcode);
                     int index = (indexByte1 << 8) | indexByte2;
 
                     YObject staticVar = metaClassRef.getStaticVariable().get(index).get5Placeholder();
@@ -890,8 +890,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.goto$: {
-                    int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                    int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                    int branchByte1 = dg.get0FromGenericOperand(singleOpcode);
+                    int branchByte2 = dg.get1FromGenericOperand(singleOpcode);
                     int branchOffset = (branchByte1 << 8) | branchByte2;
                     Tuple3 newOp = opcodes.get(branchOffset);
                     int currentI = opcodes.indexOf(newOp);
@@ -908,10 +908,10 @@ public final class CodeExecutionEngine {
                     factors limit the size of a method to 65535 bytes . This limit may
                     be raised in a future release of the Java Virtual Machine.
                      */
-                    int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                    int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
-                    int branchByte3 = ((GenericOperand) cd.get3Placeholder()).get2();
-                    int branchByte4 = ((GenericOperand) cd.get3Placeholder()).get3();
+                    int branchByte1 = dg.get0FromGenericOperand(singleOpcode);
+                    int branchByte2 = dg.get1FromGenericOperand(singleOpcode);
+                    int branchByte3 = dg.get2FromGenericOperand(singleOpcode);
+                    int branchByte4 = dg.get3FromGenericOperand(singleOpcode);
                     int branchOffset = (branchByte1 << 24) | (branchByte2 << 16)
                             | (branchByte3 << 8) | branchByte4;
                     Tuple3 newOp = opcodes.get(branchOffset);
@@ -1043,8 +1043,8 @@ public final class CodeExecutionEngine {
                     YObject value2 = dg.pop();
                     YObject value1 = dg.pop();
                     if (value1 == value2) {
-                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                        int branchByte1 = dg.get0FromGenericOperand(singleOpcode);
+                        int branchByte2 = dg.get1FromGenericOperand(singleOpcode);
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
@@ -1060,8 +1060,8 @@ public final class CodeExecutionEngine {
                     YObject value2 = dg.pop();
                     YObject value1 = dg.pop();
                     if (value1 != value2) {
-                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                        int branchByte1 = dg.get0FromGenericOperand(singleOpcode);
+                        int branchByte2 = dg.get1FromGenericOperand(singleOpcode);
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
@@ -1077,8 +1077,8 @@ public final class CodeExecutionEngine {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
                     if (value1 == value2) {
-                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                        int branchByte1 = dg.get0FromGenericOperand(singleOpcode);
+                        int branchByte2 = dg.get1FromGenericOperand(singleOpcode);
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
@@ -1094,8 +1094,8 @@ public final class CodeExecutionEngine {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
                     if (value1 != value2) {
-                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                        int branchByte1 = dg.get0FromGenericOperand(singleOpcode);
+                        int branchByte2 = dg.get1FromGenericOperand(singleOpcode);
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
@@ -1111,8 +1111,8 @@ public final class CodeExecutionEngine {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
                     if (value1 < value2) {
-                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                        int branchByte1 = dg.get0FromGenericOperand(singleOpcode);
+                        int branchByte2 = dg.get1FromGenericOperand(singleOpcode);
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
@@ -1128,8 +1128,8 @@ public final class CodeExecutionEngine {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
                     if (value1 >= value2) {
-                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                        int branchByte1 = dg.get0FromGenericOperand(singleOpcode);
+                        int branchByte2 = dg.get1FromGenericOperand(singleOpcode);
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
@@ -1145,8 +1145,8 @@ public final class CodeExecutionEngine {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
                     if (value1 > value2) {
-                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                        int branchByte1 = dg.get0FromGenericOperand(singleOpcode);
+                        int branchByte2 = dg.get1FromGenericOperand(singleOpcode);
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
@@ -1162,8 +1162,8 @@ public final class CodeExecutionEngine {
                     int value2 = dg.popInt();
                     int value1 = dg.popInt();
                     if (value1 <= value2) {
-                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                        int branchByte1 = dg.get0FromGenericOperand(singleOpcode);
+                        int branchByte2 = dg.get1FromGenericOperand(singleOpcode);
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
@@ -1178,8 +1178,8 @@ public final class CodeExecutionEngine {
                 case Mnemonic.ifeq: {
                     int value = dg.popInt();
                     if (value == 0) {
-                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                        int branchByte1 = dg.get0FromGenericOperand(singleOpcode);
+                        int branchByte2 = dg.get1FromGenericOperand(singleOpcode);
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
@@ -1194,8 +1194,8 @@ public final class CodeExecutionEngine {
                 case Mnemonic.ifne: {
                     int value = dg.popInt();
                     if (value != 0) {
-                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                        int branchByte1 = dg.get0FromGenericOperand(singleOpcode);
+                        int branchByte2 = dg.get1FromGenericOperand(singleOpcode);
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
@@ -1210,8 +1210,8 @@ public final class CodeExecutionEngine {
                 case Mnemonic.iflt: {
                     int value = dg.popInt();
                     if (value < 0) {
-                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                        int branchByte1 = dg.get0FromGenericOperand(singleOpcode);
+                        int branchByte2 = dg.get1FromGenericOperand(singleOpcode);
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
@@ -1226,8 +1226,8 @@ public final class CodeExecutionEngine {
                 case Mnemonic.ifge: {
                     int value = dg.popInt();
                     if (value >= 0) {
-                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                        int branchByte1 = dg.get0FromGenericOperand(singleOpcode);
+                        int branchByte2 = dg.get1FromGenericOperand(singleOpcode);
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
@@ -1242,8 +1242,8 @@ public final class CodeExecutionEngine {
                 case Mnemonic.ifgt: {
                     int value = dg.popInt();
                     if (value > 0) {
-                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                        int branchByte1 = dg.get0FromGenericOperand(singleOpcode);
+                        int branchByte2 = dg.get1FromGenericOperand(singleOpcode);
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
@@ -1258,8 +1258,8 @@ public final class CodeExecutionEngine {
                 case Mnemonic.ifle: {
                     int value = dg.popInt();
                     if (value <= 0) {
-                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                        int branchByte1 = dg.get0FromGenericOperand(singleOpcode);
+                        int branchByte2 = dg.get1FromGenericOperand(singleOpcode);
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
@@ -1274,8 +1274,8 @@ public final class CodeExecutionEngine {
                 case Mnemonic.ifnonnull: {
                     YObject value = dg.pop();
                     if (value != null) {
-                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                        int branchByte1 = dg.get0FromGenericOperand(singleOpcode);
+                        int branchByte2 = dg.get1FromGenericOperand(singleOpcode);
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
@@ -1290,8 +1290,8 @@ public final class CodeExecutionEngine {
                 case Mnemonic.ifnull: {
                     YObject value = dg.pop();
                     if (value == null) {
-                        int branchByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                        int branchByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                        int branchByte1 = dg.get0FromGenericOperand(singleOpcode);
+                        int branchByte2 = dg.get1FromGenericOperand(singleOpcode);
                         int branchOffset = (branchByte1 << 8) | branchByte2;
                         Tuple3 newOp = opcodes.get(branchOffset);
                         int currentI = opcodes.indexOf(newOp);
@@ -1304,14 +1304,14 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.iinc: {
-                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
-                    int const$ = ((GenericOperand) cd.get3Placeholder()).get1();
+                    int index = dg.get0FromGenericOperand(singleOpcode);
+                    int const$ = dg.get1FromGenericOperand(singleOpcode);
                     dg.setLocalVar(index, YObject.derivedFrom(dg.getLocalVar(index).toInteger() + const$));
                 }
                 break;
 
                 case Mnemonic.iload: {
-                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int index = dg.get0FromGenericOperand(singleOpcode);
                     int value = dg.getLocalVar(index).toInteger();
                     dg.push(YObject.derivedFrom(value));
                 }
@@ -1355,8 +1355,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.instanceof$: {
-                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                    int indexByte1 = dg.get0FromGenericOperand(singleOpcode);
+                    int indexByte2 = dg.get1FromGenericOperand(singleOpcode);
                     YObject object = dg.pop();
 
                     int index = (indexByte1 << 8) |
@@ -1387,10 +1387,10 @@ public final class CodeExecutionEngine {
 
                 //Invoke interface method
                 case Mnemonic.invokeinterface: {
-                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
-                    int count = ((GenericOperand) cd.get3Placeholder()).get2();
-                    int zero = ((GenericOperand) cd.get3Placeholder()).get3();
+                    int indexByte1 = dg.get0FromGenericOperand(singleOpcode);
+                    int indexByte2 = dg.get1FromGenericOperand(singleOpcode);
+                    int count = dg.get2FromGenericOperand(singleOpcode);
+                    int zero = dg.get3FromGenericOperand(singleOpcode);
                     int index = (indexByte1 << 8) | indexByte2;
                     if (zero != 0 || count == 0) {
                         throw new VMExecutionException("the specified position operand of opcode <invokeinterface> had a invalid value");
@@ -1445,8 +1445,8 @@ public final class CodeExecutionEngine {
 
                 //Invoke instance method; special handling for superclass, private, and instance initialization method invocations
                 case Mnemonic.invokespecial: {
-                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                    int indexByte1 = dg.get0FromGenericOperand(singleOpcode);
+                    int indexByte2 = dg.get1FromGenericOperand(singleOpcode);
                     int index = (indexByte1 << 8) | indexByte2;
 
                     Tuple3 symbolicReference = constantPool().findInSymbolicReference(index);
@@ -1609,8 +1609,8 @@ public final class CodeExecutionEngine {
 
                 //Invoke a class (static) method
                 case Mnemonic.invokestatic: {
-                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                    int indexByte1 = dg.get0FromGenericOperand(singleOpcode);
+                    int indexByte2 = dg.get1FromGenericOperand(singleOpcode);
                     int index = (indexByte1 << 8) | indexByte2;
 
                     Tuple3 symbolicReference = constantPool().findInSymbolicReference(index);
@@ -1718,7 +1718,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.istore: {
-                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int index = dg.get0FromGenericOperand(singleOpcode);
                     int value = dg.popInt();
                     dg.setLocalVar(index, YObject.derivedFrom(value));
                 }
@@ -1853,7 +1853,7 @@ public final class CodeExecutionEngine {
 
                 //Push item from run-time constant pool
                 case Mnemonic.ldc: {
-                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int index = dg.get0FromGenericOperand(singleOpcode);
 
                     MetaClassConstantPool poolRef = constantPool();
 
@@ -1874,8 +1874,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.ldc_w: {
-                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int indexByte1 = dg.get0FromGenericOperand(singleOpcode);
+                    int indexByte2 = dg.get0FromGenericOperand(singleOpcode);
                     int index = (indexByte1 << 8) | indexByte2;
 
                     MetaClassConstantPool poolRef = constantPool();
@@ -1897,8 +1897,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.ldc2_w: {
-                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int indexByte1 = dg.get0FromGenericOperand(singleOpcode);
+                    int indexByte2 = dg.get0FromGenericOperand(singleOpcode);
                     int index = (indexByte1 << 8) | indexByte2;
 
                     MetaClassConstantPool poolRef = constantPool();
@@ -1921,7 +1921,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.lload: {
-                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int index = dg.get0FromGenericOperand(singleOpcode);
                     dg.push(dg.getLocalVar(index));
                 }
                 break;
@@ -1960,8 +1960,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.lookupswitch: {
-                    int defaultGoto = ((TableSwitchOperand) cd.get3Placeholder()).get0();
-                    HashMap<Integer, Integer> matchOffsetPairs = ((LookupSwitchOperand) cd.get3Placeholder()).get1();
+                    int defaultGoto = dg.get0FromLookupSwitchOperand(singleOpcode);
+                    HashMap<Integer, Integer> matchOffsetPairs = dg.get1FromLookupSwitchOperand(singleOpcode);
                     int index = dg.popInt();
                     int newAddress = -1;
                     if (matchOffsetPairs.keySet().contains(index)) {
@@ -2022,7 +2022,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.lstore: {
-                    int index = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int index = dg.get0FromGenericOperand(singleOpcode);
                     long value = dg.popLong();
                     dg.setLocalVar(index, YObject.derivedFrom(value));
                 }
@@ -2084,9 +2084,9 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.multianewarray: {
-                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
-                    int dimensions = ((GenericOperand) cd.get3Placeholder()).get2();
+                    int indexByte1 = dg.get0FromGenericOperand(singleOpcode);
+                    int indexByte2 = dg.get1FromGenericOperand(singleOpcode);
+                    int dimensions = dg.get2FromGenericOperand(singleOpcode);
                     int index = (indexByte1 << 8) |
                             indexByte2;
 
@@ -2112,8 +2112,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.new$: {
-                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                    int indexByte1 = dg.get0FromGenericOperand(singleOpcode);
+                    int indexByte2 = dg.get1FromGenericOperand(singleOpcode);
                     int count = dg.popInt();
 
                     int index = (indexByte1 << 8) |
@@ -2130,7 +2130,7 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.newarray: {
-                    int aType = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int aType = dg.get0FromGenericOperand(singleOpcode);
                     int count = dg.popInt();
 
                     YArray array = new YArray(count);
@@ -2200,8 +2200,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.putfield: {
-                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                    int indexByte1 = dg.get0FromGenericOperand(singleOpcode);
+                    int indexByte2 = dg.get1FromGenericOperand(singleOpcode);
                     int index = (indexByte1 << 8) | indexByte2;
 
                     YObject value = dg.pop();
@@ -2244,8 +2244,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.putstatic: {
-                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                    int indexByte1 = dg.get0FromGenericOperand(singleOpcode);
+                    int indexByte2 = dg.get1FromGenericOperand(singleOpcode);
                     int index = (indexByte1 << 8) | indexByte2;
 
 
@@ -2323,8 +2323,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.sipush: {
-                    int byte1 = ((GenericOperand) cd.get3Placeholder()).get0();
-                    int byte2 = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int byte1 = dg.get0FromGenericOperand(singleOpcode);
+                    int byte2 = dg.get0FromGenericOperand(singleOpcode);
                     short byte$ = (short) ((byte1 <<
                             8) | byte2);
                     dg.push(YObject.derivedFrom(byte$));
@@ -2350,8 +2350,8 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.tableswitch: {
-                    int defaultGoto = ((TableSwitchOperand) cd.get3Placeholder()).get0();
-                    HashMap<Integer, Integer> jumpOffsets = ((TableSwitchOperand) cd.get3Placeholder()).get1();
+                    int defaultGoto = dg.get0FromTableSwitchOperand(singleOpcode);
+                    HashMap<Integer, Integer> jumpOffsets = dg.get1FromTableSwitchOperand(singleOpcode);
                     int index = dg.popInt();
                     int newAddress = -1;
                     if (jumpOffsets.keySet().contains(index)) {
@@ -2514,12 +2514,45 @@ public final class CodeExecutionEngine {
         }
     }
 
-    private class ConvenientDelegate {
+    private class Auxiliary {
         private YStack stackRef;
 
-        ConvenientDelegate() {
+        Auxiliary() {
             stackRef = thread.runtimeThread().stack();
         }
+
+        private int get0FromGenericOperand(Tuple3 singleOpcode) {
+            return ((GenericOperand) singleOpcode.get3Placeholder()).get0();
+        }
+
+        private int get1FromGenericOperand(Tuple3 singleOpcode) {
+            return ((GenericOperand) singleOpcode.get3Placeholder()).get1();
+        }
+
+        private int get2FromGenericOperand(Tuple3 singleOpcode) {
+            return ((GenericOperand) singleOpcode.get3Placeholder()).get2();
+        }
+
+        private int get3FromGenericOperand(Tuple3 singleOpcode) {
+            return ((GenericOperand) singleOpcode.get3Placeholder()).get3();
+        }
+
+        private int get0FromTableSwitchOperand(Tuple3 singleOpcode) {
+            return ((TableSwitchOperand) singleOpcode.get3Placeholder()).get0();
+        }
+
+        private HashMap<Integer, Integer> get1FromTableSwitchOperand(Tuple3 singleOpcode) {
+            return ((TableSwitchOperand) singleOpcode.get3Placeholder()).get1();
+        }
+
+        public int get0FromLookupSwitchOperand(Tuple3 singleOpcode) {
+            return ((LookupSwitchOperand) singleOpcode.get3Placeholder()).get0();
+        }
+
+        private HashMap<Integer, Integer> get1FromLookupSwitchOperand(Tuple3 singleOpcode) {
+            return ((LookupSwitchOperand) singleOpcode.get3Placeholder()).get1();
+        }
+
 
         private void clear() {
             stackRef.currentFrame().clearOperand();
