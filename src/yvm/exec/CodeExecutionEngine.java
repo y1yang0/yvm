@@ -1699,6 +1699,39 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.invokevirtual: {
+                    int indexByte1 = dg.get0FromGenericOperand(singleOpcode);
+                    int indexByte2 = dg.get1FromGenericOperand(singleOpcode);
+                    int index = (indexByte1 << 8) | indexByte2;
+
+                    Tuple3 symbolicReference = constantPool().findInSymbolicReference(index);
+
+                    String symbolicReferenceBelongingClassName = symbolicReference.get1Placeholder().toString();
+                    String methodName = symbolicReference.get2Placeholder().toString();
+
+                    loadClassIfAbsent(symbolicReferenceBelongingClassName);
+
+                    Tuple6<String,                                                   //method name
+                            String,                                                  //method descriptor
+                            u1[],                                                    //method codes
+                            MetaClassMethod.StackRequirement,                        //stackRef requirement for this method
+                            ArrayList<MetaClassMethod.ExceptionTable>,               //method exception tables,they are differ from checked exception in function signature
+                            MetaClassMethod.MethodExtension>                         //method related attributes,it would be use for future vm version,there just ignore them
+                            methodBundle = methodScopeRef.getMetaClass(symbolicReferenceBelongingClassName, classLoader.getClass()).methods.findMethod(methodName);
+                    if (Predicate.isNull(methodBundle) || Predicate.strNotEqual(methodBundle.get1Placeholder(), methodName)) {
+                        //there are different from executeMethod(), any method invocation in opcode should be existed in method scope area
+                        throw new VMExecutionException("method " + methodName + "invocation can not continue");
+                    }
+
+                    String methodDescriptor = methodBundle.get2Placeholder();
+                    ArrayList<String> methodReturnType = Peel.peelFieldDescriptor(Peel.peelMethodDescriptorParameter(methodDescriptor)[1]);
+                    ArrayList<String> methodParameter = Peel.peelFieldDescriptor(Peel.peelMethodDescriptorParameter(methodDescriptor)[0]);
+
+                    YObject[] args = new YObject[methodParameter.size()];
+                    for (int f = 0; f < methodParameter.size(); f++) {
+                        args[f] = dg.pop();
+                        //todo:check if they are corresponding to method parameter type and descriptor
+                    }
+                    YObject objectRef = dg.pop();
                     //todo:invokevirtual
                 }
                 break;
