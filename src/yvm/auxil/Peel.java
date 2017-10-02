@@ -95,6 +95,10 @@ public class Peel {
         return nameSequences;
     }
 
+    public static String peelArrayToComponent(String arrayDesc) {
+        return peelFieldDescriptor(arrayDesc).get(0).replaceAll("\\[", "");
+    }
+
     public static int getArrayDimension(String arrayDesc) {
         int count = 0;
         for (int i = 0; i < arrayDesc.length(); i++) {

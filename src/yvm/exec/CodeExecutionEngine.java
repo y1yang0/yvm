@@ -381,40 +381,14 @@ public final class CodeExecutionEngine {
                         String resolveClass = constantPool().findInClass(index);
                         loadClassIfAbsent(resolveClass);
                         MetaClass metaClass = methodScopeRef.getMetaClass(resolveClass, classLoader.getClass());
-
-                        //If S is an ordinary (nonarray) class
-                        if (object.getMetaClassReference().isClass && !Predicate.isArray(object.getMetaClassReference().qualifiedClassName)) {
-                            if (!Predicate.isSameClass(object.getMetaClassReference(), metaClass)
-                                    && !methodScopeRef.isSubclass(metaClass, object.getMetaClassReference(), classLoader.getClass()))
-                                throw new ClassCastException("the object can not match the given type");
+                        try {
+                            recursiveMatch(object.getMetaClassReference(), metaClass, classLoader.getClass());
+                        } catch (RecursiveMatchException e) {
+                            throw new ClassCastException("the object can not match the given type");
                         }
-                        //If S is an interface type
-                        else if (!object.getMetaClassReference().isClass) {
-                            if (metaClass.isClass) {
-                                if (!metaClass.qualifiedClassName.equals("java/lang/Object")) {
-                                    throw new ClassCastException("the object can not match the given type");
-                                } else {
-                                    if (!Predicate.isSameClass(object.getMetaClassReference(), metaClass)
-                                            && !object.getMetaClassReference().interfaces.getInterfaceNames().contains(metaClass.qualifiedClassName)) {
-                                        throw new ClassCastException("the object can not match the given type");
-                                    }
-                                }
-                            }
-                        }
-                        //If S is a class representing the array type SC[]
-                        else if (object.getMetaClassReference().isClass && Predicate.isArray(object.getMetaClassReference().qualifiedClassName)) {
-                            if (metaClass.isClass && !Predicate.isArray(metaClass.qualifiedClassName)) {
-                                if (!metaClass.qualifiedClassName.equals("java/lang/Object")) {
-                                    throw new ClassCastException("the object can not match the given type");
-                                }
-                            } else if (!metaClass.isClass && !Predicate.isArray(metaClass.qualifiedClassName)) {
-                                //todo:continue...
-                            } else if (!metaClass.isClass && Predicate.isArray(metaClass.qualifiedClassName)) {
-                                //todo:continue...
-                            }
-                        }
+                    } else {
+                        //DO NOTHING
                     }
-                    //todo:checkcast
                 }
                 break;
 
@@ -1379,7 +1353,27 @@ public final class CodeExecutionEngine {
                 break;
 
                 case Mnemonic.instanceof$: {
-                    //todo:instanceof
+                    int indexByte1 = ((GenericOperand) cd.get3Placeholder()).get0();
+                    int indexByte2 = ((GenericOperand) cd.get3Placeholder()).get1();
+                    YObject object = dg.pop();
+
+                    int index = (indexByte1 << 8) |
+                            indexByte2;
+
+                    if (object != null) {
+                        String resolveClass = constantPool().findInClass(index);
+                        loadClassIfAbsent(resolveClass);
+                        MetaClass metaClass = methodScopeRef.getMetaClass(resolveClass, classLoader.getClass());
+
+                        try {
+                            recursiveMatch(object.getMetaClassReference(), metaClass, classLoader.getClass());
+                            dg.push(YObject.derivedFrom(1));
+                        } catch (RecursiveMatchException e) {
+                            dg.push(YObject.derivedFrom(0));
+                        }
+                    } else {
+                        dg.push(YObject.derivedFrom(0));
+                    }
                 }
                 break;
 
@@ -2321,6 +2315,51 @@ public final class CodeExecutionEngine {
         Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
     }
 
+    private void recursiveMatch(MetaClass objClass, MetaClass metaClass, Class classLoader) throws RecursiveMatchException {
+        //If S is an ordinary (nonarray) class
+        if (objClass.isClass && !Predicate.isArray(objClass.qualifiedClassName)) {
+            if (!Predicate.isSameClass(objClass, metaClass)
+                    && !methodScopeRef.isSubclass(metaClass, objClass, classLoader.getClass()))
+                throw new RecursiveMatchException("the object can not match the given type");
+        }
+        //If S is an interface type
+        else if (!objClass.isClass) {
+            if (metaClass.isClass) {
+                if (!metaClass.qualifiedClassName.equals("java/lang/Object")) {
+                    throw new RecursiveMatchException("the object can not match the given type");
+                } else {
+                    if (!Predicate.isSameClass(objClass, metaClass)
+                            && !objClass.interfaces.getInterfaceNames().contains(metaClass.qualifiedClassName)) {
+                        throw new RecursiveMatchException("the object can not match the given type");
+                    }
+                }
+            }
+        }
+        //If S is a class representing the array type SC[]
+        else if (objClass.isClass && Predicate.isArray(objClass.qualifiedClassName)) {
+            if (metaClass.isClass && !Predicate.isArray(metaClass.qualifiedClassName)) {
+                if (!metaClass.qualifiedClassName.equals("java/lang/Object")) {
+                    throw new RecursiveMatchException("the object can not match the given type");
+                }
+            } else if (!metaClass.isClass && !Predicate.isArray(metaClass.qualifiedClassName)) {
+                String componentType = Peel.peelArrayToComponent(objClass.qualifiedClassName);
+                if (!objClass.interfaces.getInterfaceNames().contains(metaClass.qualifiedClassName)) {
+                    throw new RecursiveMatchException("the object can not match the given type");
+                }
+            } else if (Predicate.isArray(metaClass.qualifiedClassName)) {
+                String sComponentType = Peel.peelArrayToComponent(objClass.qualifiedClassName);
+                String tComponentType = Peel.peelArrayToComponent(metaClass.qualifiedClassName);
+                if (Predicate.isPrimitiveType(sComponentType)
+                        && Predicate.isPrimitiveType(tComponentType)
+                        && Predicate.strEqual(tComponentType, sComponentType)) {
+                    return;
+                } else {
+                    recursiveMatch(methodScopeRef.getMetaClass(sComponentType, classLoader), methodScopeRef.getMetaClass(tComponentType, classLoader), classLoader);
+                }
+            }
+        }
+    }
+
     private YHeap runtimeHeap() {
         return thread.runtimeVM().heap();
     }
@@ -2385,6 +2424,12 @@ public final class CodeExecutionEngine {
             } catch (ClassInitializingException | ClassLinkingException | ClassLoadingException e) {
                 throw new VMExecutionException("can not load class" + className);
             }
+        }
+    }
+
+    private class RecursiveMatchException extends Exception {
+        public RecursiveMatchException(String s) {
+            super(s);
         }
     }
 
