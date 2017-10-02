@@ -1449,33 +1449,30 @@ public final class CodeExecutionEngine {
                         //DONOTHING IF FALSE
                     });
 
-                    conds.shouldFalse(Predicate.isNull(objectRef.getMetaClassReference().superClassName)).yield(() -> {
-                        class RecursiveSearchInheritanceChain {
-                            private void recursiveSearch(MetaClass metaClass) {
-                                ConditionMachine cm = new ConditionMachine();
-                                cm.shouldFalse(Predicate.isNull(metaClass))
-                                        .shouldTrue(metaClass.methods.findMethod(methodName).get1Placeholder().equals(methodName))
-                                        .shouldTrue(metaClass.methods.findMethod(methodName).get2Placeholder().equals(methodDescriptor))
-                                        .yield(
-                                                () -> {
-                                                    destroyStackFrame();
-                                                    invokeMethod(args, metaClass.methods.findMethod(methodName));
-                                                },
-                                                () -> {
-                                                    if (metaClass.superClassName != null) {
-                                                        recursiveSearch(methodScopeRef.getMetaClass(metaClass.superClassName, classLoader.getClass()));
-                                                    }
-                                                }
-                                        );
-                            }
+                    Collection<String> allSuperInterfaces = objectRef.getMetaClassReference().interfaces.getInterfaceNames();
+                    for (String x : allSuperInterfaces) {
+                        loadClassIfAbsent(x);
+                        Tuple6<                                             //
+                                String,                                     //method name
+                                String,                                     //method descriptor
+                                u1[],                                       //method codes
+                                MetaClassMethod.StackRequirement,           //stack requirement for this method
+                                ArrayList<MetaClassMethod.ExceptionTable>,  //method exception tables,they are differ from checked exception in function signature
+                                MetaClassMethod.MethodExtension             //it would be change frequently, so there we create a flexible class to store data
+                                > m = methodScopeRef.getMetaClass(x, classLoader.getClass()).methods.findMethod(methodName);
+                        if (!Predicate.isNull(m)) {
+                            ConditionMachine cm = new ConditionMachine();
+                            cm.shouldTrue(m.get1Placeholder().equals(methodName))
+                                    .shouldTrue(m.get2Placeholder().equals(methodDescriptor))
+                                    .shouldFalse(m.get6Placeholder().isPrivate)
+                                    .shouldFalse(m.get6Placeholder().isStatic)
+                                    .shouldFalse(m.get6Placeholder().isAbstract).yield(() -> {
+                                destroyStackFrame();
+                                invokeMethod(args, m);
+                            }, () -> {
+                            });
                         }
-                        RecursiveSearchInheritanceChain re = new RecursiveSearchInheritanceChain();
-                        re.recursiveSearch(objectRef.getMetaClassReference());
-                    }, () -> {
-                    });
-
-
-                    //todo:invokeinterface
+                    }
                 }
                 break;
 
@@ -1504,10 +1501,6 @@ public final class CodeExecutionEngine {
                         throw new VMExecutionException("method " + methodName + "invocation can not continue");
                     }
 
-                    boolean isProtected = methodBundle.get6Placeholder().isProtected;
-                    boolean isSynchronizedMethod = methodBundle.get6Placeholder().isSynchronized;
-                    boolean isNative = methodBundle.get6Placeholder().isNative;
-
                     String methodDescriptor = methodBundle.get2Placeholder();
                     ArrayList<String> methodReturnType = Peel.peelFieldDescriptor(Peel.peelMethodDescriptorParameter(methodDescriptor)[1]);
                     ArrayList<String> methodParameter = Peel.peelFieldDescriptor(Peel.peelMethodDescriptorParameter(methodDescriptor)[0]);
@@ -1519,9 +1512,6 @@ public final class CodeExecutionEngine {
                     }
                     YObject objectRef = dg.pop();
 
-                    if (isProtected) {
-                        //todo:check if it was declared in the same runtime package
-                    }
 
                     MetaClass actualMethodInvocationClass = null;
                     if (Predicate.strNotEqual(methodName, "<clinit>")) {
@@ -1624,14 +1614,14 @@ public final class CodeExecutionEngine {
                                     conds.shouldTrue(m.get1Placeholder().equals(methodName))
                                             .shouldTrue(m.get2Placeholder().equals(methodDescriptor))
                                             .shouldFalse(m.get6Placeholder().isPrivate)
-                                            .shouldFalse(m.get6Placeholder().isStatic).yield(() -> {
+                                            .shouldFalse(m.get6Placeholder().isStatic)
+                                            .shouldFalse(m.get6Placeholder().isAbstract).yield(() -> {
                                         destroyStackFrame();
                                         invokeMethod(args, m);
                                     }, () -> {
                                     });
                                 }
                             }
-
                         }
                     } else {
                         /***************************************************************
