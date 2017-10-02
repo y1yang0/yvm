@@ -1439,6 +1439,42 @@ public final class CodeExecutionEngine {
                             ArrayList<MetaClassMethod.ExceptionTable>,  //method exception tables,they are differ from checked exception in function signature
                             MetaClassMethod.MethodExtension             //it would be change frequently, so there we create a flexible class to store data
                             > actualInvokingMethod = objectRef.getMetaClassReference().methods.findMethod(methodName);
+
+                    conds.shouldFalse(Predicate.isNull(actualInvokingMethod))
+                            .shouldTrue(actualInvokingMethod.get1Placeholder().equals(methodName))
+                            .shouldTrue(actualInvokingMethod.get2Placeholder().equals(methodDescriptor)).yield(() -> {
+                        destroyStackFrame();
+                        invokeMethod(args, actualInvokingMethod);
+                    }, () -> {
+                        //DONOTHING IF FALSE
+                    });
+
+                    conds.shouldFalse(Predicate.isNull(objectRef.getMetaClassReference().superClassName)).yield(() -> {
+                        class RecursiveSearchInheritanceChain {
+                            private void recursiveSearch(MetaClass metaClass) {
+                                ConditionMachine cm = new ConditionMachine();
+                                cm.shouldFalse(Predicate.isNull(metaClass))
+                                        .shouldTrue(metaClass.methods.findMethod(methodName).get1Placeholder().equals(methodName))
+                                        .shouldTrue(metaClass.methods.findMethod(methodName).get2Placeholder().equals(methodDescriptor))
+                                        .yield(
+                                                () -> {
+                                                    destroyStackFrame();
+                                                    invokeMethod(args, metaClass.methods.findMethod(methodName));
+                                                },
+                                                () -> {
+                                                    if (metaClass.superClassName != null) {
+                                                        recursiveSearch(methodScopeRef.getMetaClass(metaClass.superClassName, classLoader.getClass()));
+                                                    }
+                                                }
+                                        );
+                            }
+                        }
+                        RecursiveSearchInheritanceChain re = new RecursiveSearchInheritanceChain();
+                        re.recursiveSearch(objectRef.getMetaClassReference());
+                    }, () -> {
+                    });
+
+
                     //todo:invokeinterface
                 }
                 break;
@@ -1588,10 +1624,11 @@ public final class CodeExecutionEngine {
                                     conds.shouldTrue(m.get1Placeholder().equals(methodName))
                                             .shouldTrue(m.get2Placeholder().equals(methodDescriptor))
                                             .shouldFalse(m.get6Placeholder().isPrivate)
-                                            .shouldFalse(m.get6Placeholder().isStatic);
-                                    if (conds.yield() == true) {
+                                            .shouldFalse(m.get6Placeholder().isStatic).yield(() -> {
+                                        destroyStackFrame();
                                         invokeMethod(args, m);
-                                    }
+                                    }, () -> {
+                                    });
                                 }
                             }
 
@@ -2396,7 +2433,6 @@ public final class CodeExecutionEngine {
          ***************************************************************/
         Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
     }
-
     private void recursiveMatch(MetaClass objClass, MetaClass metaClass, Class classLoader) throws RecursiveMatchException {
         //If S is an ordinary (nonarray) class
         if (objClass.isClass && !Predicate.isArray(objClass.qualifiedClassName)) {
@@ -2545,7 +2581,7 @@ public final class CodeExecutionEngine {
             return ((TableSwitchOperand) singleOpcode.get3Placeholder()).get1();
         }
 
-        public int get0FromLookupSwitchOperand(Tuple3 singleOpcode) {
+        int get0FromLookupSwitchOperand(Tuple3 singleOpcode) {
             return ((LookupSwitchOperand) singleOpcode.get3Placeholder()).get0();
         }
 
@@ -2603,7 +2639,7 @@ public final class CodeExecutionEngine {
         }
     }
 
-    class ConvenientExceptionTableDelegate {
+    private class ConvenientExceptionTableDelegate {
         private List<MetaClassMethod.ExceptionTable> exceptionTable;
 
         ConvenientExceptionTableDelegate(List<MetaClassMethod.ExceptionTable> exceptionTable) {
