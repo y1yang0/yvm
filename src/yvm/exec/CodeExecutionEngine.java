@@ -53,6 +53,7 @@ public final class CodeExecutionEngine {
         this.methodScopeRef = loader.getStartupThread().runtimeVM().methodScope();
         this.thread = loader.getStartupThread();
         ignited = true;
+        injector.load("java");
     }
 
     @SuppressWarnings("unchecked")
@@ -1704,7 +1705,7 @@ public final class CodeExecutionEngine {
                         invokeMethod(args, newMethodBundle);
                     } else {
                         try {
-                            injector.load("java").getMethod(Class.forName(symbolicReferenceMethodBelongingClass.replaceAll("/", ".")), methodName).invoke(args);
+                            injector.getMethod(Class.forName(symbolicReferenceMethodBelongingClass.replaceAll("/", ".")), methodName).invoke(args);
                         } catch (ClassNotFoundException e) {
                             e.printStackTrace();
                         }
