@@ -1732,7 +1732,70 @@ public final class CodeExecutionEngine {
                         //todo:check if they are corresponding to method parameter type and descriptor
                     }
                     YObject objectRef = dg.pop();
-                    //todo:invokevirtual
+                    Tuple6<String,                                                   //method name
+                            String,                                                  //method descriptor
+                            u1[],                                                    //method codes
+                            MetaClassMethod.StackRequirement,                        //stackRef requirement for this method
+                            ArrayList<MetaClassMethod.ExceptionTable>,               //method exception tables,they are differ from checked exception in function signature
+                            MetaClassMethod.MethodExtension>                         //method related attributes,it would be use for future vm version,there just ignore them
+                            newMethodBundle = objectRef.getMetaClassReference().methods.findMethod(methodName);
+
+                    conds.shouldFalse(Predicate.isNull(newMethodBundle)).yield(() -> {
+                        destroyStackFrame();
+                        invokeMethod(args, newMethodBundle);
+                    }, () -> {
+                    });
+
+                    conds.shouldFalse(Predicate.isNull(objectRef.getMetaClassReference().superClassName))
+                            .yield(() -> {
+                                class MethodInvocationRoutine {
+                                    public void recursiveSearch(MetaClass c, String methodName, String methodDesc) {
+                                        Tuple6 trailMethods = c.methods.findMethod(methodName);
+                                        if (!Predicate.isNull(trailMethods)) {
+                                            if (trailMethods.get1Placeholder().equals(methodName)
+                                                    && trailMethods.get2Placeholder().equals(methodDesc)) {
+                                                //pop current stackRef frame
+                                                destroyStackFrame();
+                                                //invoke method with args
+                                                invokeMethod(args, trailMethods);
+                                            } else {
+                                                recursiveSearch(methodScopeRef.getMetaClass(c.superClassName, classLoader.getClass()), methodName, methodDesc);
+                                            }
+                                        }
+                                    }
+                                }
+                                MethodInvocationRoutine routine = new MethodInvocationRoutine();
+                                routine.recursiveSearch(objectRef.getMetaClassReference(), methodName, methodDescriptor);
+                            }, () -> {
+                            });
+
+                    conds.shouldTrue(true).yield(() -> {
+                        Collection<String> allSuperInterfaces = objectRef.getMetaClassReference().interfaces.getInterfaceNames();
+                        for (String x : allSuperInterfaces) {
+                            loadClassIfAbsent(x);
+                            Tuple6<                                             //
+                                    String,                                     //method name
+                                    String,                                     //method descriptor
+                                    u1[],                                       //method codes
+                                    MetaClassMethod.StackRequirement,           //stack requirement for this method
+                                    ArrayList<MetaClassMethod.ExceptionTable>,  //method exception tables,they are differ from checked exception in function signature
+                                    MetaClassMethod.MethodExtension             //it would be change frequently, so there we create a flexible class to store data
+                                    > m = methodScopeRef.getMetaClass(x, classLoader.getClass()).methods.findMethod(methodName);
+                            if (!Predicate.isNull(m)) {
+                                ConditionMachine cm = new ConditionMachine();
+                                cm.shouldTrue(m.get1Placeholder().equals(methodName))
+                                        .shouldTrue(m.get2Placeholder().equals(methodDescriptor))
+                                        .shouldFalse(m.get6Placeholder().isPrivate)
+                                        .shouldFalse(m.get6Placeholder().isStatic)
+                                        .shouldFalse(m.get6Placeholder().isAbstract).yield(() -> {
+                                    destroyStackFrame();
+                                    invokeMethod(args, m);
+                                }, () -> {
+                                });
+                            }
+                        }
+                    }, () -> {
+                    });
                 }
                 break;
 
