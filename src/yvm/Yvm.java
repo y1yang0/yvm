@@ -35,10 +35,10 @@ public final class Yvm {
                 Tuple6<ConstantPoolObject, InterfacesObject,
                         FieldObject, MethodObject,
                         ClassFileAttributeObject, u2[]>
-                        bundle = loader.loadClass("java/math/BigInteger");
+                        bundle = loader.loadClass("testcase/Example");
                 MetaClass meta = loader.linkClass(bundle);
                 runtimeVM.methodScope().addMetaClass(meta);
-                loader.loadInheritanceChain(meta.superClassName);
+                //loader.loadInheritanceChain(meta.superClassName);
                 loader.initializeClass(meta);
             } catch (ClassLinkingException | ClassLoadingException | ClassInitializingException e) {
                 e.printStackTrace();

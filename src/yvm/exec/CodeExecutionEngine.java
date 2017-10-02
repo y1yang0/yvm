@@ -9,6 +9,7 @@ import runtime.rtexception.VMExecutionException;
 import runtime.ystack.YStack;
 import runtime.ystack.YStackFrame;
 import ycloader.YClassLoader;
+import ycloader.adt.attribute.Attribute;
 import ycloader.adt.u1;
 import ycloader.constant.ClassAccessProperty;
 import ycloader.exception.ClassInitializingException;
@@ -27,6 +28,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public final class CodeExecutionEngine {
+    private NativeInjector injector;
     @ValueRequired
     private YThread thread;
     @ValueRequired
@@ -41,6 +43,7 @@ public final class CodeExecutionEngine {
 
     public CodeExecutionEngine() {
         conds = new ConditionMachine();
+        injector = new NativeInjector();
         ignited = false;
     }
 
@@ -74,7 +77,9 @@ public final class CodeExecutionEngine {
                 methodBundle = metaClassRef.methods.findMethod(methodName);
 
         if (Predicate.isNull(methodBundle) || Predicate.strNotEqual(methodBundle.get1Placeholder(), methodName)) {
-            if (!methodName.equals("<clinit>")) {
+            if (methodName.equals("<clinit>")) {
+                return;
+            } else {
                 throw new VMExecutionException("method " + methodName + " not found");
             }
         }
@@ -349,6 +354,7 @@ public final class CodeExecutionEngine {
                 }
                 break;
 
+                //Push byte
                 case Mnemonic.bipush: {
                     int x = dg.get0FromGenericOperand(singleOpcode);
                     dg.push(YObject.derivedFrom(x));
@@ -1566,7 +1572,7 @@ public final class CodeExecutionEngine {
                                                 && trailMethods.get2Placeholder().equals(methodDesc)) {
                                             //pop current stackRef frame
                                             destroyStackFrame();
-                                            //invoke method with args
+                                            //getMethod method with args
                                             invokeMethod(args, trailMethods);
                                         } else {
                                             recursiveSearch(methodScopeRef.getMetaClass(c.superClassName, classLoader.getClass()), methodName, methodDesc);
@@ -1588,7 +1594,7 @@ public final class CodeExecutionEngine {
                             if (!Predicate.isNull(trailMethods) && trailMethods.get2Placeholder().equals(methodDescriptor)) {
                                 //pop current stackRef frame
                                 destroyStackFrame();
-                                //invoke method with args
+                                //getMethod method with args
                                 invokeMethod(args, trailMethods);
                             }
                         } else if (actualMethodInvocationClass.isClass == false) {
@@ -1625,7 +1631,7 @@ public final class CodeExecutionEngine {
                         }
                     } else {
                         /***************************************************************
-                         *  at last, we throw an exception to warn that we can not invoke
+                         *  at last, we throw an exception to warn that we can not getMethod
                          *  this method if all of above clauses were dismatch
                          *
                          ***************************************************************/
@@ -1692,9 +1698,19 @@ public final class CodeExecutionEngine {
                         args[f] = dg.pop();
                     }
 
-                    destroyStackFrame();
+                    if (!isNative) {
+                        destroyStackFrame();
 
-                    invokeMethod(args, newMethodBundle);
+                        invokeMethod(args, newMethodBundle);
+                    } else {
+                        try {
+                            injector.load("java").getMethod(Class.forName(symbolicReferenceMethodBelongingClass.replaceAll("/", ".")), methodName).invoke(args);
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+
                 }
                 break;
 
@@ -1756,7 +1772,7 @@ public final class CodeExecutionEngine {
                                                     && trailMethods.get2Placeholder().equals(methodDesc)) {
                                                 //pop current stackRef frame
                                                 destroyStackFrame();
-                                                //invoke method with args
+                                                //getMethod method with args
                                                 invokeMethod(args, trailMethods);
                                             } else {
                                                 recursiveSearch(methodScopeRef.getMetaClass(c.superClassName, classLoader.getClass()), methodName, methodDesc);
@@ -2366,6 +2382,7 @@ public final class CodeExecutionEngine {
                 }
                 break;
 
+                //Set static field in class
                 case Mnemonic.putstatic: {
                     int indexByte1 = dg.get0FromGenericOperand(singleOpcode);
                     int indexByte2 = dg.get1FromGenericOperand(singleOpcode);
@@ -2373,7 +2390,17 @@ public final class CodeExecutionEngine {
 
 
                     YObject value = dg.pop();
-                    YObject staticVar = metaClassRef.getStaticVariable().get(index).get5Placeholder();
+                    Tuple3 fieldSymbolicReference = metaClassRef.constantPool.findInSymbolicReference(index);
+                    loadClassIfAbsent(fieldSymbolicReference.get1Placeholder().toString());
+
+                    YObject staticVar = null;
+                    Collection<Tuple5<String, String, Integer, Attribute[], YObject>>
+                            staticVars = metaClassRef.getStaticVariable().values();
+                    for (Tuple5 tp : staticVars) {
+                        if (tp.get1Placeholder().toString().equals(fieldSymbolicReference.get2Placeholder().toString())) {
+                            staticVar = (YObject) tp.get5Placeholder();
+                        }
+                    }
                     if (!staticVar.isInitialized()) {
                         staticVar.initiateFields(classLoader);
                     }
@@ -2607,7 +2634,7 @@ public final class CodeExecutionEngine {
             newMethodOp.debug("#Invoke::" + method.get1Placeholder() + "#");
             codeExecution(newMethodOp, newMethodExceptionTable, newMethodIsSynchronized);
         } catch (ClassInitializingException ignored) {
-            throw new VMExecutionException("failed to invoke  " + method + " method");
+            throw new VMExecutionException("failed to getMethod  " + method + " method");
         }
     }
 

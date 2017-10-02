@@ -122,7 +122,7 @@ public class MetaClassMethod implements Resolvable<MethodObject> {
             case MethodAccessProperty.ACC_SYNCHRONIZED:
                 return (value & MethodAccessProperty.ACC_SYNCHRONIZED) == 20;
             case MethodAccessProperty.ACC_NATIVE:
-                return (value & MethodAccessProperty.ACC_NATIVE) == 100;
+                return (value & MethodAccessProperty.ACC_NATIVE) == 0x100;
             case MethodAccessProperty.ACC_PROTECTED:
                 return (value & MethodAccessProperty.ACC_PROTECTED) == 4;
             case MethodAccessProperty.ACC_PRIVATE:
