@@ -210,12 +210,12 @@ public final class CodeExecutionEngine {
                     int index = (indexByte1 << 8) |
                             indexByte2;
 
-                    String[] classes = (String[]) constantPool().getClassNames().toArray();
-                    loadClassIfAbsent(classes[index]);
+                    HashMap<Integer, String> classes = constantPool().getClassNames();
+                    loadClassIfAbsent(classes.get(index));
 
                     YArray array = new YArray(count);
                     for (int t = 0; t < count; t++) {
-                        YObject object = new YObject(methodScopeRef.getMetaClass(classes[index], classLoader.getClass()));
+                        YObject object = new YObject(methodScopeRef.getMetaClass(classes.get(index), classLoader.getClass()));
                         //object.initiateFields(classLoader);
                         array.set(t, object);
                     }
@@ -238,6 +238,7 @@ public final class CodeExecutionEngine {
 
                     destroyStackFrame();
                     stack.currentFrame().pushOperand(objectRef);
+                    System.out.println("###EXECUTE END###");
                     return;
                 }
 
@@ -529,6 +530,7 @@ public final class CodeExecutionEngine {
                     //todo:check if the objectRef is corresponding to method return type;[enhance]
                     destroyStackFrame();
                     stack.currentFrame().pushOperand(YObject.derivedFrom(value));
+                    System.out.println("###EXECUTE END###");
                     return;
                 }
 
@@ -822,6 +824,7 @@ public final class CodeExecutionEngine {
                     //todo:check if the objectRef is corresponding to method return type;[enhance]
                     destroyStackFrame();
                     stack.currentFrame().pushOperand(YObject.derivedFrom(value));
+                    System.out.println("###EXECUTE END###");
                     return;
                 }
 
@@ -1834,6 +1837,7 @@ public final class CodeExecutionEngine {
                     //todo:check if the objectRef is corresponding to method return type;[enhance]
                     destroyStackFrame();
                     stack.currentFrame().pushOperand(YObject.derivedFrom(value));
+                    System.out.println("###EXECUTE END###");
                     return;
                 }
 
@@ -2137,6 +2141,7 @@ public final class CodeExecutionEngine {
                     //todo:check if the objectRef is corresponding to method return type;[enhance]
                     destroyStackFrame();
                     stack.currentFrame().pushOperand(YObject.derivedFrom(value));
+                    System.out.println("###EXECUTE END###");
                     return;
                 }
 
@@ -2224,14 +2229,14 @@ public final class CodeExecutionEngine {
                     int index = (indexByte1 << 8) |
                             indexByte2;
 
-                    String[] classes = (String[]) constantPool().getClassNames().toArray();
-                    loadClassIfAbsent(classes[index]);
+                    HashMap<Integer, String> classes = constantPool().getClassNames();
+                    loadClassIfAbsent(classes.get(index));
 
                     YArray array = new YArray(dimensions);
                     for (int t = 0; t < array.getLength(); t++) {
                         YArray subArray = new YArray(dg.popInt());
                         for (int m = 0; m < subArray.getLength(); m++) {
-                            YObject object = new YObject(methodScopeRef.getMetaClass(classes[index], classLoader.getClass()));
+                            YObject object = new YObject(methodScopeRef.getMetaClass(classes.get(index), classLoader.getClass()));
                             //object.initiateFields(classLoader);
                             subArray.set(m, object);
                         }
@@ -2248,15 +2253,15 @@ public final class CodeExecutionEngine {
                 case Mnemonic.new$: {
                     int indexByte1 = dg.get0FromGenericOperand(singleOpcode);
                     int indexByte2 = dg.get1FromGenericOperand(singleOpcode);
-                    int count = dg.popInt();
+
 
                     int index = (indexByte1 << 8) |
                             indexByte2;
 
-                    String[] classes = (String[]) constantPool().getClassNames().toArray();
-                    loadClassIfAbsent(classes[index]);
+                    HashMap<Integer, String> classes = constantPool().getClassNames();
+                    loadClassIfAbsent(classes.get(index));
 
-                    YObject object = new YObject(methodScopeRef.getMetaClass(classes[index], classLoader.getClass()));
+                    YObject object = new YObject(methodScopeRef.getMetaClass(classes.get(index), classLoader.getClass()));
                     object.initiateFields(classLoader);
                     runtimeHeap().addToObjectArea(object);
                     dg.push(object);
@@ -2442,6 +2447,7 @@ public final class CodeExecutionEngine {
                     Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
                     //todo:check if the objectRef is corresponding to method return type;[enhance]
                     destroyStackFrame();
+                    System.out.println("###EXECUTE END###");
                     return;
                 }
 
@@ -2542,6 +2548,7 @@ public final class CodeExecutionEngine {
         Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
         System.out.println("###EXECUTE END###");
     }
+
     private void recursiveMatch(MetaClass objClass, MetaClass metaClass, Class classLoader) throws RecursiveMatchException {
         //If S is an ordinary (nonarray) class
         if (objClass.isClass && !Predicate.isArray(objClass.qualifiedClassName)) {
@@ -2569,7 +2576,6 @@ public final class CodeExecutionEngine {
                     throw new RecursiveMatchException("the object can not match the given type");
                 }
             } else if (!metaClass.isClass && !Predicate.isArray(metaClass.qualifiedClassName)) {
-                String componentType = Peel.peelArrayToComponent(objClass.qualifiedClassName);
                 if (!objClass.interfaces.getInterfaceNames().contains(metaClass.qualifiedClassName)) {
                     throw new RecursiveMatchException("the object can not match the given type");
                 }
@@ -2627,7 +2633,7 @@ public final class CodeExecutionEngine {
             }
             Opcode newMethodOp = new Opcode(method.get3Placeholder());
             newMethodOp.codes2Opcodes();
-            //newMethodOp.debug("#Invoke::" + method.get1Placeholder() + "#");
+            newMethodOp.debug("#Invoke::" + method.get1Placeholder() + "#");
             codeExecution(newMethodOp, newMethodExceptionTable, newMethodIsSynchronized);
         } catch (ClassInitializingException ignored) {
             throw new VMExecutionException("failed to getMethod  " + method + " method");

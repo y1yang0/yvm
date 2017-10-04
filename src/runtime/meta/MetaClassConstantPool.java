@@ -8,7 +8,6 @@ import ycloader.dataobject.ConstantPoolObject;
 import ycloader.exception.ClassLinkingException;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 
 public class MetaClassConstantPool {
@@ -315,7 +314,7 @@ public class MetaClassConstantPool {
         return null;
     }
 
-    public Collection<String> getClassNames() {
-        return classes.values();
+    public HashMap<Integer, String> getClassNames() {
+        return classes;
     }
 }

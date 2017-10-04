@@ -17,7 +17,7 @@ import yvm.exec.CodeExecutionEngine;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.util.Collection;
+import java.util.HashMap;
 
 /**
  * This YClassLoader(Yet another java Class file Loader) is based on
@@ -197,17 +197,22 @@ public class YClassLoader {
     @Deprecated
     public void loadRelatedClasses(MetaClass metaClass)
             throws ClassLoadingException, ClassLinkingException, ClassInitializingException {
-        Collection<String> classes = metaClass.constantPool.getClassNames();
-        for (String aClass : classes) {
+        HashMap<Integer, String> classes = metaClass.constantPool.getClassNames();
+        classes.forEach((_Unused, aClass) -> {
             String peeledClass = Peel.peelFieldDescriptor(aClass).get(0);
             if (!threadRef.runtimeVM().methodScope().existClass(peeledClass, this.getClass())) {
-                Tuple6 bundle = loadClass(peeledClass);
-                MetaClass meta = linkClass(bundle);
-                threadRef.runtimeVM().methodScope().addMetaClass(meta);
-                loadInheritanceChain(meta.superClassName);
-                initializeClass(meta);
+                try {
+                    Tuple6 bundle = loadClass(peeledClass);
+                    MetaClass meta = linkClass(bundle);
+                    threadRef.runtimeVM().methodScope().addMetaClass(meta);
+                    loadInheritanceChain(meta.superClassName);
+                    initializeClass(meta);
+                } catch (ClassLoadingException | ClassInitializingException | ClassLinkingException e) {
+                    e.printStackTrace();
+                }
+
             }
-        }
+        });
     }
 
     private synchronized void setClassFileReader() throws ClassLoadingException {
