@@ -98,7 +98,7 @@ public class Peel {
     }
 
     public static String peelArrayToComponent(String arrayDesc) {
-        return peelFieldDescriptor(arrayDesc).get(0).replaceAll("\\[", "");
+        return arrayDesc.replaceAll("\\[", "");
     }
 
     public static int getArrayDimension(String arrayDesc) {

@@ -28,7 +28,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public final class CodeExecutionEngine {
-    private NativeInjector injector;
     @ValueRequired
     private YThread thread;
     @ValueRequired
@@ -43,7 +42,6 @@ public final class CodeExecutionEngine {
 
     public CodeExecutionEngine() {
         conds = new ConditionMachine();
-        injector = new NativeInjector();
         ignited = false;
     }
 
@@ -53,7 +51,6 @@ public final class CodeExecutionEngine {
         this.methodScopeRef = loader.getStartupThread().runtimeVM().methodScope();
         this.thread = loader.getStartupThread();
         ignited = true;
-        injector.load("java");
     }
 
     @SuppressWarnings("unchecked")
@@ -1704,11 +1701,8 @@ public final class CodeExecutionEngine {
 
                         invokeMethod(args, newMethodBundle);
                     } else {
-                        try {
-                            injector.getMethod(Class.forName(symbolicReferenceMethodBelongingClass.replaceAll("/", ".")), methodName).invoke(args);
-                        } catch (ClassNotFoundException e) {
-                            e.printStackTrace();
-                        }
+                        //todo:invoke native method
+                        break;
                     }
 
 
@@ -2546,6 +2540,7 @@ public final class CodeExecutionEngine {
          *
          ***************************************************************/
         Continuation.ifSynchronizedUnlock(methodLock, isSynchronized);
+        System.out.println("###EXECUTE END###");
     }
     private void recursiveMatch(MetaClass objClass, MetaClass metaClass, Class classLoader) throws RecursiveMatchException {
         //If S is an ordinary (nonarray) class
@@ -2632,7 +2627,7 @@ public final class CodeExecutionEngine {
             }
             Opcode newMethodOp = new Opcode(method.get3Placeholder());
             newMethodOp.codes2Opcodes();
-            newMethodOp.debug("#Invoke::" + method.get1Placeholder() + "#");
+            //newMethodOp.debug("#Invoke::" + method.get1Placeholder() + "#");
             codeExecution(newMethodOp, newMethodExceptionTable, newMethodIsSynchronized);
         } catch (ClassInitializingException ignored) {
             throw new VMExecutionException("failed to getMethod  " + method + " method");

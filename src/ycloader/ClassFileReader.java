@@ -1,8 +1,11 @@
 package ycloader;
 
+import common.Predicate;
 import ycloader.adt.u1;
 import ycloader.adt.u2;
 import ycloader.adt.u4;
+import ycloader.exception.ClassLoadingException;
+import yvm.auxil.Peel;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -25,15 +28,16 @@ public class ClassFileReader {
 
     ClassFileReader(String javaClass) {
         this.javaClass = javaClass;
+        if (Predicate.isArray(this.javaClass)) {
+            this.javaClass = Peel.peelArrayToComponent(this.javaClass);
+        }
 
         confParser = new RTSearchXMLParser();
     }
 
-    boolean openDataInputStream() {
-        try {
+    boolean openDataInputStream() throws IOException, ClassLoadingException {
             rtJarsList = confParser.getStringArray(RTSearchXMLParser.TYPE_JARS);
             classPathList = confParser.getStringArray(RTSearchXMLParser.TYPE_CLASS_PATH);
-
             String parsedFileName = parseFileName(javaClass);
             //1. search in rt.jar
             for (String jar : rtJarsList) {
@@ -57,16 +61,12 @@ public class ClassFileReader {
             }
 
             return false;
-        } catch (Exception e) {
-            return false;
-        }
     }
 
     private String parseFileName(String str) throws IOException {
-        if (!isValidFileName(str)) {
-            throw new IOException("malformed class file name");
+        if (!isValidFileName(javaClass)) {
+            throw new IOException("malformed class file name " + str);
         }
-
         return str.endsWith(".class") ? str : str + ".class";
     }
 

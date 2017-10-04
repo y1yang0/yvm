@@ -38,7 +38,7 @@ public final class Yvm {
                         bundle = loader.loadClass("testcase/Example");
                 MetaClass meta = loader.linkClass(bundle);
                 runtimeVM.methodScope().addMetaClass(meta);
-                //loader.loadInheritanceChain(meta.superClassName);
+                loader.loadInheritanceChain(meta.superClassName);
                 loader.initializeClass(meta);
             } catch (ClassLinkingException | ClassLoadingException | ClassInitializingException e) {
                 e.printStackTrace();

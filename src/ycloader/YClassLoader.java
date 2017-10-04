@@ -172,7 +172,7 @@ public class YClassLoader {
         MetaClassConstantPool resolvedConstantPool = new MetaClassConstantPool();
         resolvedConstantPool.resolve(cp);
         meta.constantPool = resolvedConstantPool;
-        resolvedConstantPool.debug(cp.getClassName(bundle.get6Placeholder()[1].getValue()));
+        //resolvedConstantPool.debug(cp.getClassName(bundle.get6Placeholder()[1].getValue()));
         return meta;
     }
 
