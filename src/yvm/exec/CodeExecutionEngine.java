@@ -1528,6 +1528,7 @@ public final class CodeExecutionEngine {
                             actualMethodInvocationClass = methodScopeRef.getMetaClass(metaClassRef.superClassName, classLoader.getClass());
                         }
                     } else {
+                        loadClassIfAbsent(symbolicReferenceBelongingClassName);
                         actualMethodInvocationClass = methodScopeRef.getMetaClass(symbolicReferenceBelongingClassName, classLoader.getClass());
                     }
 
