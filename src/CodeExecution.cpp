@@ -1677,7 +1677,7 @@ void CodeExecution::loadConstantPoolItem2Stack(const JavaClass *jc, u2 index) {
     }
     else if (typeid(*jc->raw.constPoolInfo[index]) == typeid(CONSTANT_String)) {
         auto val = (char*)jc->getString(dynamic_cast<CONSTANT_String*>(jc->raw.constPoolInfo[index])->stringIndex);
-        JObject * str = yrt.jheap->createObject(*yrt.ma->loadClassIfAbsent("ydk/lang/string"));
+        JObject * str = yrt.jheap->createObject(*yrt.ma->loadClassIfAbsent("java/lang/String"));
         JArray * value = yrt.jheap->createCharArray(val, strlen(val));
         // put string  into str's field; according the source file of java.lang.Object, we know that 
         // its first field was used to store chars

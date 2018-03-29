@@ -7,18 +7,18 @@
 1. 配置src/main.cpp
 ```cpp
 #include "YVM.h"
+
 int main() {
     const char * ydk[] = {
-    				//虚拟机最小化运行必须包含如下两个路径
-        R"(...)",	//虚拟机自用的ydk路径
-        R"(...)"	//jdk路径.注意需要把rt.jar解压，比如Integer的目录是C:\Users\java\io\Integer.class，那么这里需要填入:C:\Users
+    	//该项目library文件所在绝对路径
+        R"(C:\Users\Cthulhu\Desktop\yvm\library)"
     };
 
     YVM vm;
     vm.warmUp(ydk, sizeof(ydk) / sizeof(ydk[0]));
-    vm.callMain("ydk/test/HelloWorldTest");	//这里是将要运行的.class名字(需要包含public static void main(String[])方法)
+    vm.callMain("ydk/test/InheritanceTest");
+    system("pause");
     return 0;
-
 }
 ```
 2. 支持G++7.0,MSVC 2017,直接编译运行即可

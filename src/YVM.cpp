@@ -18,12 +18,12 @@
 * \brief {class_name,method_name,descriptor_name,function_pointer}
 */
 static const char*((nativeFunctionTable[])[4]) = {
-    { "ydk/lang/IO", "print", "(Lydk/lang/string;)V", FORCE(ydk_lang_IO_print_str) },
+    { "ydk/lang/IO", "print", "(Ljava/lang/String;)V", FORCE(ydk_lang_IO_print_str) },
     { "ydk/lang/IO", "print", "(I)V", FORCE(ydk_lang_IO_print_I) },
     { "ydk/lang/IO", "print", "(C)V", FORCE(ydk_lang_IO_print_C) },
-    { "ydk/lang/string", "append", "(I)V", FORCE(ydk_lang_string_append_I) },
-    { "ydk/lang/string", "append", "(C)V", FORCE(ydk_lang_string_append_C) },
-    { "ydk/lang/string", "append", "(Lydk/lang/string;)V", FORCE(ydk_lang_string_append_str) }
+    { "java/lang/String", "append", "(I)V", FORCE(java_lang_string_append_I) },
+    { "java/lang/String", "append", "(C)V", FORCE(java_lang_string_append_C) },
+    { "java/lang/String", "append", "(Ljava/lang/String;)V", FORCE(java_lang_string_append_str) }
 };
 
 YVM::YVM() {

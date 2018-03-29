@@ -32,7 +32,7 @@ JType * ydk_lang_IO_print_C(RuntimeEnv * env) {
     return nullptr;
 }
 
-JType* ydk_lang_string_append_I(RuntimeEnv* env) {
+JType* java_lang_string_append_I(RuntimeEnv* env) {
     JObject * instance = dynamic_cast<JObject*>(env->frames.top()->locals[0]);
     JInt * numParameter = dynamic_cast<JInt*>(env->frames.top()->locals[1]);
     std::string str{};
@@ -49,7 +49,7 @@ JType* ydk_lang_string_append_I(RuntimeEnv* env) {
     return nullptr;
 }
 
-JType* ydk_lang_string_append_C(RuntimeEnv* env) {
+JType* java_lang_string_append_C(RuntimeEnv* env) {
     JObject * instance = dynamic_cast<JObject*>(env->frames.top()->locals[0]);
     JInt * numParameter = dynamic_cast<JInt*>(env->frames.top()->locals[1]);
     std::string str{};
@@ -67,7 +67,7 @@ JType* ydk_lang_string_append_C(RuntimeEnv* env) {
     return nullptr;
 }
 
-JType* ydk_lang_string_append_str(RuntimeEnv* env) {
+JType* java_lang_string_append_str(RuntimeEnv* env) {
     JObject * instance = dynamic_cast<JObject*>(env->frames.top()->locals[0]);
     JObject * strParameter = dynamic_cast<JObject*>(env->frames.top()->locals[1]);
     std::string str{};
