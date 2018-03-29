@@ -157,9 +157,10 @@ void CodeExecution::loadArrayItem2Stack() {
 
 template <>
 inline void CodeExecution::loadArrayItem2Stack<JRef>() {
-    auto* index = (JInt*)currentFrame->stack.top();
+    auto* index = dynamic_cast<JInt*>(currentFrame->stack.top());
+
     currentFrame->stack.pop();
-    auto* arrayref = (JArray*)currentFrame->stack.top();
+    auto* arrayref = dynamic_cast<JArray*>(currentFrame->stack.top());
     currentFrame->stack.pop();
     if (arrayref == nullptr) {
         throw std::runtime_error("null pointer");
