@@ -5,8 +5,7 @@
 # 使用
 
 1. 配置src/main.cpp
-```
-cpp
+```cpp
 #include "YVM.h"
 int main() {
     const char * ydk[] = {

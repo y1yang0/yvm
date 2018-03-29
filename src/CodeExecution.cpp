@@ -1963,7 +1963,7 @@ void CodeExecution::invokeInterface(const JavaClass * jc, const char * methodNam
     const int returnType = std::get<0>(parameterAndReturnType);
     auto parameter = std::get<1>(parameterAndReturnType);
     Frame * frame = new Frame;
-    for (int64_t i = parameter.size() - 1; i >= 0; i--) {
+    for (int64_t i = (int64_t)parameter.size() - 1; i >= 0; i--) {
         if (parameter[i] == T_INT || parameter[i] == T_BOOLEAN ||
             parameter[i] == T_CHAR || parameter[i] == T_BYTE || parameter[i] == T_SHORT) {
             auto * v = (JInt*)currentFrame->stack.top();
@@ -2027,7 +2027,7 @@ void CodeExecution::invokeVirtual(const char * methodName, const char * methodDe
     auto parameter = std::get<1>(parameterAndReturnType);
 
     Frame * frame = new Frame;
-    for (int64_t i = parameter.size() - 1; i >= 0; i--) {
+    for (int64_t i = (int64_t)parameter.size() - 1; i >= 0; i--) {
         if (parameter[i] == T_INT || parameter[i] == T_BOOLEAN ||
             parameter[i] == T_CHAR || parameter[i] == T_BYTE || parameter[i] == T_SHORT) {
             auto * v = (JInt*)currentFrame->stack.top();
@@ -2110,7 +2110,7 @@ void CodeExecution::invokeSpecial(const JavaClass * jc, const char * methodName,
     auto parameter = std::get<1>(parameterAndReturnType);
 
     Frame * frame = new Frame;
-    for (int64_t i = parameter.size() - 1; i >= 0; i--) {
+    for (int64_t i = (int64_t)parameter.size() - 1; i >= 0; i--) {
         if (parameter[i] == T_INT || parameter[i] == T_BOOLEAN ||
             parameter[i] == T_CHAR || parameter[i] == T_BYTE || parameter[i] == T_SHORT) {
             auto * v = (JInt*)currentFrame->stack.top();
@@ -2223,7 +2223,7 @@ void CodeExecution::invokeStatic(const JavaClass * jc, const char * methodName, 
     auto parameterAndReturnType = peelMethodParameterAndType(methodDescriptor);
     const int returnType = std::get<0>(parameterAndReturnType);
     auto parameter = std::get<1>(parameterAndReturnType);
-    for (int64_t i = parameter.size() - 1; i >= 0; i--) {
+    for (int64_t i = (int64_t)parameter.size() - 1; i >= 0; i--) {
         if (parameter[i] == T_INT || parameter[i] == T_BOOLEAN ||
             parameter[i] == T_CHAR || parameter[i] == T_BYTE || parameter[i] == T_SHORT) {
             auto * v = (JInt*)currentFrame->stack.top();
