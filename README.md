@@ -6,6 +6,7 @@
 
 1. 配置src/main.cpp
 ```
+cpp
 #include "YVM.h"
 int main() {
     const char * ydk[] = {
@@ -16,7 +17,7 @@ int main() {
 
     YVM vm;
     vm.warmUp(ydk, sizeof(ydk) / sizeof(ydk[0]));
-    vm.callMain("ydk/test/");	//这里是将要运行的.class名字(需要包含public static void main方法)
+    vm.callMain("ydk/test/HelloWorldTest");	//这里是将要运行的.class名字(需要包含public static void main(String[])方法)
     return 0;
 
 }
