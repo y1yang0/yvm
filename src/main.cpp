@@ -8,10 +8,10 @@ int main() {
 
     YVM vm;
     vm.warmUp(ydk, sizeof(ydk) / sizeof(ydk[0]));
-    //vm.callMain("ydk/test/InheritanceTest");
-    //vm.callMain("ydk/test/HelloWorldTest");
-    //vm.callMain("ydk/test/BubbleSortTest");
-    //vm.callMain("ydk/test/StringConcatenation");
+    vm.callMain("ydk/test/InheritanceTest");
+    vm.callMain("ydk/test/HelloWorldTest");
+    vm.callMain("ydk/test/BubbleSortTest");
+    vm.callMain("ydk/test/StringConcatenation");
     vm.callMain("ydk/test/InstanceofTest");
     system("pause");
     return 0;

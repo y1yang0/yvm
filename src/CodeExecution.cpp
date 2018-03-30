@@ -11,7 +11,7 @@
 #include "Descriptor.h"
 #include <cmath>
 
-JType * CodeExecution::execCode(const JavaClass * jc, CodeExtension ext) {
+JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
     for (decltype(ext.codeLength) op = 0; op < ext.codeLength; op++) {
         yrt.eip = op;
 #ifdef YVM_DEBUG_SHOW_BYTECODE
@@ -1527,7 +1527,26 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeExtension ext) {
                 delete arrayref;
             }break;
             case op_athrow: {
-                throw std::runtime_error("unsupported opcode [athrow]");
+                auto * throwableObject = currentStackPop<JObject>();
+                if (throwableObject == nullptr) {
+                    throw std::runtime_error("null pointer");
+                }
+                if (!hasInheritanceRelationship(throwableObject->jc, yrt.ma->loadClassIfAbsent("java/lang/Throwable"))) {
+                    throw std::runtime_error("it's not a throwable object");
+                }
+
+                if (handleException(jc, ext, throwableObject, op)) {
+                    while (!currentFrame->stack.empty()) {
+                        auto * temp = currentStackPop<JType*>();
+                        delete temp;
+                    }
+                    currentFrame->stack.push(throwableObject);
+                    return nullptr;
+                }
+                else {
+                    exceptionUnhandled = true;
+                    return throwableObject;
+                }
             }break;
             case op_checkcast: {
                 throw std::runtime_error("unsupported opcode [checkcast]");
@@ -1637,6 +1656,25 @@ void CodeExecution::loadConstantPoolItem2Stack(const JavaClass *jc, u2 index) {
     else {
         throw std::runtime_error("invalid symbolic reference index on constant pool");
     }
+}
+
+bool CodeExecution::handleException(const JavaClass* jc, const CodeAttrCore & ext,const  JObject* objectref, u4& op) {
+    FOR_EACH(i,ext.exceptionTableLength) {
+        const char * catchTypeName = (char*)jc->getString(
+            dynamic_cast<CONSTANT_Class*>(jc->raw.constPoolInfo[ext.exceptionTable[i].catchType])->nameIndex);
+
+        if (hasInheritanceRelationship(jc, yrt.ma->findJavaClass(catchTypeName))
+            && ext.exceptionTable[i].startPC <= op && op < ext.exceptionTable[i].endPC) {   // start<=op<end
+            // If we found a proper exception handler, set current pc as handlerPC of this exception table item;
+            op = ext.exceptionTable[i].handlerPC - 1;
+            return true;
+        }else if(ext.exceptionTable[i].catchType == 0) {
+            op = ext.exceptionTable[i].handlerPC - 1;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 std::tuple<JavaClass*, const char*, const char*> CodeExecution::parseFieldSymbolicReference(const JavaClass * jc, u2 index) {
@@ -1787,8 +1825,8 @@ JObject * CodeExecution::execNew(const JavaClass * jc, u2 index) {
     return yrt.jheap->createObject(*newClass);
 }
 
-CodeExecution::CodeExtension CodeExecution::getCodeExtension(const MethodInfo * m) {
-    CodeExtension ext{};
+CodeAttrCore CodeExecution::getCodeExtension(const MethodInfo * m) {
+    CodeAttrCore ext{};
     if(!m){
         return ext;
     }
@@ -1799,6 +1837,7 @@ CodeExecution::CodeExtension CodeExecution::getCodeExtension(const MethodInfo * 
             ext.codeLength = ((ATTR_Code*)m->attributes[i])->codeLength;
             ext.maxLocal = dynamic_cast<ATTR_Code*>(m->attributes[i])->maxLocals;
             ext.maxStack = dynamic_cast<ATTR_Code*>(m->attributes[i])->maxStack;
+            ext.exceptionTableLength = dynamic_cast<ATTR_Code*>(m->attributes[i])->exceptionTableLength;
             ext.exceptionTable = dynamic_cast<ATTR_Code*>(m->attributes[i])->exceptionTable;
             ext.valid = true;
             break;
@@ -1932,7 +1971,7 @@ std::pair<MethodInfo *, const JavaClass*> CodeExecution::findMethod(const JavaCl
 
 void CodeExecution::invokeByName(JavaClass * jc,const char * methodName, const char * methodDescriptor) {
     const MethodInfo * m = jc->getMethod(methodName, methodDescriptor);
-    CodeExtension ext = getCodeExtension(m);
+    CodeAttrCore ext = getCodeExtension(m);
     const int returnType = std::get<0>(peelMethodParameterAndType(methodDescriptor));
 
     if (!ext.valid) {
@@ -1959,11 +1998,12 @@ void CodeExecution::invokeByName(JavaClass * jc,const char * methodName, const c
     if (IS_METHOD_NATIVE(m->accessFlags)) {
         returnValue = duplicateValue(invokeNative((char*)jc->getClassName(), methodName, methodDescriptor));
     }else{
-        returnValue = duplicateValue(execCode(jc, ext));
+        returnValue = duplicateValue(execCode(jc, std::move(ext)));
     }
     popFrame();
-    if (returnType != T_EXTRA_VOID)
+    if (returnType != T_EXTRA_VOID || exceptionUnhandled) {
         currentFrame->stack.push(returnValue);
+    }
 }
 
 void CodeExecution::invokeInterface(const JavaClass * jc, const char * methodName, const char * methodDescriptor) {
@@ -2026,7 +2066,7 @@ void CodeExecution::invokeInterface(const JavaClass * jc, const char * methodNam
     auto * objectref = (JObject*)currentFrame->stack.top();
     currentFrame->stack.pop();
     frame->locals.push_front(objectref);
-    CodeExtension ext = getCodeExtension(invokingMethod.first);
+    CodeAttrCore ext = getCodeExtension(invokingMethod.first);
     frame->locals.resize(ext.maxLocal);
     yrt.frames.push(frame);
     this->currentFrame = frame;
@@ -2035,12 +2075,13 @@ void CodeExecution::invokeInterface(const JavaClass * jc, const char * methodNam
     if(IS_METHOD_NATIVE(invokingMethod.first->accessFlags)){
         returnValue = duplicateValue(invokeNative((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(), methodName, methodDescriptor));
     }else{
-        returnValue = duplicateValue(execCode(invokingMethod.second, ext));
+        returnValue = duplicateValue(execCode(invokingMethod.second, std::move(ext)));
     }
 
     popFrame();
-    if (returnType != T_EXTRA_VOID)
+    if (returnType != T_EXTRA_VOID || exceptionUnhandled) {
         currentFrame->stack.push(returnValue);
+    }
 }
 
 void CodeExecution::invokeVirtual(const char * methodName, const char * methodDescriptor) {
@@ -2113,7 +2154,7 @@ void CodeExecution::invokeVirtual(const char * methodName, const char * methodDe
         }
         else {
             
-            returnValue = duplicateValue(execCode(invokingMethod.second, ext));
+            returnValue = duplicateValue(execCode(invokingMethod.second, std::move(ext)));
         }
     }
     else {
@@ -2121,8 +2162,9 @@ void CodeExecution::invokeVirtual(const char * methodName, const char * methodDe
     }
 
     popFrame();
-    if (returnType != T_EXTRA_VOID)
+    if (returnType != T_EXTRA_VOID || exceptionUnhandled) {
         currentFrame->stack.push(returnValue);
+    }
 }
 
 void CodeExecution::invokeSpecial(const JavaClass * jc, const char * methodName, const char * methodDescriptor) {
@@ -2196,7 +2238,7 @@ void CodeExecution::invokeSpecial(const JavaClass * jc, const char * methodName,
         else {
             auto ext = getCodeExtension(invokingMethod.first);
             frame->locals.resize(ext.maxLocal);
-            returnValue = duplicateValue(execCode(invokingMethod.second, ext));
+            returnValue = duplicateValue(execCode(invokingMethod.second, std::move(ext)));
         }
     }
     else if (IS_CLASS_INTERFACE(jc->raw.accessFlags)) {
@@ -2213,14 +2255,15 @@ void CodeExecution::invokeSpecial(const JavaClass * jc, const char * methodName,
             else {
                 auto ext = getCodeExtension(javaLangObjectMethod);
                 frame->locals.resize(ext.maxLocal);
-                returnValue = duplicateValue(execCode(javaLangObjectClass, ext));
+                returnValue = duplicateValue(execCode(javaLangObjectClass, std::move(ext)));
             }
         }
     }
     
     popFrame();
-    if (returnType != T_EXTRA_VOID)
+    if (returnType != T_EXTRA_VOID || exceptionUnhandled) {
         currentFrame->stack.push(returnValue);
+    }
 }
 
 void CodeExecution::invokeStatic(const JavaClass * jc, const char * methodName, const char * methodDescriptor) {
@@ -2294,12 +2337,13 @@ void CodeExecution::invokeStatic(const JavaClass * jc, const char * methodName, 
         returnValue = duplicateValue(invokeNative((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(),methodName, methodDescriptor));
     }
     else {
-        returnValue = duplicateValue(execCode(invokingMethod.second, ext));
+        returnValue = duplicateValue(execCode(invokingMethod.second, std::move(ext)));
     }
     popFrame();
 
-    if (returnType != T_EXTRA_VOID)
+    if (returnType != T_EXTRA_VOID || exceptionUnhandled) {
         currentFrame->stack.push(returnValue);
+    }
 }
 
 JType* CodeExecution::invokeNative(const char * className, const char * methodName, const char * methodDescriptor) {

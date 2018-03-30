@@ -13,22 +13,22 @@ struct MethodInfo;
 struct RuntimeEnv;
 extern RuntimeEnv yrt;
 
+struct CodeAttrCore {
+    bool valid = false;
+    u1* code{};
+    u4 codeLength{};
+    u2 maxStack{};
+    u2 maxLocal{};
+    u2 exceptionTableLength{};
+    ATTR_Code::_exceptionTable* exceptionTable{};
+};
+
 /**
  * \brief This class does actual bytecode interruption. To accomplish code execution, it needs 
  * sorts of information with regard to class file structure, runtime heap structure and function
  * calling stack,etc. So we set it as a friend class of that classes for convenience.
  */
 class CodeExecution {
-private:
-    struct CodeExtension {
-        bool valid = false;
-        u1* code{};
-        u4 codeLength{};
-        u2 maxStack{};
-        u2 maxLocal{};
-        ATTR_Code::_exceptionTable* exceptionTable{};
-    };
-
 public:
     CodeExecution() = default;
 
@@ -52,7 +52,7 @@ private:
                             JObject* object, size_t offset = 0);
     void putInstanceField(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor,
                           JObject* object, JType* value, size_t offset = 0);
-    CodeExtension getCodeExtension(const MethodInfo* methodInfo);
+    CodeAttrCore getCodeExtension(const MethodInfo* methodInfo);
     bool checkInstanceof(const JavaClass * jc, u2 index, JType* objectref);
 
     std::tuple<JavaClass*, const char*, const char*> parseFieldSymbolicReference(const JavaClass* jc, u2 index);
@@ -61,19 +61,21 @@ private:
     std::tuple<JavaClass*, const char*, const char*> parseMethodSymbolicReference(const JavaClass* jc, u2 index);
 
     JObject* execNew(const JavaClass* jc, u2 index);
-    JType* execCode(const JavaClass* jc, CodeExtension ext);
+    JType* execCode(const JavaClass* jc, CodeAttrCore && ext);
 
     void loadConstantPoolItem2Stack(const JavaClass *jc, u2 index);
 
+    bool handleException(const JavaClass * jc, const CodeAttrCore & ext, const JObject * objectref, u4 & op);
+
 private:
-    inline u2 u2index(const u1* code, u4& opidx) {
+    static inline u2 u2index(const u1* code, u4& opidx) {
         const u1 indexbyte1 = code[++opidx];
         const u1 indexbyte2 = code[++opidx];
         const u2 index = (indexbyte1 << 8) | indexbyte2;
         return index;
     }
 
-    inline u4 u4index(const u1* code, u4& opidx) {
+    static inline u4 u4index(const u1* code, u4& opidx) {
         const u1 byte1 = code[++opidx];
         const u1 byte2 = code[++opidx];
         const u1 byte3 = code[++opidx];
@@ -110,6 +112,7 @@ private:
 
 private:
     Frame* currentFrame;
+    bool exceptionUnhandled = false;
 };
 
 template <typename LoadType>

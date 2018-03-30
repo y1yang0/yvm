@@ -124,6 +124,7 @@
     <ClCompile Include="MethodArea.cpp" />
     <ClCompile Include="NativeMethod.cpp" />
     <ClCompile Include="RuntimeEnv.cpp" />
+    <ClCompile Include="Utils.cpp" />
     <ClCompile Include="YVM.cpp" />
   </ItemGroup>
   <ItemGroup>

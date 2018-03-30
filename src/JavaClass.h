@@ -27,6 +27,7 @@ public:
     u1* getString(u2 index) const;
     std::vector<u2> getInterfacesIndex() const;
     MethodInfo* getMethod(const char* methodName, const char* methodDescriptor) const;
+    inline bool hasSuperClass()const { return raw.superClass != 0; }
 
 private:
     bool parseConstantPool(u2 cpCount);
