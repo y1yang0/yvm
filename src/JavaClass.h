@@ -21,11 +21,11 @@ public:
     ~JavaClass();
 
 public:
-    u1* getClassName();
+    u1* getClassName() const;
     u1* getSuperClassName() const;
     void parseClassFile();
     u1* getString(u2 index) const;
-    std::vector<u2> getInterfacesIndex();
+    std::vector<u2> getInterfacesIndex() const;
     MethodInfo* getMethod(const char* methodName, const char* methodDescriptor) const;
 
 private:
@@ -42,7 +42,7 @@ private:
     Annotation readToAnnotationStructure();
 
 private:
-    ClassFile raw;
+    ClassFile raw{};
     FileReader reader;
     std::map<size_t, JType*> sfield;
 };

@@ -11,7 +11,7 @@
 int main() {
     const char * ydk[] = {
     	//该项目library文件所在绝对路径
-        R"(C:\Users\Cthulhu\Desktop\yvm\library)"
+        R"(C:\Users\Cthulhu\Desktop\yvm\javalib)"
     };
 
     YVM vm;
@@ -22,6 +22,10 @@ int main() {
 }
 ```
 2. 支持G++7.0,MSVC 2017,直接编译运行即可
+
+# 支持特性
+0. Java基本算数运算，面向对象
+1. 字符串常量运算(+,+=)
 
 # 效果
 0. helloworld

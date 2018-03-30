@@ -41,6 +41,9 @@ JType * JavaHeap::getObjectField(const JObject & object, size_t fieldOffset){
 }
 
 void JavaHeap::removeArray(const JArray* arr) {
+    if(arr==nullptr) {
+        return;
+    }
     arrheap.erase(arrheap.find(arr->offset));
 }
 

@@ -16,16 +16,16 @@ JavaClass::JavaClass(const char *classFilePath) : reader(classFilePath) {
     raw.attributes = nullptr;
 }
 
-JavaClass::JavaClass(const JavaClass &rhs) : reader() {
+JavaClass::JavaClass(const JavaClass &rhs) {
     this->raw = rhs.raw;
 }
 JavaClass::~JavaClass() {
-    for (auto i = sfield.begin(); i != sfield.end(); i++) {
-        delete i->second;
+    for (auto& i : sfield) {
+        delete i.second;
     }
 }
 
-u1 * JavaClass::getClassName() {
+u1 * JavaClass::getClassName() const {
     return getString(dynamic_cast<CONSTANT_Class*>(raw.constPoolInfo[raw.thisClass])->nameIndex);
 }
 
@@ -36,7 +36,7 @@ u1 *JavaClass::getString(u2 index) const {
     return dynamic_cast<CONSTANT_Utf8*>(raw.constPoolInfo[index])->bytes;
 }
 
-std::vector<u2>  JavaClass::getInterfacesIndex() {
+std::vector<u2>  JavaClass::getInterfacesIndex() const {
     if (raw.interfacesCount == 0)
         return std::vector<u2>();
     std::vector<u2> v;
@@ -337,13 +337,13 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
     }
 
     for (decltype(attributeCount) i = 0; i<attributeCount; i++) {
-        u2 attrStrIndex = reader.readget2();
+        const u2 attrStrIndex = reader.readget2();
 
         if (typeid(*raw.constPoolInfo[attrStrIndex]) != typeid(CONSTANT_Utf8)) {
             return false;
         }
 
-        char * attrName = (char *)((CONSTANT_Utf8*)raw.constPoolInfo[attrStrIndex])->bytes;
+        char * attrName = (char *)dynamic_cast<CONSTANT_Utf8*>(raw.constPoolInfo[attrStrIndex])->bytes;
         IS_ATTR_ConstantValue(attrName) {
             auto * attr = new ATTR_ConstantValue;
             attr->attributeNameIndex = attrStrIndex;

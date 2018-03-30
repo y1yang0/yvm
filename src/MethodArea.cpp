@@ -13,13 +13,13 @@ MethodArea::MethodArea(const char *searchPath[],int howManySearchPath) {
 }
 
 MethodArea::~MethodArea() {
-    for (auto x = classTable.begin(); x != classTable.end(); x++) {
-        delete x->second;
+    for (auto& x : classTable) {
+        delete x.second;
     }
 }
 
-JavaClass * MethodArea::findJavaClass(const char * jcName) {
-    auto pos = classTable.find(jcName);
+JavaClass * MethodArea::findJavaClass(const char* jcName) {
+    const auto pos = classTable.find(jcName);
     if (pos != classTable.end()) {
         return pos->second;
     }
@@ -29,7 +29,7 @@ JavaClass * MethodArea::findJavaClass(const char * jcName) {
 }
 
 bool MethodArea::loadJavaClass(const char * jcName) {
-    std::string path = parseNameToPath(jcName);
+    auto path = parseNameToPath(jcName);
 
     if (path.length() != 0 && !findJavaClass(jcName)) {
         // Load this class which specified by jcName (it' a path string)
@@ -44,7 +44,7 @@ bool MethodArea::loadJavaClass(const char * jcName) {
 
         // Load super interfaces if exitsted
         std::vector<u2> && interfacesIdx = jc->getInterfacesIndex();
-        if (jc->getInterfacesIndex().size() > 0) {
+        if (jc->getInterfacesIndex().empty()) {
             for (auto idx : interfacesIdx) {
                 this->loadJavaClass((char *)jc->getString(idx));
             }

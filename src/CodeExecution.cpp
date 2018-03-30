@@ -993,104 +993,43 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeExtension ext) {
                 }
             }break;
             case op_i2l: {
-                auto * value = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * result = new JLong;
-                result->val = (int64_t)(value->val);
-                currentFrame->stack.push(result);
-                delete value;
+                typeCast<JInt, JLong>();
             }break;
             case op_i2f: {
-                auto * value = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * result = new JFloat;
-                result->val = (float)(value->val);
-                currentFrame->stack.push(result);
-                delete value;
+                typeCast<JInt, JFloat>();
             }break;
             case op_i2d: {
-                auto * value = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * result = new JDouble;
-                result->val = (double)(value->val);
-                currentFrame->stack.push(result);
-                delete value;
+                typeCast<JInt, JDouble>();
             }break;
             case op_l2i: {
-                auto * value = (JLong*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * result = new JInt;
-                result->val = (int32_t)(value->val);
-                currentFrame->stack.push(result);
-                delete value;
+                typeCast<JLong, JInt>();
             }break;
             case op_l2f: {
-                auto * value = (JLong*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * result = new JFloat;
-                result->val = (float)(value->val);
-                currentFrame->stack.push(result);
-                delete value;
+                typeCast<JLong, JFloat>();
             }break;
             case op_l2d: {
-                auto * value = (JLong*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * result = new JDouble;
-                result->val = (double)(value->val);
-                currentFrame->stack.push(result);
-                delete value;
+                typeCast<JLong, JDouble>();
             }break;
             case op_f2i: {
-                auto * value = (JFloat*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * result = new JInt;
-                result->val = (int32_t)(value->val);
-                currentFrame->stack.push(result);
-                delete value;
+                typeCast<JFloat, JInt>();
             }break;
             case op_f2l: {
-                auto * value = (JFloat*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * result = new JLong;
-                result->val = (int64_t)(value->val);
-                currentFrame->stack.push(result);
-                delete value;
+                typeCast<JFloat, JLong>();
             }break;
             case op_f2d: {
-                auto * value = (JFloat*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * result = new JDouble;
-                result->val = (double)(value->val);
-                currentFrame->stack.push(result);
-                delete value;
+                typeCast<JFloat, JDouble>();
             }break;
             case op_d2i: {
-                auto * value = (JDouble*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * result = new JInt;
-                result->val = (int32_t)(value->val);
-                currentFrame->stack.push(result);
-                delete value;
+                typeCast<JDouble, JInt>();
             }break;
             case op_d2l: {
-                auto * value = (JDouble*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * result = new JLong;
-                result->val = (int64_t)(value->val);
-                currentFrame->stack.push(result);
-                delete value;
+                typeCast<JDouble, JLong>();
             }break;
             case op_d2f: {
-                auto * value = (JDouble*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * result = new JFloat;
-                result->val = (float)(value->val);
-                currentFrame->stack.push(result);
-                delete value;
+                typeCast<JDouble, JFloat>();
             }break;
-
-#if __cplusplus >= 201103L
-                [[fallthrough]]
+#if __cplusplus>=201703L
+            [[fallthrough]]
 #endif
             case op_i2c:
             case op_i2b: {
@@ -1129,7 +1068,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeExtension ext) {
                 delete value1;
                 delete value2;
             }break;
-#if __cplusplus >= 201103L
+#if __cplusplus>=201703L
             [[fallthrough]]
 #endif
             case op_fcmpg:
@@ -1153,7 +1092,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeExtension ext) {
                 delete value1;
                 delete value2;
             }break;
-#if __cplusplus >= 201103L
+#if __cplusplus>=201703L
                 [[fallthrough]]
 #endif
             case op_dcmpl:
@@ -1560,8 +1499,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeExtension ext) {
             }break;
             case op_newarray: {
                 u1 atype = ext.code[++op];
-                JInt * count = dynamic_cast<JInt*>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JInt * count = currentStackPop<JInt>();
 
                 if (count->val < 0) {
                     throw std::runtime_error("negative array size");
@@ -1573,8 +1511,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeExtension ext) {
             }break;
             case op_anewarray: {
                 u2 index = u2index(ext.code, op);
-                JInt * count = dynamic_cast<JInt*>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JInt * count = currentStackPop<JInt>();
 
                 if (count->val < 0) {
                     throw std::runtime_error("negative array size");
@@ -1585,8 +1522,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeExtension ext) {
                 delete count;
             }break;
             case op_arraylength: {
-                JArray * arrayref = dynamic_cast<JArray*>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JArray * arrayref = currentStackPop<JArray>();
 
                 if (arrayref == nullptr) {
                     throw std::runtime_error("null pointer\n");
@@ -1621,8 +1557,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeExtension ext) {
             case op_ifnull: {
                 u4 currentOffset = op - 1;
                 int16_t branchIndex = u2index(ext.code, op);
-                JObject * value = (JObject*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JObject * value = currentStackPop<JObject>();
                 if (value == nullptr) {
                     delete value;
                     op = currentOffset + branchIndex;
@@ -1631,8 +1566,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeExtension ext) {
             case op_ifnonnull: {
                 u4 currentOffset = op - 1;
                 int16_t branchIndex = u2index(ext.code, op);
-                JObject * value = (JObject*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JObject * value = currentStackPop<JObject>();
                 if (value != nullptr) {
                     delete value;
                     op = currentOffset + branchIndex;
@@ -1662,6 +1596,11 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeExtension ext) {
     return nullptr;
 }
 
+/**
+ * \brief This function does "ldc" opcode
+ * \param jc type of JavaClass, which indicate where to resolve constant pool index
+ * \param index constant pool index 
+ */
 void CodeExecution::loadConstantPoolItem2Stack(const JavaClass *jc, u2 index) {
     if (typeid(*jc->raw.constPoolInfo[index]) == typeid(CONSTANT_Integer)) {
         auto val = dynamic_cast<CONSTANT_Integer*>(jc->raw.constPoolInfo[index])->val;
@@ -1803,7 +1742,7 @@ JType * CodeExecution::getInstanceField(JavaClass * parsedJc,const char * fieldN
             const char * n = (char*)parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
             const char * d = (char*)parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
             if (strcmp(n, fieldName) == 0 && strcmp(d, fieldDescriptor) == 0) {
-                 return yrt.jheap->objheap[object->offset].at(i + offset);
+                 return yrt.jheap->objheap.find(object->offset)->second.at(i + offset);
             }
         }
     }
@@ -1823,13 +1762,13 @@ void CodeExecution::putInstanceField(JavaClass * parsedJc, const char * fieldNam
             const char * n = (char*)parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
             const char * d = (char*)parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
             if (strcmp(n, fieldName) == 0 && strcmp(d, fieldDescriptor) == 0) {
-                yrt.jheap->objheap[object->offset].at(offset + i) = value;
+                yrt.jheap->objheap.find(object->offset)->second.at(offset + i) = value;
                 return;
             }
         }
     }
     if (parsedJc->raw.superClass != 0) {
-        putInstanceField(yrt.ma->findJavaClass((char*)parsedJc->getSuperClassName()), fieldName, fieldDescriptor, object, 
+        putInstanceField(yrt.ma->findJavaClass((char*)parsedJc->getSuperClassName()), fieldName, fieldDescriptor, object,
             value, offset + howManyNonStaticFields);
     }
 }
@@ -1906,7 +1845,7 @@ std::pair<MethodInfo *, const JavaClass*> CodeExecution::findMethod(const JavaCl
 void CodeExecution::invokeByName(JavaClass * jc,const char * methodName, const char * methodDescriptor) {
     const MethodInfo * m = jc->getMethod(methodName, methodDescriptor);
     CodeExtension ext = getCodeExtension(m);
-
+    const int returnType = std::get<0>(peelMethodParameterAndType(methodDescriptor));
 
     if (!ext.valid) {
 #ifdef YVM_DEBUG_SHOW_EXEC_FLOW
@@ -1930,18 +1869,13 @@ void CodeExecution::invokeByName(JavaClass * jc,const char * methodName, const c
 
     JType * returnValue{};
     if (IS_METHOD_NATIVE(m->accessFlags)) {
-        invokeNativeMethod((char*)jc->getClassName(), methodName, methodDescriptor);
+        returnValue = duplicateValue(invokeNative((char*)jc->getClassName(), methodName, methodDescriptor));
     }else{
-        returnValue = execCode(jc, ext);
+        returnValue = duplicateValue(execCode(jc, ext));
     }
     popFrame();
-    if (yrt.frames.empty()) {
-        currentFrame = nullptr;
-    }
-    else {
-        currentFrame = yrt.frames.top();
-    }
-    yrt.eip = 0;
+    if (returnType != T_EXTRA_VOID)
+        currentFrame->stack.push(returnValue);
 }
 
 void CodeExecution::invokeInterface(const JavaClass * jc, const char * methodName, const char * methodDescriptor) {
@@ -2011,9 +1945,9 @@ void CodeExecution::invokeInterface(const JavaClass * jc, const char * methodNam
     
     JType * returnValue{};
     if(IS_METHOD_NATIVE(invokingMethod.first->accessFlags)){
-        invokeNativeMethod((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(), methodName, methodDescriptor);
+        returnValue = duplicateValue(invokeNative((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(), methodName, methodDescriptor));
     }else{
-        returnValue = execCode(invokingMethod.second, ext);
+        returnValue = duplicateValue(execCode(invokingMethod.second, ext));
     }
 
     popFrame();
@@ -2066,12 +2000,15 @@ void CodeExecution::invokeVirtual(const char * methodName, const char * methodDe
         }
     }
     auto * objectref = (JObject*)currentFrame->stack.top();
+   
+  
     currentFrame->stack.pop();
     frame->locals.push_front(objectref);
     yrt.frames.push(frame);
     this->currentFrame = frame;
 
     auto invokingMethod = findMethod(objectref->jc, methodName, methodDescriptor);
+    auto ext = getCodeExtension(invokingMethod.first);
 #ifdef YVM_DEBUG_SHOW_EXEC_FLOW
     for (int i = 0; i<yrt.frames.size(); i++) {
         std::cout << "-";
@@ -2082,14 +2019,13 @@ void CodeExecution::invokeVirtual(const char * methodName, const char * methodDe
     JType * returnValue{};
     if (invokingMethod.first) {
         if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
-            invokeNativeMethod((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(),
-                (char*)invokingMethod.second->getString(invokingMethod.first->nameIndex), 
-                (char*)invokingMethod.second->getString(invokingMethod.first->descriptorIndex));
+            returnValue = duplicateValue(invokeNative((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(),
+                (char*)invokingMethod.second->getString(invokingMethod.first->nameIndex),
+                (char*)invokingMethod.second->getString(invokingMethod.first->descriptorIndex)));
         }
         else {
-            auto ext = getCodeExtension(invokingMethod.first);
-            frame->locals.resize(ext.maxLocal);
-            returnValue = execCode(invokingMethod.second, ext);
+            
+            returnValue = duplicateValue(execCode(invokingMethod.second, ext));
         }
     }
     else {
@@ -2165,14 +2101,14 @@ void CodeExecution::invokeSpecial(const JavaClass * jc, const char * methodName,
     JType * returnValue{};
     if (invokingMethod.first) {
         if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
-            invokeNativeMethod((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(), 
-                (char*)invokingMethod.second->getString(invokingMethod.first->nameIndex),
-                (char*)invokingMethod.second->getString(invokingMethod.first->descriptorIndex));
+            returnValue = duplicateValue(invokeNative((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(),
+                                              (char*)invokingMethod.second->getString(invokingMethod.first->nameIndex),
+                                              (char*)invokingMethod.second->getString(invokingMethod.first->descriptorIndex)));
         }
         else {
             auto ext = getCodeExtension(invokingMethod.first);
             frame->locals.resize(ext.maxLocal);
-            returnValue = execCode(invokingMethod.second, ext);
+            returnValue = duplicateValue(execCode(invokingMethod.second, ext));
         }
     }
     else if (IS_CLASS_INTERFACE(jc->raw.accessFlags)) {
@@ -2182,14 +2118,14 @@ void CodeExecution::invokeSpecial(const JavaClass * jc, const char * methodName,
             IS_METHOD_PUBLIC(javaLangObjectMethod->accessFlags) && 
             !IS_METHOD_STATIC(javaLangObjectMethod->accessFlags)) {
             if (IS_METHOD_NATIVE(javaLangObjectMethod->accessFlags)) {
-                invokeNativeMethod((char*)javaLangObjectClass->getClassName(),
-                    (char*)javaLangObjectClass->getString(javaLangObjectMethod->nameIndex),
-                    (char*)javaLangObjectClass->getString(javaLangObjectMethod->descriptorIndex));
+                returnValue = duplicateValue(invokeNative((char*)javaLangObjectClass->getClassName(),
+                                                 (char*)javaLangObjectClass->getString(javaLangObjectMethod->nameIndex),
+                                                 (char*)javaLangObjectClass->getString(javaLangObjectMethod->descriptorIndex)));
             }
             else {
                 auto ext = getCodeExtension(javaLangObjectMethod);
                 frame->locals.resize(ext.maxLocal);
-                returnValue = execCode(javaLangObjectClass, ext);
+                returnValue = duplicateValue(execCode(javaLangObjectClass, ext));
             }
         }
     }
@@ -2267,10 +2203,10 @@ void CodeExecution::invokeStatic(const JavaClass * jc, const char * methodName, 
 
     JType * returnValue{};
     if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
-        invokeNativeMethod((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(),methodName, methodDescriptor);
+        returnValue = duplicateValue(invokeNative((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(),methodName, methodDescriptor));
     }
     else {
-        returnValue = execCode(invokingMethod.second, ext);
+        returnValue = duplicateValue(execCode(invokingMethod.second, ext));
     }
     popFrame();
 
@@ -2278,13 +2214,14 @@ void CodeExecution::invokeStatic(const JavaClass * jc, const char * methodName, 
         currentFrame->stack.push(returnValue);
 }
 
-void CodeExecution::invokeNativeMethod(const char * className, const char * methodName, const char * methodDescriptor) {
+JType* CodeExecution::invokeNative(const char * className, const char * methodName, const char * methodDescriptor) {
     std::string nativeMethod(className);
     nativeMethod.append(".");
     nativeMethod.append(methodName);
     nativeMethod.append(".");
     nativeMethod.append(methodDescriptor);
     if (yrt.nativeMethods.find(nativeMethod) != yrt.nativeMethods.end()) {
-        ((*yrt.nativeMethods.find(nativeMethod)).second)(&yrt);
+        return ((*yrt.nativeMethods.find(nativeMethod)).second)(&yrt);
     }
+    return nullptr;
 }

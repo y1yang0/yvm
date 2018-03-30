@@ -21,3 +21,7 @@ hs_err_pid*
 /src/Debug
 /src/.idea
 src/yvm.vcxproj.user
+/.idea
+/.vs
+/cmake-build-debug/CMakeFiles
+/src/cmake-build-debug

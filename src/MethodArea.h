@@ -6,6 +6,7 @@
 #include <vector>
 #include <algorithm>
 #include <string.h>
+#include "ClassFile.h"
 class CodeExecution;
 class JavaClass;
 

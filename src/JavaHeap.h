@@ -25,11 +25,11 @@ public:
     JType* getObjectField(const JObject& object, size_t fieldOffset);
 
     auto& getObject(JObject* object) {
-        return objheap.find(object->offset)->second;
+        return (objheap.find(object->offset))->second;
     }
 
     auto& getArray(JArray* array) {
-        return arrheap.find(array->offset)->second;
+        return (arrheap.find(array->offset))->second;
     }
 
     void removeArray(const JArray * arr);

@@ -18,6 +18,9 @@
  */
 
 inline JType* duplicateValue(JType* value) {
+    if(value == nullptr) {
+        return nullptr;
+    }
     JType* dupvalue{};
     if (typeid(*value) == typeid(JDouble)) {
         dupvalue = new JDouble();

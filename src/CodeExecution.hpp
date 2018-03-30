@@ -41,7 +41,7 @@ public:
     void invokeSpecial(const JavaClass* jc, const char* methodName, const char* methodDescriptor);
     void invokeStatic(const JavaClass* jc, const char* methodName, const char* methodDescriptor);
     void invokeVirtual(const char* methodName, const char* methodDescriptor);
-    void invokeNativeMethod(const char * className, const char * methodName, const char * methodDescriptor);
+    JType* invokeNative(const char * className, const char * methodName, const char * methodDescriptor);
 
 private:
     std::pair<MethodInfo *, const JavaClass*> findMethod(const JavaClass* jc, const char* methodName,
@@ -104,13 +104,15 @@ private:
     template <typename ReturnType>
     ReturnType* currentStackPop();
 
+    template <typename Type1,typename Type2>
+    void typeCast() const;
 
 private:
     Frame* currentFrame;
 };
 
 template <typename LoadType>
-void CodeExecution::load2Stack(u1 localIndex) {
+inline void CodeExecution::load2Stack(u1 localIndex) {
     auto* pushingV = new LoadType;
     pushingV->val = dynamic_cast<LoadType*>(currentFrame->locals[localIndex])->val;
     currentFrame->stack.push(pushingV);
@@ -188,7 +190,7 @@ inline void CodeExecution::loadArrayItem2Stack<JRef>() {
 }
 
 template <typename StoreType>
-void CodeExecution::store2Local(u1 index) {
+inline void CodeExecution::store2Local(u1 index) {
     auto* value = dynamic_cast<StoreType*>(currentFrame->stack.top());
     currentFrame->stack.pop();
     currentFrame->locals[index] = value;
@@ -246,7 +248,7 @@ inline void CodeExecution::storeArrayItem<JRef>() {
 }
 
 template <typename ReturnType>
-ReturnType* CodeExecution::flowReturn() const {
+inline ReturnType* CodeExecution::flowReturn() const {
     auto* value = dynamic_cast<ReturnType*>(currentFrame->stack.top());
     currentFrame->stack.pop();
     return value;
@@ -257,6 +259,16 @@ inline ReturnType* CodeExecution::currentStackPop() {
     auto* value = dynamic_cast<ReturnType*>(currentFrame->stack.top());
     currentFrame->stack.pop();
     return value;
+}
+
+template <typename Type1, typename Type2>
+inline void CodeExecution::typeCast() const {
+    auto * value = dynamic_cast<Type1*>(currentFrame->stack.top());
+    currentFrame->stack.pop();
+    auto * result = new Type2;
+    result->val = value->val;
+    currentFrame->stack.push(result);
+    delete value;
 }
 
 #endif //YVM_CODEEXECUTION_H
