@@ -1,14 +1,25 @@
 #ifndef YVM_OPTION_H
-
-#define YVM_DEBUG_INTERNAL
-#undef YVM_DEBUG_CLASS_FILE
-#define YVM_DEBUG_SHOW_EXEC_FLOW
-#ifdef YVM_DEBUG_INTERNAL
+#define YVM_OPTION_H
+/*
+ * define to output byte size of yvm's internal structures
+ */
 #undef YVM_DEBUG_SHOW_SIZEOF_ALL_TYPE
-#undef YVM_DEBUG_SHOW_BYTECODE
-#undef YVM_DEBUG_SHOW_EXEC_FLOW
-#endif
 
+
+
+/*
+ * defint to show executing bytecode and current class of method, method name and
+ * method descriptor
+ */
+#undef YVM_DEBUG_SHOW_BYTECODE
+#undef  YVM_DEBUG_SHOW_EXEC_FLOW
+
+
+ /*
+ * define to output *.class parsing result, which contains constant pool table,
+ * fields, methods, class access flag, interfaces, etc
+ */
+#undef YVM_DEBUG_CLASS_FILE
 #ifdef YVM_DEBUG_CLASS_FILE
 #define YVM_DEBUG_SHOW_VERSION
 #define YVM_DEBUG_SHOW_CONSTANT_POOL_TABLE

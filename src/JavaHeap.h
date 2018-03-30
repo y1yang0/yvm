@@ -8,6 +8,9 @@
 
 using namespace std;
 
+/**
+ * \brief Java heap holds instance fields data which object referred to, and array component data 
+ */
 class JavaHeap {
     friend class CodeExecution;
 public:

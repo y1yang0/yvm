@@ -11,17 +11,16 @@ class YVM {
 public:
     explicit YVM();
 
-    bool loadClass(const char* name);
-    bool linkClass(const char* name);
+    static bool loadClass(const char* name);
+    static bool linkClass(const char* name);
     bool initClass(const char* name);
-
     void callMain(const char * name);
-
-    void registerNativeMethod(const char *className, const char * name, const char * descriptor, JType *(*func)(RuntimeEnv *env));
-    void warmUp(const char  *libraryPath[], int howManySearchPath);
+    static void registerNativeMethod(const char *className, const char * name, const char * descriptor, JType *(*func)(RuntimeEnv *env));
+    
+    void warmUp(const char  *libraryPath[], int howManySearchPath) const;
 
 private:
-    CodeExecution exec;
+    CodeExecution exec{};
 };
 
 

@@ -72,7 +72,7 @@ void YVM::registerNativeMethod(const char* className, const char* name, const ch
     yrt.nativeMethods.insert(std::make_pair(methodName, func));
 }
 
-void YVM::warmUp(const char* libraryPath[], int howManySearchPath) {
+void YVM::warmUp(const char* libraryPath[], int howManySearchPath) const {
     int p = sizeof nativeFunctionTable / sizeof nativeFunctionTable[0];
     for (int i = 0; i < p; i++) {
         this->registerNativeMethod(

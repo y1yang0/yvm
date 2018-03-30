@@ -1409,10 +1409,6 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeExtension ext) {
 
                 delete objectref;
             }break;
-//////////////////////////////////////////////////////
-// bug region start
-// write symbolic reference inline function 
-/////////////////////////////////////////////////////
             case op_invokevirtual: {
                 const u2 index = u2index(ext.code, op);
                 assert(typeid(*jc->raw.constPoolInfo[index]) == typeid(CONSTANT_Methodref));
@@ -1489,9 +1485,6 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeExtension ext) {
             case op_invokedynamic: {
                 throw std::runtime_error("unsupported opcode [invokedynamic]");
             }break;
-//////////////////////////////////////////////////////
-// bug region end
-/////////////////////////////////////////////////////
             case op_new: {
                 u2 index = u2index(ext.code, op);
                 JObject * objectref = execNew(jc, index);
@@ -1540,7 +1533,16 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeExtension ext) {
                 throw std::runtime_error("unsupported opcode [checkcast]");
             }break;
             case op_instanceof: {
-                throw std::runtime_error("unsupported opcode [instanceof]");
+                u2 index = u2index(ext.code, op);
+                auto * objectref = currentStackPop<JObject>();
+                if(objectref==nullptr) {
+                    currentFrame->stack.push(new JInt(0));
+                }
+                if(checkInstanceof(jc,index,objectref)) {
+                    currentFrame->stack.push(new JInt(1));
+                }else {
+                    currentFrame->stack.push(new JInt(0));
+                }
             }break;
             case op_monitorenter: {
                 throw std::runtime_error("unsupported opcode [monitorenter]");
@@ -1803,6 +1805,92 @@ CodeExecution::CodeExtension CodeExecution::getCodeExtension(const MethodInfo * 
         }
     }
     return ext;
+}
+
+bool CodeExecution::checkInstanceof(const JavaClass * jc, u2 index ,JType* objectref) {
+    std::string TclassName = (char*)dynamic_cast<CONSTANT_Utf8*>(jc->raw.constPoolInfo[
+        dynamic_cast<CONSTANT_Class*>(jc->raw.constPoolInfo[index])->nameIndex])->bytes;
+    constexpr short TYPE_ARRAY = 1;
+    constexpr short TYPE_CLASS = 2;
+    constexpr short TYPE_INTERFACE = 3;
+
+    short tType = 0;
+    if(TclassName.find('[')!=std::string::npos) {
+        tType = TYPE_ARRAY;
+    }else {
+        if(IS_CLASS_INTERFACE(yrt.ma->findJavaClass(TclassName.c_str())->raw.accessFlags)) {
+            tType = TYPE_INTERFACE;
+        }else {
+            tType = TYPE_CLASS;
+        }
+    }
+    
+    if(typeid(objectref)== typeid(JObject)){
+        if(!IS_CLASS_INTERFACE(dynamic_cast<JObject*>(objectref)->jc->raw.accessFlags)) {
+            // If it's an ordinary class
+            if (tType == TYPE_CLASS) {
+                if(strcmp((char*)yrt.ma->findJavaClass((char*)dynamic_cast<JObject*>(objectref)->jc->getClassName()),
+                        TclassName.c_str())==0||
+                    strcmp((char*)yrt.ma->findJavaClass((char*)dynamic_cast<JObject*>(objectref)->jc->getSuperClassName()),
+                        TclassName.c_str()) == 0) {
+                    return true;
+                }
+            }else if(tType == TYPE_INTERFACE) {
+                auto && interfaceIdxs = dynamic_cast<JObject*>(objectref)->jc->getInterfacesIndex();
+                FOR_EACH(i,interfaceIdxs.size()) {
+                    auto * interfaceName = (char*)
+                        dynamic_cast<JObject*>(objectref)->jc->getString(
+                            dynamic_cast<CONSTANT_Class*>(dynamic_cast<JObject*>(objectref)->jc->raw.constPoolInfo[interfaceIdxs[i]])->nameIndex);
+                    if(strcmp(interfaceName,TclassName.c_str())==0) {
+                        return true;
+                    }
+                }
+            }
+            else {
+                SHOULD_NOT_REACH_HERE
+            }
+        }else {
+            // Otherwise, it's an interface class 
+            if (tType == TYPE_CLASS) {
+                if(strcmp(TclassName.c_str(),"java/lang/Object")==0) {
+                    return true;
+                }
+            }else if(tType == TYPE_INTERFACE) {
+                if(strcmp(TclassName.c_str(), (char*)dynamic_cast<JObject*>(objectref)->jc->getClassName())==0
+                    || strcmp(TclassName.c_str(), (char*)dynamic_cast<JObject*>(objectref)->jc->getSuperClassName()) == 0) {
+                    return true;
+                }
+            }else {
+                SHOULD_NOT_REACH_HERE
+            }
+        }
+    }else if (typeid(objectref) == typeid(JArray)) {
+        if (tType == TYPE_CLASS) {
+            if (strcmp(TclassName.c_str(), "java/lang/Object") == 0) {
+                return true;
+            }
+        }
+        else if (tType == TYPE_INTERFACE) {
+            auto * firstComponent = dynamic_cast<JObject*>(yrt.jheap->getArrayItem(*dynamic_cast<JArray*>(objectref), 0));
+            auto && interfaceIdxs = firstComponent->jc->getInterfacesIndex();
+            FOR_EACH(i,interfaceIdxs.size()) {
+                if(strcmp((char*)firstComponent->jc->getString(
+                    dynamic_cast<CONSTANT_Class*>(firstComponent->jc->raw.constPoolInfo[interfaceIdxs[i]])->nameIndex),
+                    TclassName.c_str())==0) {
+                    return true;
+                }
+            }
+        }else if(tType == TYPE_ARRAY) {
+            throw std::runtime_error("to be implement\n");
+        }
+        else {
+            SHOULD_NOT_REACH_HERE
+        }
+    }
+    else {
+        SHOULD_NOT_REACH_HERE
+    }
+    
 }
 
 std::pair<MethodInfo *, const JavaClass*> CodeExecution::findMethod(const JavaClass * jc, const char * methodName, const char * methodDescriptor) {

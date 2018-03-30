@@ -1,5 +1,6 @@
 #include "Descriptor.h"
 #include "Opcode.h"
+#include "Utils.h"
 
 JType * determineBasicType(const char * type) {
     if (IS_FIELD_INT(type) || IS_FIELD_BYTE(type) || IS_FIELD_CHAR(type) || IS_FIELD_SHORT(type) || IS_FIELD_BOOL(type)) {
@@ -26,11 +27,12 @@ std::string peelClassNameFrom(const char * descriptor) {
 }
 
 std::string peelArrayComponentTypeFrom(const char * descriptor) {
-    if (descriptor[0] != '[') {
-        return std::string("");
+    int i = 0;
+    while(descriptor[i]=='[') {
+        i++;
     }
     std::string arrayComponentTypeName(descriptor);
-    return arrayComponentTypeName.substr(1, arrayComponentTypeName.length());
+    return arrayComponentTypeName.substr(i, arrayComponentTypeName.length() - i);
 }
 
 std::tuple<int, std::vector<int>>  peelMethodParameterAndType(const char * descriptor){
@@ -125,4 +127,5 @@ std::tuple<int, std::vector<int>>  peelMethodParameterAndType(const char * descr
         }
         i++;
     }
+    SHOULD_NOT_REACH_HERE
 }
