@@ -16,24 +16,10 @@ JavaClass::JavaClass(const char *classFilePath) : reader(classFilePath) {
     raw.attributes = nullptr;
 }
 
-JavaClass::JavaClass(const JavaClass &rhs) {
-    this->raw = rhs.raw;
-}
 JavaClass::~JavaClass() {
     for (auto& i : sfield) {
         delete i.second;
     }
-}
-
-u1 * JavaClass::getClassName() const {
-    return getString(dynamic_cast<CONSTANT_Class*>(raw.constPoolInfo[raw.thisClass])->nameIndex);
-}
-
-u1 *JavaClass::getString(u2 index) const {
-    if (typeid(*raw.constPoolInfo[index]) != typeid(CONSTANT_Utf8)) {
-        return nullptr;
-    }
-    return dynamic_cast<CONSTANT_Utf8*>(raw.constPoolInfo[index])->bytes;
 }
 
 std::vector<u2>  JavaClass::getInterfacesIndex() const {
@@ -60,13 +46,6 @@ MethodInfo * JavaClass::getMethod(const char * methodName, const char * methodDe
     return nullptr;
 }
 
-
-u1 * JavaClass::getSuperClassName() const {
-    if (raw.superClass == 0)
-        return nullptr;
-
-    return getString(dynamic_cast<CONSTANT_Class*>(raw.constPoolInfo[raw.superClass])->nameIndex);
-}
 
 void JavaClass::parseClassFile() {
     int ff = 0;

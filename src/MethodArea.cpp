@@ -3,7 +3,6 @@
 #include "JavaHeap.h"
 #include "AccessFlag.h"
 #include "Descriptor.h"
-#include "Opcode.h"
 
 
 MethodArea::MethodArea(const char *searchPath[],int howManySearchPath) {

@@ -8,6 +8,10 @@
 #include "MethodArea.h"
 #include "YVM.h"
 
+/**
+ * \brief JavaClass is an in-memory representation of java class file. We should call
+ * parseClassFile() to parse into proper structure before any operation on JavaClass.
+ */
 class JavaClass {
     friend struct Inspector;
     friend class YVM;
@@ -17,17 +21,29 @@ class JavaClass {
 
 public:
     explicit JavaClass(const char* classFilePath);
-    JavaClass(const JavaClass& rhs);
     ~JavaClass();
+    JavaClass(const JavaClass& rhs) { this->raw = rhs.raw; }
+    
 
 public:
-    u1* getClassName() const;
-    u1* getSuperClassName() const;
+    inline decltype(auto) getString(u2 index) const {
+        return reinterpret_cast<const char*>(dynamic_cast<CONSTANT_Utf8*>(raw.constPoolInfo[index])->bytes);
+    }
+    inline decltype(auto) getClassName() const {
+        return getString(dynamic_cast<CONSTANT_Class*>(raw.constPoolInfo[raw.thisClass])->nameIndex);
+    }
+    inline decltype(auto) getSuperClassName() const {
+        return raw.superClass == 0 ? nullptr : getString(dynamic_cast<CONSTANT_Class*>(raw.constPoolInfo[raw.superClass])->nameIndex);
+    }
+    inline bool hasSuperClass() const {
+        return raw.superClass != 0;
+    }
+    
     void parseClassFile();
-    u1* getString(u2 index) const;
+    
     std::vector<u2> getInterfacesIndex() const;
     MethodInfo* getMethod(const char* methodName, const char* methodDescriptor) const;
-    inline bool hasSuperClass()const { return raw.superClass != 0; }
+    
 
 private:
     bool parseConstantPool(u2 cpCount);

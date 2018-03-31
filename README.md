@@ -67,3 +67,4 @@ Code licensed under the MIT License.
 2. 根据JVM SPEC,虚拟机执行引擎会直接操纵JDK一些类,如`java/lang/Class`,,`java/lang/String`.为了实现一个"Runnable"的JVM，这里使用重写的同名类(位于javalib)代替。
 3.  YVM不支持(未来也不打算)JavaSE6及其之前版本编译器编译的`.class`
 4. **不能使用任何JDK的方法**,不过部分运行攸关的JDK类已经重写过。输出可用`ydk.lang.IO`代替。
+5. YVM中`float`相等取6位小数精度，`double`相等取12位小数精度

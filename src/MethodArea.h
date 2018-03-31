@@ -10,12 +10,6 @@
 class CodeExecution;
 class JavaClass;
 
-enum NameReprestation {
-    DOT_QUALIFIED_NAME,
-    SLASH_QUALIFIED_NAME,
-    PURE_FILE_NAME
-};
-
 class MethodArea {
 public:
     MethodArea(const char *searchPath[], int howManySearchPath);

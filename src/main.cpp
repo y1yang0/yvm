@@ -1,9 +1,9 @@
 #include "YVM.h"
 
 int main() {
-    const char * ydk[] = {
+    const char* ydk[] = {
         R"(C:\Users\Cthulhu\Desktop\yvm\javalib)",
-        R"(C:\Users\Cthulhu\Desktop\code_warehouse_hp\java\out\production\java)"
+        R"(C:\Users\Cthulhu\Desktop\code_warehouse_hp\ydktest\out\production\ydktest)"
     };
 
     YVM vm;

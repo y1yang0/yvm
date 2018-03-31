@@ -1,12 +1,12 @@
 #ifndef YVM_CODEEXECUTION_H
 #define YVM_CODEEXECUTION_H
 
-#define USELESS 0
 #include "JavaHeap.h"
 #include "RuntimeEnv.h"
 #include "JavaType.h"
 #include "ClassFile.h"
 #include "Frame.h"
+#include <typeinfo>
 
 
 struct MethodInfo;

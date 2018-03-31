@@ -25,7 +25,7 @@ struct JFloat BASE_OF_JTYPE {
 };
 
 struct JInt BASE_OF_JTYPE {
-    explicit JInt() : val(0) {}
+    explicit JInt() {}
     explicit JInt(int32_t val) : val(val) {}
     int32_t val = 0;
 };

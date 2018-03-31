@@ -354,19 +354,17 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 storeArrayItem<JRef>();
             }break;
             case op_bastore: {
-                JInt * value = (JInt*)currentFrame->stack.top();
+                JInt * value = currentStackPop<JInt>();
                 value->val = static_cast<int8_t>(value->val);
-                currentFrame->stack.pop();
-                JInt * index = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                JArray * arrayref = (JArray*)currentFrame->stack.top();
+             
+                JInt * index = currentStackPop<JInt>();
+                JArray * arrayref = currentStackPop<JArray>();
                 if (arrayref == nullptr) {
                     throw std::runtime_error("null pointer");
                 }
                 if (index->val > arrayref->length || index->val < 0) {
                     throw std::runtime_error("array index out of bounds");
                 }
-                currentFrame->stack.pop();
                 yrt.jheap->putArrayItem(*arrayref, index->val, value);
 
                 delete index;
@@ -376,19 +374,17 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
 #endif
             case op_sastore:
             case op_castore: {
-                JInt * value = (JInt*)currentFrame->stack.top();
+                JInt * value = currentStackPop<JInt>();
                 value->val = static_cast<int16_t>(value->val);
-                currentFrame->stack.pop();
-                JInt * index = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                JArray * arrayref = (JArray*)currentFrame->stack.top();
+
+                JInt * index = currentStackPop<JInt>();
+                JArray * arrayref = currentStackPop<JArray>();
                 if (arrayref == nullptr) {
                     throw std::runtime_error("null pointer");
                 }
                 if (index->val > arrayref->length || index->val < 0) {
                     throw std::runtime_error("array index out of bounds");
                 }
-                currentFrame->stack.pop();
                 yrt.jheap->putArrayItem(*arrayref, index->val, value);
 
                 delete index;
@@ -401,18 +397,15 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete currentStackPop<JType>();
             }break;
             case op_dup: {
-                JType * value = currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JType * value = currentStackPop<JType>();
 
                 assert(typeid(*value)!= typeid(JLong) && typeid(*value)!= typeid(JDouble));
                 currentFrame->stack.push(value);
                 currentFrame->stack.push(cloneValue(value));
             }break;
             case op_dup_x1: {
-                JType * value1 = currentFrame->stack.top();
-                currentFrame->stack.pop();
-                JType * value2 = currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JType * value1 = currentStackPop<JType>();
+                JType * value2 = currentStackPop<JType>();
 
                 assert(IS_COMPUTATIONAL_TYPE_1(value1));
                 assert(IS_COMPUTATIONAL_TYPE_1(value2));
@@ -422,12 +415,9 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 currentFrame->stack.push(value1);
             }break;
             case op_dup_x2: {
-                JType * value1 = currentFrame->stack.top();
-                currentFrame->stack.pop();
-                JType * value2 = currentFrame->stack.top();
-                currentFrame->stack.pop();
-                JType * value3 = currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JType * value1 = currentStackPop<JType>();
+                JType * value2 = currentStackPop<JType>();
+                JType * value3 = currentStackPop<JType>();
 
                 if(IS_COMPUTATIONAL_TYPE_1(value1) && IS_COMPUTATIONAL_TYPE_1(value2) && IS_COMPUTATIONAL_TYPE_1(value3)){
                     // use structure 1
@@ -447,10 +437,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 }
             }break;
             case op_dup2: {
-                JType * value1 = currentFrame->stack.top();
-                currentFrame->stack.pop();
-                JType * value2 = currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JType * value1 = currentStackPop<JType>();
+                JType * value2 = currentStackPop<JType>();
 
                 if(IS_COMPUTATIONAL_TYPE_1(value1) && IS_COMPUTATIONAL_TYPE_1(value2)){
                     // use structure 1
@@ -469,12 +457,9 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 }
             }break;
             case op_dup2_x1: {
-                JType * value1 = currentFrame->stack.top();
-                currentFrame->stack.pop();
-                JType * value2 = currentFrame->stack.top();
-                currentFrame->stack.pop();
-                JType * value3 = currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JType * value1 = currentStackPop<JType>();
+                JType * value2 = currentStackPop<JType>();
+                JType * value3 = currentStackPop<JType>();
 
                 if(IS_COMPUTATIONAL_TYPE_1(value1) && IS_COMPUTATIONAL_TYPE_1(value2) && IS_COMPUTATIONAL_TYPE_1(value3)){
                     // use structure 1
@@ -495,14 +480,10 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 }
             }break;
             case op_dup2_x2: {
-                JType * value1 = currentFrame->stack.top();
-                currentFrame->stack.pop();
-                JType * value2 = currentFrame->stack.top();
-                currentFrame->stack.pop();
-                JType * value3 = currentFrame->stack.top();
-                currentFrame->stack.pop();
-                JType * value4 = currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JType * value1 = currentStackPop<JType>();
+                JType * value2 = currentStackPop<JType>();
+                JType * value3 = currentStackPop<JType>();
+                JType * value4 = currentStackPop<JType>();
                 if(IS_COMPUTATIONAL_TYPE_1(value1) && IS_COMPUTATIONAL_TYPE_1(value2)
                    && IS_COMPUTATIONAL_TYPE_1(value3) && IS_COMPUTATIONAL_TYPE_1(value4)){
                     // use structure 1
@@ -525,10 +506,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 }
             }break;
             case op_swap: {
-                JType * value1 = currentFrame->stack.top();
-                currentFrame->stack.pop();
-                JType * value2 = currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JType * value1 = currentStackPop<JType>();
+                JType * value2 = currentStackPop<JType>();
 
                 assert(IS_COMPUTATIONAL_TYPE_1(value1));
                 assert(IS_COMPUTATIONAL_TYPE_1(value2));
@@ -549,10 +528,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 }
             }break;
             case op_iadd: {
-                JInt * value2 = dynamic_cast<JInt *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JInt * value1 = dynamic_cast<JInt *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JInt * value2 = currentStackPop<JInt>();
+                JInt * value1 = currentStackPop<JInt>();
 
                 JInt * result = new JInt;
                 result->val = value1->val + value2->val;
@@ -562,10 +539,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_ladd: {
-                JLong * value2 = dynamic_cast<JLong *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JLong * value1 = dynamic_cast<JLong *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JLong * value2 = currentStackPop<JLong>();
+                JLong * value1 = currentStackPop<JLong>();
 
                 JLong * result = new JLong;
                 result->val = value1->val + value2->val;
@@ -575,10 +550,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_fadd: {
-                JFloat * value2 = dynamic_cast<JFloat *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JFloat * value1 = dynamic_cast<JFloat *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JFloat * value2 = currentStackPop<JFloat>();
+                JFloat * value1 = currentStackPop<JFloat>();
 
                 JFloat * result = new JFloat;
                 result->val = value1->val + value2->val;
@@ -588,10 +561,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_dadd: {
-                JDouble * value2 = dynamic_cast<JDouble *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JDouble * value1 = dynamic_cast<JDouble *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JDouble * value2 = currentStackPop<JDouble>();
+                JDouble * value1 = currentStackPop<JDouble>();
 
                 JDouble * result = new JDouble;
                 result->val = value1->val + value2->val;
@@ -601,10 +572,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_isub: {
-                JInt * value2 = dynamic_cast<JInt *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JInt * value1 = dynamic_cast<JInt *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JInt * value2 = currentStackPop<JInt>();
+                JInt * value1 = currentStackPop<JInt>();
 
                 JInt * result = new JInt;
                 result->val = value1->val - value2->val;
@@ -614,10 +583,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_lsub: {
-                JLong * value2 = dynamic_cast<JLong *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JLong * value1 = dynamic_cast<JLong *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JLong * value2 = currentStackPop<JLong>();
+                JLong * value1 = currentStackPop<JLong>();
 
                 JLong * result = new JLong;
                 result->val = value1->val - value2->val;
@@ -627,10 +594,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_fsub: {
-                JFloat * value2 = dynamic_cast<JFloat *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JFloat * value1 = dynamic_cast<JFloat *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JFloat * value2 = currentStackPop<JFloat>();
+                JFloat * value1 = currentStackPop<JFloat>();
 
                 JFloat * result = new JFloat;
                 result->val = value1->val - value2->val;
@@ -640,10 +605,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_dsub: {
-                JDouble * value2 = dynamic_cast<JDouble *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JDouble * value1 = dynamic_cast<JDouble *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JDouble * value2 = currentStackPop<JDouble>();
+                JDouble * value1 = currentStackPop<JDouble>();
 
                 JDouble * result = new JDouble;
                 result->val = value1->val - value2->val;
@@ -653,10 +616,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_imul: {
-                JInt * value2 = dynamic_cast<JInt *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JInt * value1 = dynamic_cast<JInt *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JInt * value2 = currentStackPop<JInt>();
+                JInt * value1 = currentStackPop<JInt>();
 
                 JInt * result = new JInt;
                 result->val = value1->val * value2->val;
@@ -666,10 +627,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_lmul: {
-                JLong * value2 = dynamic_cast<JLong *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JLong * value1 = dynamic_cast<JLong *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JLong * value2 = currentStackPop<JLong>();
+                JLong * value1 = currentStackPop<JLong>();
 
                 JLong * result = new JLong;
                 result->val = value1->val * value2->val;
@@ -679,10 +638,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_fmul: {
-                JFloat * value2 = dynamic_cast<JFloat *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JFloat * value1 = dynamic_cast<JFloat *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JFloat * value2 = currentStackPop<JFloat>();
+                JFloat * value1 = currentStackPop<JFloat>();
 
                 JFloat * result = new JFloat;
                 result->val = value1->val * value2->val;
@@ -692,10 +649,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_dmul: {
-                JDouble * value2 = dynamic_cast<JDouble *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JDouble * value1 = dynamic_cast<JDouble *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JDouble * value2 = currentStackPop<JDouble>();
+                JDouble * value1 = currentStackPop<JDouble>();
 
                 JDouble * result = new JDouble;
                 result->val = value1->val * value2->val;
@@ -705,10 +660,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_idiv: {
-                JInt * value2 = dynamic_cast<JInt *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JInt * value1 = dynamic_cast<JInt *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JInt * value2 = currentStackPop<JInt>();
+                JInt * value1 = currentStackPop<JInt>();
 
                 JInt * result = new JInt;
                 result->val = value1->val / value2->val;
@@ -718,10 +671,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_ldiv: {
-                JLong * value2 = dynamic_cast<JLong *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JLong * value1 = dynamic_cast<JLong *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JLong * value2 = currentStackPop<JLong>();
+                JLong * value1 = currentStackPop<JLong>();
 
                 JLong * result = new JLong;
                 result->val = value1->val / value2->val;
@@ -731,10 +682,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_fdiv: {
-                JFloat * value2 = dynamic_cast<JFloat *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JFloat * value1 = dynamic_cast<JFloat *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JFloat * value2 = currentStackPop<JFloat>();
+                JFloat * value1 = currentStackPop<JFloat>();
 
                 JFloat * result = new JFloat;
                 result->val = value1->val / value2->val;
@@ -744,10 +693,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_ddiv: {
-                JDouble * value2 = dynamic_cast<JDouble *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JDouble * value1 = dynamic_cast<JDouble *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JDouble * value2 = currentStackPop<JDouble>();
+                JDouble * value1 = currentStackPop<JDouble>();
 
                 JDouble * result = new JDouble;
                 result->val = value1->val / value2->val;
@@ -757,10 +704,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_irem: {
-                JInt * value2 = dynamic_cast<JInt *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JInt * value1 = dynamic_cast<JInt *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JInt * value2 = currentStackPop<JInt>();
+                JInt * value1 = currentStackPop<JInt>();
 
                 JInt * result = new JInt;
                 result->val = value1->val - (value1->val/value2->val) * value2->val;
@@ -770,10 +715,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_lrem: {
-                JLong * value2 = dynamic_cast<JLong *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JLong * value1 = dynamic_cast<JLong *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JLong * value2 = currentStackPop<JLong>();
+                JLong * value1 = currentStackPop<JLong>();
 
                 JLong * result = new JLong;
                 result->val = value1->val - (value1->val/value2->val) * value2->val;
@@ -783,10 +726,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_frem: {
-                JFloat * value2 = dynamic_cast<JFloat *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JFloat * value1 = dynamic_cast<JFloat *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JFloat * value2 = currentStackPop<JFloat>();
+                JFloat * value1 = currentStackPop<JFloat>();
 
                 JFloat * result = new JFloat;
                 result->val = std::fmod(value1->val,value2->val);
@@ -796,10 +737,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_drem: {
-                JDouble * value2 = dynamic_cast<JDouble *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JDouble * value1 = dynamic_cast<JDouble *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JDouble * value2 = currentStackPop<JDouble>();
+                JDouble * value1 = currentStackPop<JDouble>();
 
                 JDouble * result = new JDouble;
                 result->val = std::fmod(value1->val,value2->val);
@@ -809,34 +748,28 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_ineg: {
-                JInt * ival = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JInt * ival = currentStackPop<JInt>();
                 ival->val = -ival->val;
                 currentFrame->stack.push(ival);
             }break;
             case op_lneg: {
-                JLong * lval = (JLong*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JLong * lval = currentStackPop<JLong>();
                 lval->val = -lval->val;
                 currentFrame->stack.push(lval);
             }break;
             case op_fneg: {
-                JFloat * fval = (JFloat*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JFloat * fval = currentStackPop<JFloat>();
                 fval->val = -fval->val;
                 currentFrame->stack.push(fval);
             }break;
             case op_dneg: {
-                JDouble * dval = (JDouble*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JDouble * dval = currentStackPop<JDouble>();
                 dval->val = -dval->val;
                 currentFrame->stack.push(dval);
             }break;
             case op_ishl: {
-                JInt *value2 = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                JInt *value1 = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JInt *value2 = currentStackPop<JInt>();
+                JInt *value1 = currentStackPop<JInt>();
                 JInt * result = new JInt;
                 result->val = value1->val * std::pow(2, value2->val & 0x1f);
                 currentFrame->stack.push(result);
@@ -845,10 +778,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value1;
             }break;
             case op_lshl: {
-                JInt * value2 = (JInt *)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                JLong * value1 = (JLong*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JInt * value2 = currentStackPop<JInt>();
+                JLong * value1 = currentStackPop<JLong>();
                 JLong * result = new JLong;
                 result->val = value1->val * std::pow(2, value2->val & 0x3f);
                 currentFrame->stack.push(result);
@@ -857,10 +788,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value1;
             }break;
             case op_ishr: {
-                JInt *value2 = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                JInt *value1 = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JInt *value2 = currentStackPop<JInt>();
+                JInt *value1 = currentStackPop<JInt>();
                 JInt * result = new JInt;
                 result->val = std::floor(value1->val / std::pow(2, value2->val & 0x1f));
                 currentFrame->stack.push(result);
@@ -869,10 +798,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value1;
             }break;
             case op_lshr: {
-                JInt * value2 = (JInt *)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                JLong * value1 = (JLong*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JInt * value2 = currentStackPop<JInt>();
+                JLong * value1 = currentStackPop<JLong>();
                 JLong * result = new JLong;
                 result->val = std::floor(value1->val / std::pow(2, value2->val & 0x3f));
                 currentFrame->stack.push(result);
@@ -881,10 +808,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value1;
             }break;
             case op_iushr: {
-                JInt *value2 = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                JInt *value1 = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JInt *value2 = currentStackPop<JInt>();
+                JInt *value1 = currentStackPop<JInt>();
                 JInt * result = new JInt;
                 if (value1->val > 0) {
                     result->val = value1->val >> (value2->val & 0x1f);
@@ -901,10 +826,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value1;
             }break;
             case op_lushr: {
-                JInt *value2 = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                JLong *value1 = (JLong*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JInt *value2 = currentStackPop<JInt>();
+                JLong *value1 = currentStackPop<JLong>();
                 JLong * result = new JLong;
                 if (value1->val > 0) {
                     result->val = value1->val >> (value2->val & 0x3f);
@@ -921,10 +844,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value1;
             }break;
             case op_iand: {
-                JInt * value2 = dynamic_cast<JInt *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JInt * value1 = dynamic_cast<JInt *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JInt * value2 = currentStackPop<JInt>();
+                JInt * value1 = currentStackPop<JInt>();
 
                 JInt * result = new JInt;
                 result->val = value1->val & value2->val;
@@ -934,10 +855,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_land: {
-                JLong * value2 = dynamic_cast<JLong *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JLong * value1 = dynamic_cast<JLong *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JLong * value2 = currentStackPop<JLong>();
+                JLong * value1 = currentStackPop<JLong>();
 
                 JLong * result = new JLong;
                 result->val = value1->val & value2->val;
@@ -947,10 +866,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_ior: {
-                JInt * value2 = dynamic_cast<JInt *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JInt * value1 = dynamic_cast<JInt *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JInt * value2 = currentStackPop<JInt>();
+                JInt * value1 = currentStackPop<JInt>();
 
                 JInt * result = new JInt;
                 result->val = value1->val | value2->val;
@@ -960,10 +877,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_lor: {
-                JLong * value2 = dynamic_cast<JLong *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JLong * value1 = dynamic_cast<JLong *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JLong * value2 = currentStackPop<JLong>();
+                JLong * value1 = currentStackPop<JLong>();
 
                 JLong * result = new JLong;
                 result->val = value1->val | value2->val;
@@ -973,10 +888,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_ixor: {
-                JInt * value2 = dynamic_cast<JInt *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JInt * value1 = dynamic_cast<JInt *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JInt * value2 = currentStackPop<JInt>();
+                JInt * value1 = currentStackPop<JInt>();
 
                 JInt * result = new JInt;
                 result->val = value1->val & value2->val;
@@ -986,10 +899,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete value2;
             }break;
             case op_lxor: {
-                JLong * value2 = dynamic_cast<JLong *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
-                JLong * value1 = dynamic_cast<JLong *>(currentFrame->stack.top());
-                currentFrame->stack.pop();
+                JLong * value2 = currentStackPop<JLong>();
+                JLong * value1 = currentStackPop<JLong>();
 
                 JLong * result = new JLong;
                 result->val = value1->val ^ value2->val;
@@ -1001,7 +912,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             case op_iinc: {
                 const u1 index = ext.code[++op];
                 const int8_t count = ext.code[++op];
-                int32_t extendedCount = count;
+                const int32_t extendedCount = count;
                 if(IS_JINT(currentFrame->locals[index])){
                     dynamic_cast<JInt*>(currentFrame->locals[index])->val += extendedCount;
                 }else if(IS_JLong(currentFrame->locals[index])){
@@ -1055,26 +966,22 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
 #endif
             case op_i2c:
             case op_i2b: {
-                auto * value = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * value = currentStackPop<JInt>();
                 auto * result = new JInt;
                 result->val = (int8_t)(value->val);
                 currentFrame->stack.push(result);
                 delete value;
             }break;
             case op_i2s: {
-                auto * value = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * value = currentStackPop<JInt>();
                 auto * result = new JInt;
                 result->val = (int16_t)(value->val);
                 currentFrame->stack.push(result);
                 delete value;
             }break;
             case op_lcmp: {
-                auto * value2 = (JLong*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * value1 = (JLong*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * value2 = currentStackPop<JLong>();
+                auto * value1 = currentStackPop<JLong>();
                 if (value1->val > value2->val) {
                     auto * result = new JInt(1);
                     currentFrame->stack.push(result);
@@ -1095,10 +1002,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
 #endif
             case op_fcmpg:
             case op_fcmpl: {
-                auto * value2 = (JFloat*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * value1 = (JFloat*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * value2 = currentStackPop<JFloat>();
+                auto * value1 = currentStackPop<JFloat>();
                 if (value1->val > value2->val) {
                     auto * result = new JInt(1);
                     currentFrame->stack.push(result);
@@ -1119,10 +1024,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
 #endif
             case op_dcmpl:
             case op_dcmpg: {
-                auto * value2 = (JDouble*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * value1 = (JDouble*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * value2 = currentStackPop<JDouble>();
+                auto * value1 = currentStackPop<JDouble>();
                 if (value1->val > value2->val) {
                     auto * result = new JInt(1);
                     currentFrame->stack.push(result);
@@ -1141,8 +1044,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             case op_ifeq: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = u2index(ext.code, op);
-                auto * value = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * value = currentStackPop<JInt>();
                 if (value->val == 0) {
                     op = currentOffset + branchindex;
                 }
@@ -1151,8 +1053,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             case op_ifne: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = u2index(ext.code, op);
-                auto * value = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * value = currentStackPop<JInt>();
                 if (value->val != 0) {
                     op = currentOffset + branchindex;
                 }
@@ -1161,8 +1062,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             case op_iflt: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = u2index(ext.code, op);
-                auto * value = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * value = currentStackPop<JInt>();
                 if (value->val < 0) {
                     op = currentOffset + branchindex;
                 }
@@ -1171,8 +1071,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             case op_ifge: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = u2index(ext.code, op);
-                auto * value = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * value = currentStackPop<JInt>();
                 if (value->val >= 0) {
                     op = currentOffset + branchindex;
                 }
@@ -1181,8 +1080,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             case op_ifgt: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = u2index(ext.code, op);
-                auto * value = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * value = currentStackPop<JInt>();
                 if (value->val > 0) {
                     op = currentOffset + branchindex;
                 }
@@ -1191,8 +1089,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             case op_ifle: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = u2index(ext.code, op);
-                auto * value = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * value = currentStackPop<JInt>();
                 if (value->val <= 0) {
                     op = currentOffset + branchindex;
                 }
@@ -1201,10 +1098,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             case op_if_icmpeq: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = u2index(ext.code, op);
-                auto * value2 = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * value1 = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * value2 = currentStackPop<JInt>();
+                auto * value1 = currentStackPop<JInt>();
                 if (value1->val == value2->val) {
                     op = currentOffset + branchindex;
                 }
@@ -1214,10 +1109,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             case op_if_icmpne: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = u2index(ext.code, op);
-                auto * value2 = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * value1 = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * value2 = currentStackPop<JInt>();
+                auto * value1 = currentStackPop<JInt>();
                 if (value1->val != value2->val) {
                     op = currentOffset + branchindex;                
                 }
@@ -1227,10 +1120,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             case op_if_icmplt: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = u2index(ext.code, op);
-                auto * value2 = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * value1 = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * value2 = currentStackPop<JInt>();
+                auto * value1 = currentStackPop<JInt>();
                 if (value1->val < value2->val) {
                     op = currentOffset + branchindex;                  
                 }
@@ -1240,10 +1131,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             case op_if_icmpge: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = u2index(ext.code, op);
-                auto * value2 = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * value1 = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * value2 = currentStackPop<JInt>();
+                auto * value1 = currentStackPop<JInt>();
                 if (value1->val >= value2->val) {
                     op = currentOffset + branchindex;                   
                 }
@@ -1253,10 +1142,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             case op_if_icmpgt: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = u2index(ext.code, op);
-                auto * value2 = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * value1 = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * value2 = currentStackPop<JInt>();
+                auto * value1 = currentStackPop<JInt>();
                 if (value1->val > value2->val) {
                     op = currentOffset + branchindex;                  
                 }
@@ -1266,10 +1153,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             case op_if_icmple: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = u2index(ext.code, op);
-                auto * value2 = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * value1 = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * value2 = currentStackPop<JInt>();
+                auto * value1 = currentStackPop<JInt>();
                 if (value1->val <= value2->val) {
                     op = currentOffset + branchindex;                   
                 }
@@ -1279,10 +1164,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             case op_if_acmpeq: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = u2index(ext.code, op);
-                auto * value2 = (JObject*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * value1 = (JObject*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * value2 = currentStackPop<JObject>();
+                auto * value1 = currentStackPop<JObject>();
                 if (value1->offset == value2->offset && value1->jc == value2->jc) {
                     op = currentOffset + branchindex;                  
                 }
@@ -1292,10 +1175,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             case op_if_acmpne: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = u2index(ext.code, op);
-                auto * value2 = (JObject*)currentFrame->stack.top();
-                currentFrame->stack.pop();
-                auto * value1 = (JObject*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * value2 = currentStackPop<JObject>();
+                auto * value1 = currentStackPop<JObject>();
                 if (value1->offset != value2->offset || value1->jc != value2->jc) {
                     op = currentOffset + branchindex;                   
                 }
@@ -1326,8 +1207,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                     jumpOffset.push_back(u4index(ext.code, op));
                 }
 
-                auto * index = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * index = currentStackPop<JInt>();
                 if (index->val < low || index->val > high) {
                     op = currentOffset + defaultIndex;
                 }
@@ -1347,8 +1227,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 FOR_EACH(i, npair) {
                     matchOffset.insert(std::make_pair(u4index(ext.code, op), u4index(ext.code, op)));
                 }
-                auto * key = (JInt*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                auto * key = currentStackPop<JInt>();
                 auto res = matchOffset.find(key->val);
                 if (res != matchOffset.end()) {
                     op = currentOffset + (*res).second;                 
@@ -1384,15 +1263,13 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_putstatic: {
                 u2 index = u2index(ext.code, op);
-                JType * value = currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JType * value = currentStackPop<JType>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
                 putStaticField(std::get<0>(symbolicRef), std::get<1>(symbolicRef), std::get<2>(symbolicRef), value);
             }break;
             case op_getfield: {
                 u2 index = u2index(ext.code, op);
-                JObject * objectref = (JObject*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JObject * objectref = currentStackPop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
                 JType * field = cloneValue(getInstanceField(std::get<0>(symbolicRef), std::get<1>(symbolicRef), std::get<2>(symbolicRef),
                                                                 objectref, 0));
@@ -1402,10 +1279,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_putfield: {
                 u2 index = u2index(ext.code, op);
-                JType * value = currentFrame->stack.top();
-                currentFrame->stack.pop();
-                JObject * objectref = (JObject*)currentFrame->stack.top();
-                currentFrame->stack.pop();
+                JType * value = currentStackPop<JType>();
+                JObject * objectref = currentStackPop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
                 putInstanceField(std::get<0>(symbolicRef), std::get<1>(symbolicRef), std::get<2>(symbolicRef),
                     objectref, value, 0);
