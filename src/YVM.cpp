@@ -13,7 +13,7 @@
 #include "NativeMethod.h"
 #include "RuntimeEnv.h"
 
-#define FORCE(x) reinterpret_cast<char*>(x)
+#define FORCE(x) (reinterpret_cast<char*>(x))
 /**
 * \brief {class_name,method_name,descriptor_name,function_pointer}
 */

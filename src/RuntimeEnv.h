@@ -15,7 +15,6 @@ struct RuntimeEnv {
     RuntimeEnv();
     ~RuntimeEnv();
 
-    u4 eip;
     MethodArea* ma;
     JavaHeap* jheap;
     std::stack<Frame*> frames;

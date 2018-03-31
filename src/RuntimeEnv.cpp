@@ -4,7 +4,7 @@
 #include "Frame.h"
 RuntimeEnv yrt;
 
-RuntimeEnv::RuntimeEnv(): eip(0){
+RuntimeEnv::RuntimeEnv() {
     ma = nullptr;
     jheap = new JavaHeap;
 }

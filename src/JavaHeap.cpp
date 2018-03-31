@@ -47,7 +47,7 @@ void JavaHeap::removeArray(const JArray* arr) {
     arrheap.erase(arrheap.find(arr->offset));
 }
 
-void JavaHeap::createSuperFields(const JavaClass & javaClass, const JObject * object){
+void JavaHeap::createSuperFields(const JavaClass & javaClass, const JObject * object) {
     if (javaClass.raw.superClass != 0) {
         const JavaClass * superClass = yrt.ma->findJavaClass((char*)javaClass.getSuperClassName());
         FOR_EACH(i, superClass->raw.fieldsCount) {
@@ -59,7 +59,7 @@ void JavaHeap::createSuperFields(const JavaClass & javaClass, const JObject * ob
                 // Special handling for field whose type is another class
                 if (!IS_FIELD_STATIC(superClass->raw.fields[i].accessFlags)) {
                     JObject * fieldObject = nullptr;
-                    yrt.jheap->objheap[object->offset].push_back(fieldObject);
+                    yrt.jheap->objheap.find(object->offset)->second.push_back(fieldObject);
                 }
             }
             else if (IS_FIELD_REF_ARRAY(descriptor)) {
@@ -68,7 +68,7 @@ void JavaHeap::createSuperFields(const JavaClass & javaClass, const JObject * ob
                 // while meeting opcodes [newarray]/[multinewarray]
                 if (!IS_FIELD_STATIC(superClass->raw.fields[i].accessFlags)) {
                     JArray * uninitializedArray = nullptr;
-                    yrt.jheap->objheap[object->offset].push_back(uninitializedArray);
+                    yrt.jheap->objheap.find(object->offset)->second.push_back(uninitializedArray);
                 }
             }
             else {
@@ -76,7 +76,7 @@ void JavaHeap::createSuperFields(const JavaClass & javaClass, const JObject * ob
                 // by determining its access flag
                 if (!IS_FIELD_STATIC(superClass->raw.fields[i].accessFlags)) {
                     JType * basicField = determineBasicType(descriptor);
-                    yrt.jheap->objheap[object->offset].push_back(basicField);
+                    yrt.jheap->objheap.find(object->offset)->second.push_back(basicField);
                 }
             }
         }

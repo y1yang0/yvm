@@ -30,11 +30,9 @@ struct CodeAttrCore {
  */
 class CodeExecution {
 public:
-    CodeExecution() = default;
+    CodeExecution() : currentFrame(nullptr) {}
 
-    ~CodeExecution() {
-        currentFrame = nullptr;
-    }
+    ~CodeExecution() { currentFrame = nullptr; }
 
     void invokeByName(JavaClass* jc, const char* methodName, const char* methodDescriptor);
     void invokeInterface(const JavaClass* jc, const char* methodName, const char* methodDescriptor);
@@ -52,7 +50,7 @@ private:
                             JObject* object, size_t offset = 0);
     void putInstanceField(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor,
                           JObject* object, JType* value, size_t offset = 0);
-    CodeAttrCore getCodeAttrCore(const MethodInfo* methodInfo);
+    CodeAttrCore getCodeAttrCore(const MethodInfo* m);
     bool checkInstanceof(const JavaClass * jc, u2 index, JType* objectref);
 
     std::tuple<JavaClass*, const char*, const char*> parseFieldSymbolicReference(const JavaClass* jc, u2 index);
@@ -111,7 +109,7 @@ private:
     void typeCast() const;
 
 private:
-    Frame* currentFrame;
+    Frame* currentFrame{};
     bool exceptionUnhandled = false;
 };
 

@@ -36,7 +36,6 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 exceptionUnhandled = true;
             }
         }
-        yrt.eip = op;
 #ifdef YVM_DEBUG_SHOW_BYTECODE
         for (int i = 0; i<yrt.frames.size(); i++) {
             std::cout << "-";
@@ -1146,7 +1145,6 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 currentFrame->stack.pop();
                 if (value->val == 0) {
                     op = currentOffset + branchindex;
-                    yrt.eip = op;
                 }
                 delete value;
             }break;
@@ -1157,7 +1155,6 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 currentFrame->stack.pop();
                 if (value->val != 0) {
                     op = currentOffset + branchindex;
-                    yrt.eip = op;
                 }
                 delete value;
             }break;
@@ -1168,7 +1165,6 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 currentFrame->stack.pop();
                 if (value->val < 0) {
                     op = currentOffset + branchindex;
-                    yrt.eip = op;
                 }
                 delete value;
             }break;
@@ -1179,7 +1175,6 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 currentFrame->stack.pop();
                 if (value->val >= 0) {
                     op = currentOffset + branchindex;
-                    yrt.eip = op;
                 }
                 delete value;
             }break;
@@ -1190,7 +1185,6 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 currentFrame->stack.pop();
                 if (value->val > 0) {
                     op = currentOffset + branchindex;
-                    yrt.eip = op;
                 }
                 delete value;
             }break;
@@ -1201,7 +1195,6 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 currentFrame->stack.pop();
                 if (value->val <= 0) {
                     op = currentOffset + branchindex;
-                    yrt.eip = op;
                 }
                 delete value;
             }break;
@@ -1214,7 +1207,6 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 currentFrame->stack.pop();
                 if (value1->val == value2->val) {
                     op = currentOffset + branchindex;
-                    yrt.eip = op;
                 }
                 delete value1;
                 delete value2;
@@ -1227,8 +1219,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 auto * value1 = (JInt*)currentFrame->stack.top();
                 currentFrame->stack.pop();
                 if (value1->val != value2->val) {
-                    op = currentOffset + branchindex;
-                    yrt.eip = op;
+                    op = currentOffset + branchindex;                
                 }
                 delete value1;
                 delete value2;
@@ -1241,8 +1232,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 auto * value1 = (JInt*)currentFrame->stack.top();
                 currentFrame->stack.pop();
                 if (value1->val < value2->val) {
-                    op = currentOffset + branchindex;
-                    yrt.eip = op;
+                    op = currentOffset + branchindex;                  
                 }
                 delete value1;
                 delete value2;
@@ -1255,8 +1245,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 auto * value1 = (JInt*)currentFrame->stack.top();
                 currentFrame->stack.pop();
                 if (value1->val >= value2->val) {
-                    op = currentOffset + branchindex;
-                    yrt.eip = op;
+                    op = currentOffset + branchindex;                   
                 }
                 delete value1;
                 delete value2;
@@ -1269,8 +1258,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 auto * value1 = (JInt*)currentFrame->stack.top();
                 currentFrame->stack.pop();
                 if (value1->val > value2->val) {
-                    op = currentOffset + branchindex;
-                    yrt.eip = op;
+                    op = currentOffset + branchindex;                  
                 }
                 delete value1;
                 delete value2;
@@ -1283,8 +1271,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 auto * value1 = (JInt*)currentFrame->stack.top();
                 currentFrame->stack.pop();
                 if (value1->val <= value2->val) {
-                    op = currentOffset + branchindex;
-                    yrt.eip = op;
+                    op = currentOffset + branchindex;                   
                 }
                 delete value1;
                 delete value2;
@@ -1297,8 +1284,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 auto * value1 = (JObject*)currentFrame->stack.top();
                 currentFrame->stack.pop();
                 if (value1->offset == value2->offset && value1->jc == value2->jc) {
-                    op = currentOffset + branchindex;
-                    yrt.eip = op;
+                    op = currentOffset + branchindex;                  
                 }
                 delete value1;
                 delete value2;
@@ -1311,8 +1297,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 auto * value1 = (JObject*)currentFrame->stack.top();
                 currentFrame->stack.pop();
                 if (value1->offset != value2->offset || value1->jc != value2->jc) {
-                    op = currentOffset + branchindex;
-                    yrt.eip = op;
+                    op = currentOffset + branchindex;                   
                 }
                 delete value1;
                 delete value2;
@@ -1320,8 +1305,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             case op_goto: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = u2index(ext.code, op);
-                op = currentOffset + branchindex;
-                yrt.eip = op;
+                op = currentOffset + branchindex;               
             }break;
             case op_jsr: {
                 throw std::runtime_error("unsupported opcode [jsr]");
@@ -1346,11 +1330,9 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 currentFrame->stack.pop();
                 if (index->val < low || index->val > high) {
                     op = currentOffset + defaultIndex;
-                    yrt.eip = op;
                 }
                 else {
-                    op = currentOffset + jumpOffset[index->val - low];
-                    yrt.eip = op;
+                    op = currentOffset + jumpOffset[index->val - low];        
                 }
                 delete index;
             }break;
@@ -1369,12 +1351,10 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 currentFrame->stack.pop();
                 auto res = matchOffset.find(key->val);
                 if (res != matchOffset.end()) {
-                    op = currentOffset + (*res).second;
-                    yrt.eip = op;
+                    op = currentOffset + (*res).second;                 
                 }
                 else {
-                    op = currentOffset + defaultIndex;
-                    yrt.eip = op;
+                    op = currentOffset + defaultIndex;                  
                 }
                 delete key;
             }break;
