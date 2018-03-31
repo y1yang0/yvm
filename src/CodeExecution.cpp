@@ -13,6 +13,29 @@
 
 JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
     for (decltype(ext.codeLength) op = 0; op < ext.codeLength; op++) {
+        if(exceptionUnhandled) {
+            op--;
+            auto * throwableObject = currentStackPop<JObject>();
+            if (throwableObject == nullptr) {
+                throw std::runtime_error("null pointer");
+            }
+            if (!hasInheritanceRelationship(throwableObject->jc, yrt.ma->loadClassIfAbsent("java/lang/Throwable"))) {
+                throw std::runtime_error("it's not a throwable object");
+            }
+
+            if (handleException(jc, ext, throwableObject, op)) {
+                while (!currentFrame->stack.empty()) {
+                    auto * temp = currentStackPop<JType>();
+                    delete temp;
+                }
+                currentFrame->stack.push(throwableObject);
+                exceptionUnhandled = false;
+            }
+            else {
+
+                exceptionUnhandled = true;
+            }
+        }
         yrt.eip = op;
 #ifdef YVM_DEBUG_SHOW_BYTECODE
         for (int i = 0; i<yrt.frames.size(); i++) {
@@ -384,7 +407,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
 
                 assert(typeid(*value)!= typeid(JLong) && typeid(*value)!= typeid(JDouble));
                 currentFrame->stack.push(value);
-                currentFrame->stack.push(duplicateValue(value));
+                currentFrame->stack.push(cloneValue(value));
             }break;
             case op_dup_x1: {
                 JType * value1 = currentFrame->stack.top();
@@ -395,7 +418,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 assert(IS_COMPUTATIONAL_TYPE_1(value1));
                 assert(IS_COMPUTATIONAL_TYPE_1(value2));
 
-                currentFrame->stack.push(duplicateValue(value1));
+                currentFrame->stack.push(cloneValue(value1));
                 currentFrame->stack.push(value2);
                 currentFrame->stack.push(value1);
             }break;
@@ -409,7 +432,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
 
                 if(IS_COMPUTATIONAL_TYPE_1(value1) && IS_COMPUTATIONAL_TYPE_1(value2) && IS_COMPUTATIONAL_TYPE_1(value3)){
                     // use structure 1
-                    currentFrame->stack.push(duplicateValue(value1));
+                    currentFrame->stack.push(cloneValue(value1));
                     currentFrame->stack.push(value3);
                     currentFrame->stack.push(value2);
                     currentFrame->stack.push(value1);
@@ -417,7 +440,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                     //use structure 2
                     currentFrame->stack.push(value3);
 
-                    currentFrame->stack.push(duplicateValue(value1));
+                    currentFrame->stack.push(cloneValue(value1));
                     currentFrame->stack.push(value2);
                     currentFrame->stack.push(value1);
                 }else{
@@ -432,15 +455,15 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
 
                 if(IS_COMPUTATIONAL_TYPE_1(value1) && IS_COMPUTATIONAL_TYPE_1(value2)){
                     // use structure 1
-                    currentFrame->stack.push(duplicateValue(value2));
-                    currentFrame->stack.push(duplicateValue(value1));
+                    currentFrame->stack.push(cloneValue(value2));
+                    currentFrame->stack.push(cloneValue(value1));
                     currentFrame->stack.push(value2);
                     currentFrame->stack.push(value1);
                 }else if(IS_COMPUTATIONAL_TYPE_2(value1)){
                     //use structure 2
                     currentFrame->stack.push(value2);
 
-                    currentFrame->stack.push(duplicateValue(value1));
+                    currentFrame->stack.push(cloneValue(value1));
                     currentFrame->stack.push(value1);
                 }else{
                     SHOULD_NOT_REACH_HERE
@@ -456,8 +479,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
 
                 if(IS_COMPUTATIONAL_TYPE_1(value1) && IS_COMPUTATIONAL_TYPE_1(value2) && IS_COMPUTATIONAL_TYPE_1(value3)){
                     // use structure 1
-                    currentFrame->stack.push(duplicateValue(value2));
-                    currentFrame->stack.push(duplicateValue(value1));
+                    currentFrame->stack.push(cloneValue(value2));
+                    currentFrame->stack.push(cloneValue(value1));
                     currentFrame->stack.push(value3);
                     currentFrame->stack.push(value2);
                     currentFrame->stack.push(value1);
@@ -465,7 +488,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                     //use structure 2
                     currentFrame->stack.push(value3);
 
-                    currentFrame->stack.push(duplicateValue(value1));
+                    currentFrame->stack.push(cloneValue(value1));
                     currentFrame->stack.push(value2);
                     currentFrame->stack.push(value1);
                 }else{
@@ -484,8 +507,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 if(IS_COMPUTATIONAL_TYPE_1(value1) && IS_COMPUTATIONAL_TYPE_1(value2)
                    && IS_COMPUTATIONAL_TYPE_1(value3) && IS_COMPUTATIONAL_TYPE_1(value4)){
                     // use structure 1
-                    currentFrame->stack.push(duplicateValue(value2));
-                    currentFrame->stack.push(duplicateValue(value1));
+                    currentFrame->stack.push(cloneValue(value2));
+                    currentFrame->stack.push(cloneValue(value1));
                     currentFrame->stack.push(value4);
                     currentFrame->stack.push(value3);
                     currentFrame->stack.push(value2);
@@ -494,7 +517,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                     //use structure 2
                     currentFrame->stack.push(value4);
 
-                    currentFrame->stack.push(duplicateValue(value1));
+                    currentFrame->stack.push(cloneValue(value1));
                     currentFrame->stack.push(value4);
                     currentFrame->stack.push(value2);
                     currentFrame->stack.push(value1);
@@ -1376,7 +1399,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             case op_getstatic: {
                 u2 index = u2index(ext.code, op);
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
-                JType * field = duplicateValue(getStaticField(std::get<0>(symbolicRef), std::get<1>(symbolicRef), std::get<2>(symbolicRef)));
+                JType * field = cloneValue(getStaticField(std::get<0>(symbolicRef), std::get<1>(symbolicRef), std::get<2>(symbolicRef)));
                 currentFrame->stack.push(field);
             }break;
             case op_putstatic: {
@@ -1391,8 +1414,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JObject * objectref = (JObject*)currentFrame->stack.top();
                 currentFrame->stack.pop();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
-                JType * field = duplicateValue(getInstanceField(std::get<0>(symbolicRef), std::get<1>(symbolicRef), std::get<2>(symbolicRef),
-                    objectref, 0));
+                JType * field = cloneValue(getInstanceField(std::get<0>(symbolicRef), std::get<1>(symbolicRef), std::get<2>(symbolicRef),
+                                                                objectref, 0));
                 currentFrame->stack.push(field);
 
                 delete objectref;
@@ -1537,11 +1560,10 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
 
                 if (handleException(jc, ext, throwableObject, op)) {
                     while (!currentFrame->stack.empty()) {
-                        auto * temp = currentStackPop<JType*>();
+                        auto * temp = currentStackPop<JType>();
                         delete temp;
                     }
                     currentFrame->stack.push(throwableObject);
-                    return nullptr;
                 }
                 else {
                     exceptionUnhandled = true;
@@ -1663,7 +1685,7 @@ bool CodeExecution::handleException(const JavaClass* jc, const CodeAttrCore & ex
         const char * catchTypeName = (char*)jc->getString(
             dynamic_cast<CONSTANT_Class*>(jc->raw.constPoolInfo[ext.exceptionTable[i].catchType])->nameIndex);
 
-        if (hasInheritanceRelationship(jc, yrt.ma->findJavaClass(catchTypeName))
+        if (hasInheritanceRelationship(yrt.ma->findJavaClass((char*)objectref->jc->getClassName()), yrt.ma->findJavaClass(catchTypeName))
             && ext.exceptionTable[i].startPC <= op && op < ext.exceptionTable[i].endPC) {   // start<=op<end
             // If we found a proper exception handler, set current pc as handlerPC of this exception table item;
             op = ext.exceptionTable[i].handlerPC - 1;
@@ -1825,7 +1847,7 @@ JObject * CodeExecution::execNew(const JavaClass * jc, u2 index) {
     return yrt.jheap->createObject(*newClass);
 }
 
-CodeAttrCore CodeExecution::getCodeExtension(const MethodInfo * m) {
+CodeAttrCore CodeExecution::getCodeAttrCore(const MethodInfo * m) {
     CodeAttrCore ext{};
     if(!m){
         return ext;
@@ -1971,7 +1993,7 @@ std::pair<MethodInfo *, const JavaClass*> CodeExecution::findMethod(const JavaCl
 
 void CodeExecution::invokeByName(JavaClass * jc,const char * methodName, const char * methodDescriptor) {
     const MethodInfo * m = jc->getMethod(methodName, methodDescriptor);
-    CodeAttrCore ext = getCodeExtension(m);
+    CodeAttrCore ext = getCodeAttrCore(m);
     const int returnType = std::get<0>(peelMethodParameterAndType(methodDescriptor));
 
     if (!ext.valid) {
@@ -1996,13 +2018,18 @@ void CodeExecution::invokeByName(JavaClass * jc,const char * methodName, const c
 
     JType * returnValue{};
     if (IS_METHOD_NATIVE(m->accessFlags)) {
-        returnValue = duplicateValue(invokeNative((char*)jc->getClassName(), methodName, methodDescriptor));
+        returnValue = cloneValue(invokeNative((char*)jc->getClassName(), methodName, methodDescriptor));
     }else{
-        returnValue = duplicateValue(execCode(jc, std::move(ext)));
+        returnValue = cloneValue(execCode(jc, std::move(ext)));
     }
     popFrame();
-    if (returnType != T_EXTRA_VOID || exceptionUnhandled) {
+    if (returnType != T_EXTRA_VOID ) {
         currentFrame->stack.push(returnValue);
+    }
+    if(exceptionUnhandled) {
+        std::atexit([]()->void {
+            std::cerr << "unhandled exception\n";
+        });
     }
 }
 
@@ -2066,16 +2093,16 @@ void CodeExecution::invokeInterface(const JavaClass * jc, const char * methodNam
     auto * objectref = (JObject*)currentFrame->stack.top();
     currentFrame->stack.pop();
     frame->locals.push_front(objectref);
-    CodeAttrCore ext = getCodeExtension(invokingMethod.first);
+    CodeAttrCore ext = getCodeAttrCore(invokingMethod.first);
     frame->locals.resize(ext.maxLocal);
     yrt.frames.push(frame);
     this->currentFrame = frame;
     
     JType * returnValue{};
     if(IS_METHOD_NATIVE(invokingMethod.first->accessFlags)){
-        returnValue = duplicateValue(invokeNative((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(), methodName, methodDescriptor));
+        returnValue = cloneValue(invokeNative((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(), methodName, methodDescriptor));
     }else{
-        returnValue = duplicateValue(execCode(invokingMethod.second, std::move(ext)));
+        returnValue = cloneValue(execCode(invokingMethod.second, std::move(ext)));
     }
 
     popFrame();
@@ -2137,7 +2164,7 @@ void CodeExecution::invokeVirtual(const char * methodName, const char * methodDe
     this->currentFrame = frame;
 
     auto invokingMethod = findMethod(objectref->jc, methodName, methodDescriptor);
-    auto ext = getCodeExtension(invokingMethod.first);
+    auto ext = getCodeAttrCore(invokingMethod.first);
 #ifdef YVM_DEBUG_SHOW_EXEC_FLOW
     for (int i = 0; i<yrt.frames.size(); i++) {
         std::cout << "-";
@@ -2148,13 +2175,13 @@ void CodeExecution::invokeVirtual(const char * methodName, const char * methodDe
     JType * returnValue{};
     if (invokingMethod.first) {
         if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
-            returnValue = duplicateValue(invokeNative((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(),
-                (char*)invokingMethod.second->getString(invokingMethod.first->nameIndex),
-                (char*)invokingMethod.second->getString(invokingMethod.first->descriptorIndex)));
+            returnValue = cloneValue(invokeNative((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(),
+                                                      (char*)invokingMethod.second->getString(invokingMethod.first->nameIndex),
+                                                      (char*)invokingMethod.second->getString(invokingMethod.first->descriptorIndex)));
         }
         else {
             
-            returnValue = duplicateValue(execCode(invokingMethod.second, std::move(ext)));
+            returnValue = cloneValue(execCode(invokingMethod.second, std::move(ext)));
         }
     }
     else {
@@ -2231,14 +2258,14 @@ void CodeExecution::invokeSpecial(const JavaClass * jc, const char * methodName,
     JType * returnValue{};
     if (invokingMethod.first) {
         if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
-            returnValue = duplicateValue(invokeNative((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(),
-                                              (char*)invokingMethod.second->getString(invokingMethod.first->nameIndex),
-                                              (char*)invokingMethod.second->getString(invokingMethod.first->descriptorIndex)));
+            returnValue = cloneValue(invokeNative((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(),
+                                                      (char*)invokingMethod.second->getString(invokingMethod.first->nameIndex),
+                                                      (char*)invokingMethod.second->getString(invokingMethod.first->descriptorIndex)));
         }
         else {
-            auto ext = getCodeExtension(invokingMethod.first);
+            auto ext = getCodeAttrCore(invokingMethod.first);
             frame->locals.resize(ext.maxLocal);
-            returnValue = duplicateValue(execCode(invokingMethod.second, std::move(ext)));
+            returnValue = cloneValue(execCode(invokingMethod.second, std::move(ext)));
         }
     }
     else if (IS_CLASS_INTERFACE(jc->raw.accessFlags)) {
@@ -2248,14 +2275,14 @@ void CodeExecution::invokeSpecial(const JavaClass * jc, const char * methodName,
             IS_METHOD_PUBLIC(javaLangObjectMethod->accessFlags) && 
             !IS_METHOD_STATIC(javaLangObjectMethod->accessFlags)) {
             if (IS_METHOD_NATIVE(javaLangObjectMethod->accessFlags)) {
-                returnValue = duplicateValue(invokeNative((char*)javaLangObjectClass->getClassName(),
-                                                 (char*)javaLangObjectClass->getString(javaLangObjectMethod->nameIndex),
-                                                 (char*)javaLangObjectClass->getString(javaLangObjectMethod->descriptorIndex)));
+                returnValue = cloneValue(invokeNative((char*)javaLangObjectClass->getClassName(),
+                                                          (char*)javaLangObjectClass->getString(javaLangObjectMethod->nameIndex),
+                                                          (char*)javaLangObjectClass->getString(javaLangObjectMethod->descriptorIndex)));
             }
             else {
-                auto ext = getCodeExtension(javaLangObjectMethod);
+                auto ext = getCodeAttrCore(javaLangObjectMethod);
                 frame->locals.resize(ext.maxLocal);
-                returnValue = duplicateValue(execCode(javaLangObjectClass, std::move(ext)));
+                returnValue = cloneValue(execCode(javaLangObjectClass, std::move(ext)));
             }
         }
     }
@@ -2284,7 +2311,7 @@ void CodeExecution::invokeStatic(const JavaClass * jc, const char * methodName, 
     assert(strcmp("<init>",methodName)!=0);
 
     Frame * frame = new Frame;
-    auto ext = getCodeExtension(invokingMethod.first);
+    auto ext = getCodeAttrCore(invokingMethod.first);
     frame->locals.resize(ext.maxLocal);
 
     auto parameterAndReturnType = peelMethodParameterAndType(methodDescriptor);
@@ -2334,10 +2361,10 @@ void CodeExecution::invokeStatic(const JavaClass * jc, const char * methodName, 
 
     JType * returnValue{};
     if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
-        returnValue = duplicateValue(invokeNative((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(),methodName, methodDescriptor));
+        returnValue = cloneValue(invokeNative((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(),methodName, methodDescriptor));
     }
     else {
-        returnValue = duplicateValue(execCode(invokingMethod.second, std::move(ext)));
+        returnValue = cloneValue(execCode(invokingMethod.second, std::move(ext)));
     }
     popFrame();
 

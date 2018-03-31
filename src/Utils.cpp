@@ -2,7 +2,7 @@
 #include "JavaClass.h"
 
 
-JType* duplicateValue(JType* value) {
+JType* cloneValue(JType* value) {
      if (value == nullptr) {
          return nullptr;
      }

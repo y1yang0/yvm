@@ -17,7 +17,7 @@
  * \brief Utilities for code execution engine
  */
 
-JType* duplicateValue(JType* value);
+JType* cloneValue(JType* value);
 bool hasInheritanceRelationship(const JavaClass * source, const JavaClass * super);
 
 #define IS_COMPUTATIONAL_TYPE_1(value) (typeid(*value)!=typeid(JDouble) && typeid(*value)!=typeid(JLong))

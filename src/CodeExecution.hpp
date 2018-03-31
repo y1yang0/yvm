@@ -52,7 +52,7 @@ private:
                             JObject* object, size_t offset = 0);
     void putInstanceField(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor,
                           JObject* object, JType* value, size_t offset = 0);
-    CodeAttrCore getCodeExtension(const MethodInfo* methodInfo);
+    CodeAttrCore getCodeAttrCore(const MethodInfo* methodInfo);
     bool checkInstanceof(const JavaClass * jc, u2 index, JType* objectref);
 
     std::tuple<JavaClass*, const char*, const char*> parseFieldSymbolicReference(const JavaClass* jc, u2 index);

@@ -13,6 +13,7 @@ int main() {
     vm.callMain("ydk/test/BubbleSortTest");
     vm.callMain("ydk/test/StringConcatenation");
     vm.callMain("ydk/test/InstanceofTest");
+    vm.callMain("ydk/test/ThrowExceptionTest");
     system("pause");
     return 0;
 }

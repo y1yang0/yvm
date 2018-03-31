@@ -25,3 +25,4 @@ src/yvm.vcxproj.user
 /.vs
 /cmake-build-debug/CMakeFiles
 /src/cmake-build-debug
+/src/Release
