@@ -1846,6 +1846,47 @@ std::pair<MethodInfo *, const JavaClass*> CodeExecution::findMethod(const JavaCl
     return std::make_pair(nullptr, nullptr);
 }
 
+void CodeExecution::pushMethodArguments(Frame* frame, std::vector<int>& parameter) {
+    for (int64_t i = (int64_t)parameter.size() - 1; i >= 0; i--) {
+        if (parameter[i] == T_INT || parameter[i] == T_BOOLEAN ||
+            parameter[i] == T_CHAR || parameter[i] == T_BYTE || parameter[i] == T_SHORT) {
+            auto * v = currentStackPop<JInt>();
+            frame->locals.push_front(v);
+        }
+        else if (parameter[i] == T_FLOAT) {
+            auto * v = currentStackPop<JFloat>();
+            frame->locals.push_front(v);
+        }
+        else if (parameter[i] == T_DOUBLE) {
+            auto * v = currentStackPop<JDouble>();
+            frame->locals.push_front(nullptr);
+            frame->locals.push_front(v);
+        }
+        else if (parameter[i] == T_LONG) {
+            auto * v = currentStackPop<JLong>();
+            frame->locals.push_front(nullptr);
+            frame->locals.push_front(v);
+        }
+        else if (parameter[i] == T_EXTRA_ARRAY) {
+            auto * v = currentStackPop<JArray>();
+            frame->locals.push_front(v);
+        }
+        else if (parameter[i] == T_EXTRA_OBJECT) {
+            auto * v = currentStackPop<JObject>();
+            frame->locals.push_front(v);
+        }
+        else {
+            SHOULD_NOT_REACH_HERE;
+        }
+    }
+}
+
+JObject* CodeExecution::pushMethodThisArgument(Frame* frame) {
+    auto * objectref = currentStackPop<JObject>();
+    frame->locals.push_front(objectref);
+    return objectref;
+}
+
 void CodeExecution::invokeByName(JavaClass * jc,const char * methodName, const char * methodDescriptor) {
     const MethodInfo * m = jc->getMethod(methodName, methodDescriptor);
     CodeAttrCore ext = getCodeAttrCore(m);
@@ -1907,47 +1948,9 @@ void CodeExecution::invokeInterface(const JavaClass * jc, const char * methodNam
     const int returnType = std::get<0>(parameterAndReturnType);
     auto parameter = std::get<1>(parameterAndReturnType);
     Frame * frame = new Frame;
-    for (int64_t i = (int64_t)parameter.size() - 1; i >= 0; i--) {
-        if (parameter[i] == T_INT || parameter[i] == T_BOOLEAN ||
-            parameter[i] == T_CHAR || parameter[i] == T_BYTE || parameter[i] == T_SHORT) {
-            auto * v = (JInt*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(v);
-        }
-        else if (parameter[i] == T_FLOAT) {
-            auto * v = (JFloat*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(v);
-        }
-        else if (parameter[i] == T_DOUBLE) {
-            auto * v = (JDouble*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(nullptr);
-            frame->locals.push_front(v);
-        }
-        else if (parameter[i] == T_LONG) {
-            auto * v = (JLong*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(nullptr);
-            frame->locals.push_front(v);
-        }
-        else if (parameter[i] == T_EXTRA_ARRAY) {
-            auto * v = (JArray*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(v);
-        }
-        else if (parameter[i] == T_EXTRA_OBJECT) {
-            auto * v = (JObject*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(v);
-        }
-        else {
-            SHOULD_NOT_REACH_HERE;
-        }
-    }
-    auto * objectref = (JObject*)currentFrame->stack.top();
-    currentFrame->stack.pop();
-    frame->locals.push_front(objectref);
+    pushMethodArguments(frame,parameter);
+    auto * objectref = pushMethodThisArgument(frame);
+
     CodeAttrCore ext = getCodeAttrCore(invokingMethod.first);
     frame->locals.resize(ext.maxLocal);
     yrt.frames.push(frame);
@@ -1972,49 +1975,8 @@ void CodeExecution::invokeVirtual(const char * methodName, const char * methodDe
     auto parameter = std::get<1>(parameterAndReturnType);
 
     Frame * frame = new Frame;
-    for (int64_t i = (int64_t)parameter.size() - 1; i >= 0; i--) {
-        if (parameter[i] == T_INT || parameter[i] == T_BOOLEAN ||
-            parameter[i] == T_CHAR || parameter[i] == T_BYTE || parameter[i] == T_SHORT) {
-            auto * v = (JInt*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(v);
-        }
-        else if (parameter[i] == T_FLOAT) {
-            auto * v = (JFloat*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(v);
-        }
-        else if (parameter[i] == T_DOUBLE) {
-            auto * v = (JDouble*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(nullptr);
-            frame->locals.push_front(v);
-        }
-        else if (parameter[i] == T_LONG) {
-            auto * v = (JLong*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(nullptr);
-            frame->locals.push_front(v);
-        }
-        else if (parameter[i] == T_EXTRA_ARRAY) {
-            auto * v = (JArray*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(v);
-        }
-        else if (parameter[i] == T_EXTRA_OBJECT) {
-            auto * v = (JObject*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(v);
-        }
-        else {
-            SHOULD_NOT_REACH_HERE;
-        }
-    }
-    auto * objectref = (JObject*)currentFrame->stack.top();
-   
-  
-    currentFrame->stack.pop();
-    frame->locals.push_front(objectref);
+    pushMethodArguments(frame, parameter);
+    auto * objectref = pushMethodThisArgument(frame);
     yrt.frames.push(frame);
     this->currentFrame = frame;
 
@@ -2058,47 +2020,8 @@ void CodeExecution::invokeSpecial(const JavaClass * jc, const char * methodName,
     auto parameter = std::get<1>(parameterAndReturnType);
 
     Frame * frame = new Frame;
-    for (int64_t i = (int64_t)parameter.size() - 1; i >= 0; i--) {
-        if (parameter[i] == T_INT || parameter[i] == T_BOOLEAN ||
-            parameter[i] == T_CHAR || parameter[i] == T_BYTE || parameter[i] == T_SHORT) {
-            auto * v = (JInt*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(v);
-        }
-        else if (parameter[i] == T_FLOAT) {
-            auto * v = (JFloat*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(v);
-        }
-        else if (parameter[i] == T_DOUBLE) {
-            auto * v = (JDouble*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(nullptr);
-            frame->locals.push_front(v);
-        }
-        else if (parameter[i] == T_LONG) {
-            auto * v = (JLong*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(nullptr);
-            frame->locals.push_front(v);
-        }
-        else if (parameter[i] == T_EXTRA_ARRAY) {
-            auto * v = (JArray*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(v);
-        }
-        else if (parameter[i] == T_EXTRA_OBJECT) {
-            auto * v = (JObject*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(v);
-        }
-        else {
-            SHOULD_NOT_REACH_HERE;
-        }
-    }
-    auto * objectref = (JObject*)currentFrame->stack.top();
-    currentFrame->stack.pop();
-    frame->locals.push_front(objectref);
+    pushMethodArguments(frame, parameter);
+    auto * objectref = pushMethodThisArgument(frame);
     yrt.frames.push(frame);
     this->currentFrame = frame;
 
@@ -2172,44 +2095,7 @@ void CodeExecution::invokeStatic(const JavaClass * jc, const char * methodName, 
     auto parameterAndReturnType = peelMethodParameterAndType(methodDescriptor);
     const int returnType = std::get<0>(parameterAndReturnType);
     auto parameter = std::get<1>(parameterAndReturnType);
-    for (int64_t i = (int64_t)parameter.size() - 1; i >= 0; i--) {
-        if (parameter[i] == T_INT || parameter[i] == T_BOOLEAN ||
-            parameter[i] == T_CHAR || parameter[i] == T_BYTE || parameter[i] == T_SHORT) {
-            auto * v = (JInt*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(v);
-        }
-        else if (parameter[i] == T_FLOAT) {
-            auto * v = (JFloat*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(v);
-        }
-        else if (parameter[i] == T_DOUBLE) {
-            auto * v = (JDouble*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(nullptr);
-            frame->locals.push_front(v);
-        }
-        else if (parameter[i] == T_LONG) {
-            auto * v = (JLong*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(nullptr);
-            frame->locals.push_front(v);
-        }
-        else if (parameter[i] == T_EXTRA_ARRAY) {
-            auto * v = (JArray*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(v);
-        }
-        else if (parameter[i] == T_EXTRA_OBJECT) {
-            auto * v = (JObject*)currentFrame->stack.top();
-            currentFrame->stack.pop();
-            frame->locals.push_front(v);
-        }
-        else {
-            SHOULD_NOT_REACH_HERE;
-        }
-    }
+    pushMethodArguments(frame, parameter);
     
     yrt.frames.push(frame);
     this->currentFrame = frame;

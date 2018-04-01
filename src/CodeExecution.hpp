@@ -65,6 +65,10 @@ private:
 
     bool handleException(const JavaClass * jc, const CodeAttrCore & ext, const JObject * objectref, u4 & op);
 
+    void pushMethodArguments(Frame* frame, std::vector<int>& parameter);
+
+    JObject* pushMethodThisArgument(Frame * frame);
+
 private:
     static inline u2 consumeU2(const u1* code, u4& opidx) {
         const u1 indexbyte1 = code[++opidx];
