@@ -21,7 +21,7 @@ JavaHeap::~JavaHeap(){
     }
 }
 
-void JavaHeap::putObjectField(const JObject & object, size_t fieldOffset, JType * value) {
+void JavaHeap::putObjectFieldByOffset(const JObject & object, size_t fieldOffset, JType * value) {
     auto fields = objheap.find(object.offset);
     fields->second[fieldOffset] = new JType;
     fields->second[fieldOffset] = value;
@@ -35,7 +35,7 @@ JType * JavaHeap::getArrayItem(const JArray & array, size_t index){
     return arrheap.find(array.offset)->second.second[index];
 }
 
-JType * JavaHeap::getObjectField(const JObject & object, size_t fieldOffset){
+JType * JavaHeap::getObjectFieldByOffset(const JObject & object, size_t fieldOffset){
     auto & fields = objheap.find(object.offset)->second;
     return fields[fieldOffset];
 }
@@ -192,4 +192,44 @@ JArray * JavaHeap::createCharArray(const char * source, int length) {
     }
     arrheap.insert(std::make_pair(arr->offset, std::make_pair(length, items)));
     return arr;
+}
+
+JType * JavaHeap::getObjectFieldByName(JavaClass * parsedJc, const char * fieldName, const char * fieldDescriptor,
+    JObject * object, size_t offset) {
+    size_t howManyNonStaticFields = 0;
+    FOR_EACH(i, parsedJc->raw.fieldsCount) {
+        if (!IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {
+            howManyNonStaticFields++;
+            const char * n = parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
+            const char * d = parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
+            if (strcmp(n, fieldName) == 0 && strcmp(d, fieldDescriptor) == 0) {
+                return objheap.find(object->offset)->second.at(i + offset);
+            }
+        }
+    }
+    if (parsedJc->raw.superClass != 0) {
+        return getObjectFieldByName(yrt.ma->findJavaClass(parsedJc->getSuperClassName()), fieldName, fieldDescriptor,
+            object, offset + howManyNonStaticFields);
+    }
+    return nullptr;
+}
+
+void JavaHeap::putObjectFieldByName(JavaClass * parsedJc, const char * fieldName, const char * fieldDescriptor,
+    JObject * object, JType * value, size_t offset) {
+    size_t howManyNonStaticFields = 0;
+    FOR_EACH(i, parsedJc->raw.fieldsCount) {
+        if (!IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {
+            howManyNonStaticFields++;
+            const char * n = parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
+            const char * d = parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
+            if (strcmp(n, fieldName) == 0 && strcmp(d, fieldDescriptor) == 0) {
+                objheap.find(object->offset)->second.at(offset + i) = value;
+                return;
+            }
+        }
+    }
+    if (parsedJc->raw.superClass != 0) {
+        putObjectFieldByName(yrt.ma->findJavaClass(parsedJc->getSuperClassName()), fieldName, fieldDescriptor, object,
+            value, offset + howManyNonStaticFields);
+    }
 }

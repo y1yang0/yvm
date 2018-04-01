@@ -46,10 +46,7 @@ private:
         const char* methodDescriptor);
     JType* getStaticField(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor);
     void putStaticField(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor, JType* value);
-    JType* getInstanceField(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor,
-        JObject* object, size_t offset = 0);
-    void putInstanceField(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor,
-        JObject* object, JType* value, size_t offset = 0);
+
     CodeAttrCore getCodeAttrCore(const MethodInfo* m);
     bool checkInstanceof(const JavaClass * jc, u2 index, JType* objectref);
 

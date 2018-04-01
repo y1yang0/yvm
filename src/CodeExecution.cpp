@@ -1271,7 +1271,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 u2 index = consumeU2(ext.code, op);
                 JObject * objectref = currentStackPop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
-                JType * field = cloneValue(getInstanceField(std::get<0>(symbolicRef), std::get<1>(symbolicRef), std::get<2>(symbolicRef),
+                JType * field = cloneValue(yrt.jheap->getObjectFieldByName(std::get<0>(symbolicRef), std::get<1>(symbolicRef), std::get<2>(symbolicRef),
                                                                 objectref, 0));
                 currentFrame->stack.push(field);
 
@@ -1282,7 +1282,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JType * value = currentStackPop<JType>();
                 JObject * objectref = currentStackPop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
-                putInstanceField(std::get<0>(symbolicRef), std::get<1>(symbolicRef), std::get<2>(symbolicRef),
+                yrt.jheap->putObjectFieldByName(std::get<0>(symbolicRef), std::get<1>(symbolicRef), std::get<2>(symbolicRef),
                     objectref, value, 0);
 
                 delete objectref;
@@ -1296,7 +1296,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 if (strcmp(std::get<1>(symbolicRef), "<init>") == 0) {
                     std::runtime_error("invoking method should not be instance initialization method\n");
                 }
-                if (!IS_SIGNATURE_POLYMORPHIC_METHOD((char*)std::get<0>(symbolicRef)->getClassName(), std::get<1>(symbolicRef))) {
+                if (!IS_SIGNATURE_POLYMORPHIC_METHOD(std::get<0>(symbolicRef)->getClassName(), std::get<1>(symbolicRef))) {
                     invokeVirtual(std::get<1>(symbolicRef), std::get<2>(symbolicRef));
                 }
                 else {
@@ -1323,9 +1323,9 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JavaClass * symbolicRefClass = std::get<0>(symbolicRef);
                 if (strcmp("<init>", std::get<1>(symbolicRef)) != 0) {
                     if (!IS_CLASS_INTERFACE(symbolicRefClass->raw.accessFlags)) {
-                        if (strcmp((char*)symbolicRefClass->getClassName(), (char*)jc->getSuperClassName()) == 0) {
+                        if (strcmp(symbolicRefClass->getClassName(), jc->getSuperClassName()) == 0) {
                             if (IS_CLASS_SUPER(jc->raw.accessFlags)) {
-                                invokeSpecial(yrt.ma->findJavaClass((char*)jc->getSuperClassName()), std::get<1>(symbolicRef), std::get<2>(symbolicRef));
+                                invokeSpecial(yrt.ma->findJavaClass(jc->getSuperClassName()), std::get<1>(symbolicRef), std::get<2>(symbolicRef));
                                 break;
                             }
                         }
@@ -1513,12 +1513,12 @@ void CodeExecution::loadConstantPoolItem2Stack(const JavaClass *jc, u2 index) {
         currentFrame->stack.push(fval);
     }
     else if (typeid(*jc->raw.constPoolInfo[index]) == typeid(CONSTANT_String)) {
-        auto val = (char*)jc->getString(dynamic_cast<CONSTANT_String*>(jc->raw.constPoolInfo[index])->stringIndex);
+        auto val = jc->getString(dynamic_cast<CONSTANT_String*>(jc->raw.constPoolInfo[index])->stringIndex);
         JObject * str = yrt.jheap->createObject(*yrt.ma->loadClassIfAbsent("java/lang/String"));
         JArray * value = yrt.jheap->createCharArray(val, strlen(val));
         // put string  into str's field; according the source file of java.lang.Object, we know that 
         // its first field was used to store chars
-        yrt.jheap->putObjectField(*str, 0, value);
+        yrt.jheap->putObjectFieldByOffset(*str, 0, value);
         currentFrame->stack.push(str);
     }
     else if (typeid(*jc->raw.constPoolInfo[index]) == typeid(CONSTANT_Class)) {
@@ -1586,7 +1586,7 @@ std::tuple<JavaClass*, const char*, const char*> CodeExecution::parseInterfaceMe
     JavaClass * symbolicReferenceInterfaceMethodClass = yrt.ma->loadClassIfAbsent(jc->getString(
         dynamic_cast<CONSTANT_Class*>(jc->raw.constPoolInfo[
             dynamic_cast<CONSTANT_InterfaceMethodref*>(jc->raw.constPoolInfo[index])->classIndex])->nameIndex));
-    yrt.ma->linkClassIfAbsent((char*)symbolicReferenceInterfaceMethodClass->getClassName());
+    yrt.ma->linkClassIfAbsent(symbolicReferenceInterfaceMethodClass->getClassName());
 
     return std::make_tuple(symbolicReferenceInterfaceMethodClass,
         symbolicReferenceInterfaceMethodName, 
@@ -1605,7 +1605,7 @@ std::tuple<JavaClass*, const char*, const char*> CodeExecution::parseMethodSymbo
     JavaClass * symbolicReferenceMethodClass = yrt.ma->loadClassIfAbsent(jc->getString(
         dynamic_cast<CONSTANT_Class*>(jc->raw.constPoolInfo[
             dynamic_cast<CONSTANT_Methodref*>(jc->raw.constPoolInfo[index])->classIndex])->nameIndex));
-    yrt.ma->linkClassIfAbsent((char*)symbolicReferenceMethodClass->getClassName());
+    yrt.ma->linkClassIfAbsent(symbolicReferenceMethodClass->getClassName());
 
     return std::make_tuple(symbolicReferenceMethodClass,
         symbolicReferenceMethodName,
@@ -1650,49 +1650,9 @@ void CodeExecution::putStaticField(JavaClass * parsedJc, const char * fieldName,
     }
 }
 
-JType * CodeExecution::getInstanceField(JavaClass * parsedJc,const char * fieldName, const char * fieldDescriptor, 
-    JObject * object, size_t offset) {
-    size_t howManyNonStaticFields = 0;
-    FOR_EACH(i, parsedJc->raw.fieldsCount) {
-        if (!IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {
-            howManyNonStaticFields++;
-            const char * n = parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
-            const char * d = parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
-            if (strcmp(n, fieldName) == 0 && strcmp(d, fieldDescriptor) == 0) {
-                 return yrt.jheap->objheap.find(object->offset)->second.at(i + offset);
-            }
-        }
-    }
-    if (parsedJc->raw.superClass != 0) {
-        return getInstanceField(yrt.ma->findJavaClass(parsedJc->getSuperClassName()), fieldName, fieldDescriptor,
-            object, offset + howManyNonStaticFields);
-    }
-    return nullptr;
-}
-
-void CodeExecution::putInstanceField(JavaClass * parsedJc, const char * fieldName, const char * fieldDescriptor, 
-    JObject * object, JType * value, size_t offset){
-    size_t howManyNonStaticFields = 0;
-    FOR_EACH(i, parsedJc->raw.fieldsCount) {
-        if (!IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {
-            howManyNonStaticFields++;
-            const char * n = parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
-            const char * d = parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
-            if (strcmp(n, fieldName) == 0 && strcmp(d, fieldDescriptor) == 0) {
-                yrt.jheap->objheap.find(object->offset)->second.at(offset + i) = value;
-                return;
-            }
-        }
-    }
-    if (parsedJc->raw.superClass != 0) {
-        putInstanceField(yrt.ma->findJavaClass(parsedJc->getSuperClassName()), fieldName, fieldDescriptor, object,
-            value, offset + howManyNonStaticFields);
-    }
-}
-
 JObject * CodeExecution::execNew(const JavaClass * jc, u2 index) {
-    yrt.ma->linkClassIfAbsent((char*)const_cast<JavaClass*>(jc)->getClassName());
-    yrt.ma->initClassIfAbsent(*this, (char*)const_cast<JavaClass*>(jc)->getClassName());
+    yrt.ma->linkClassIfAbsent(const_cast<JavaClass*>(jc)->getClassName());
+    yrt.ma->initClassIfAbsent(*this, const_cast<JavaClass*>(jc)->getClassName());
 
     if (typeid(*jc->raw.constPoolInfo[index]) != typeid(CONSTANT_Class)) {
         throw std::runtime_error("operand index of new is not a class or interface\n");
@@ -1745,16 +1705,16 @@ bool CodeExecution::checkInstanceof(const JavaClass * jc, u2 index ,JType* objec
         if(!IS_CLASS_INTERFACE(dynamic_cast<JObject*>(objectref)->jc->raw.accessFlags)) {
             // If it's an ordinary class
             if (tType == TYPE_CLASS) {
-                if(strcmp((char*)yrt.ma->findJavaClass((char*)dynamic_cast<JObject*>(objectref)->jc->getClassName()),
+                if(strcmp(yrt.ma->findJavaClass(dynamic_cast<JObject*>(objectref)->jc->getClassName())->getClassName(),
                         TclassName.c_str())==0||
-                    strcmp((char*)yrt.ma->findJavaClass((char*)dynamic_cast<JObject*>(objectref)->jc->getSuperClassName()),
+                    strcmp(yrt.ma->findJavaClass(dynamic_cast<JObject*>(objectref)->jc->getSuperClassName())->getClassName(),
                         TclassName.c_str()) == 0) {
                     return true;
                 }
             }else if(tType == TYPE_INTERFACE) {
                 auto && interfaceIdxs = dynamic_cast<JObject*>(objectref)->jc->getInterfacesIndex();
                 FOR_EACH(i,interfaceIdxs.size()) {
-                    auto * interfaceName = (char*)
+                    auto * interfaceName = 
                         dynamic_cast<JObject*>(objectref)->jc->getString(
                             dynamic_cast<CONSTANT_Class*>(dynamic_cast<JObject*>(objectref)->jc->raw.constPoolInfo[interfaceIdxs[i]])->nameIndex);
                     if(strcmp(interfaceName,TclassName.c_str())==0) {
@@ -1772,8 +1732,8 @@ bool CodeExecution::checkInstanceof(const JavaClass * jc, u2 index ,JType* objec
                     return true;
                 }
             }else if(tType == TYPE_INTERFACE) {
-                if(strcmp(TclassName.c_str(), (char*)dynamic_cast<JObject*>(objectref)->jc->getClassName())==0
-                    || strcmp(TclassName.c_str(), (char*)dynamic_cast<JObject*>(objectref)->jc->getSuperClassName()) == 0) {
+                if(strcmp(TclassName.c_str(), dynamic_cast<JObject*>(objectref)->jc->getClassName())==0
+                    || strcmp(TclassName.c_str(), dynamic_cast<JObject*>(objectref)->jc->getSuperClassName()) == 0) {
                     return true;
                 }
             }else {
@@ -1790,7 +1750,7 @@ bool CodeExecution::checkInstanceof(const JavaClass * jc, u2 index ,JType* objec
             auto * firstComponent = dynamic_cast<JObject*>(yrt.jheap->getArrayItem(*dynamic_cast<JArray*>(objectref), 0));
             auto && interfaceIdxs = firstComponent->jc->getInterfacesIndex();
             FOR_EACH(i,interfaceIdxs.size()) {
-                if(strcmp((char*)firstComponent->jc->getString(
+                if(strcmp(firstComponent->jc->getString(
                     dynamic_cast<CONSTANT_Class*>(firstComponent->jc->raw.constPoolInfo[interfaceIdxs[i]])->nameIndex),
                     TclassName.c_str())==0) {
                     return true;
@@ -1914,7 +1874,7 @@ void CodeExecution::invokeByName(JavaClass * jc,const char * methodName, const c
 
     JType * returnValue{};
     if (IS_METHOD_NATIVE(m->accessFlags)) {
-        returnValue = cloneValue(invokeNative((char*)jc->getClassName(), methodName, methodDescriptor));
+        returnValue = cloneValue(invokeNative(jc->getClassName(), methodName, methodDescriptor));
     }else{
         returnValue = cloneValue(execCode(jc, std::move(ext)));
     }
@@ -1958,7 +1918,7 @@ void CodeExecution::invokeInterface(const JavaClass * jc, const char * methodNam
     
     JType * returnValue{};
     if(IS_METHOD_NATIVE(invokingMethod.first->accessFlags)){
-        returnValue = cloneValue(invokeNative((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(), methodName, methodDescriptor));
+        returnValue = cloneValue(invokeNative(const_cast<JavaClass*>(invokingMethod.second)->getClassName(), methodName, methodDescriptor));
     }else{
         returnValue = cloneValue(execCode(invokingMethod.second, std::move(ext)));
     }
@@ -2036,9 +1996,9 @@ void CodeExecution::invokeSpecial(const JavaClass * jc, const char * methodName,
     JType * returnValue{};
     if (invokingMethod.first) {
         if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
-            returnValue = cloneValue(invokeNative((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(),
-                                                      (char*)invokingMethod.second->getString(invokingMethod.first->nameIndex),
-                                                      (char*)invokingMethod.second->getString(invokingMethod.first->descriptorIndex)));
+            returnValue = cloneValue(invokeNative(const_cast<JavaClass*>(invokingMethod.second)->getClassName(),
+                                                      invokingMethod.second->getString(invokingMethod.first->nameIndex),
+                                                      invokingMethod.second->getString(invokingMethod.first->descriptorIndex)));
         }
         else {
             auto ext = getCodeAttrCore(invokingMethod.first);
@@ -2053,9 +2013,9 @@ void CodeExecution::invokeSpecial(const JavaClass * jc, const char * methodName,
             IS_METHOD_PUBLIC(javaLangObjectMethod->accessFlags) && 
             !IS_METHOD_STATIC(javaLangObjectMethod->accessFlags)) {
             if (IS_METHOD_NATIVE(javaLangObjectMethod->accessFlags)) {
-                returnValue = cloneValue(invokeNative((char*)javaLangObjectClass->getClassName(),
-                                                          (char*)javaLangObjectClass->getString(javaLangObjectMethod->nameIndex),
-                                                          (char*)javaLangObjectClass->getString(javaLangObjectMethod->descriptorIndex)));
+                returnValue = cloneValue(invokeNative(javaLangObjectClass->getClassName(),
+                                                          javaLangObjectClass->getString(javaLangObjectMethod->nameIndex),
+                                                          javaLangObjectClass->getString(javaLangObjectMethod->descriptorIndex)));
             }
             else {
                 auto ext = getCodeAttrCore(javaLangObjectMethod);
@@ -2074,8 +2034,8 @@ void CodeExecution::invokeSpecial(const JavaClass * jc, const char * methodName,
 void CodeExecution::invokeStatic(const JavaClass * jc, const char * methodName, const char * methodDescriptor) {
     // Get instance method name and descriptor from CONSTANT_Methodref locating by index
     // and get interface method parameter and return value descriptor
-    yrt.ma->linkClassIfAbsent((char*)const_cast<JavaClass*>(jc)->getClassName());
-    yrt.ma->initClassIfAbsent(*this, (char*)const_cast<JavaClass*>(jc)->getClassName());
+    yrt.ma->linkClassIfAbsent(const_cast<JavaClass*>(jc)->getClassName());
+    yrt.ma->initClassIfAbsent(*this, const_cast<JavaClass*>(jc)->getClassName());
 
     const auto invokingMethod = findMethod(jc, methodName, methodDescriptor);
 #ifdef YVM_DEBUG_SHOW_EXEC_FLOW
@@ -2102,7 +2062,7 @@ void CodeExecution::invokeStatic(const JavaClass * jc, const char * methodName, 
 
     JType * returnValue{};
     if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
-        returnValue = cloneValue(invokeNative((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(),methodName, methodDescriptor));
+        returnValue = cloneValue(invokeNative(const_cast<JavaClass*>(invokingMethod.second)->getClassName(),methodName, methodDescriptor));
     }
     else {
         returnValue = cloneValue(execCode(invokingMethod.second, std::move(ext)));

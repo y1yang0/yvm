@@ -72,7 +72,7 @@ void MethodArea::linkJavaClass(const char * jcName) {
                                         )->constantValueIndex])->stringIndex);
                             int strLen = strlen(constantStr);
                             fieldObject = yrt.jheap->createObject(*yrt.ma->loadClassIfAbsent("java/lang/String"));
-                            yrt.jheap->putObjectField(*fieldObject, 0, yrt.jheap->createCharArray(constantStr, strLen));
+                            yrt.jheap->putObjectFieldByOffset(*fieldObject, 0, yrt.jheap->createCharArray(constantStr, strLen));
                         }
                     }
                 }
