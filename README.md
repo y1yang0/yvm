@@ -48,9 +48,12 @@ int main() {
 Code licensed under the MIT License.
 
 
-## {↓ For developers who want to explore more...}
+{↓ For developers who want to explore more...}
 ---
-### {文件结构}
+## {Big picture}
+![](./public/arch.png)
+
+## {Components}
 + `javalib` YVM的运行时库，重写了部分JDK类。
 + `public` 文档，图片
 + `src/JavaClass.h` `.class`文件在YVM中的类表示
@@ -61,7 +64,7 @@ Code licensed under the MIT License.
 + `src/RuntimeEnv.h` 运行时数据。拥有堆，调用栈，和方法区数据
 + `src/CodeExecution.h` 执行引擎，现在是解释执行
 
-### {公有设计，私有实现}
+### {Public design, private implementation}
 1. YVM中类只有一种权威表示,即"package/foo/Bar",任何其他表示如"java.lang.Object","Thread.class"都拒绝加载
 2. 根据JVM SPEC,虚拟机执行引擎会直接操纵JDK一些类,如`java/lang/Class`,,`java/lang/String`.为了实现一个"Runnable"的JVM，这里使用重写的同名类(位于javalib)代替。
 3.  YVM不支持(未来也不打算)JavaSE6及其之前版本编译器编译的`.class`
