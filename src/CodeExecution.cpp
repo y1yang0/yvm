@@ -30,6 +30,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 }
                 currentFrame->stack.push(throwableObject);
                 exceptionUnhandled = false;
+                clearExceptionStackTrace();
             }
             else {
                 exceptionUnhandled = true;
@@ -1420,7 +1421,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                     }
                     currentFrame->stack.push(throwableObject);
                 }
-                else {
+                else /*exception can not handled within method handlers*/{
                     exceptionUnhandled = true;
                     return throwableObject;
                 }
@@ -1881,11 +1882,19 @@ void CodeExecution::invokeByName(JavaClass * jc,const char * methodName, const c
     popFrame();
     if (returnType != T_EXTRA_VOID ) {
         currentFrame->stack.push(returnValue);
+        extendExceptionStackTrace(methodName);
     }
     if(exceptionUnhandled) {
-        std::atexit([]()->void {
-            std::cerr << "unhandled exception\n";
-        });
+        assert(!exceptionStackTrace.empty());
+        [&]()->void {
+            std::cerr << "----------Unhandled Exception----------\n";
+            std::cerr << "Thrown at " << exceptionStackTrace[0] << "()\n";
+            for (auto * x : exceptionStackTrace) {
+                std::cerr << "By its caller " << x << "()\n";
+            }
+            std::cerr << "---------------------------------------\n";
+        }();
+        std::exit(EXIT_FAILURE);
     }
 }
 
@@ -1926,6 +1935,7 @@ void CodeExecution::invokeInterface(const JavaClass * jc, const char * methodNam
     popFrame();
     if (returnType != T_EXTRA_VOID || exceptionUnhandled) {
         currentFrame->stack.push(returnValue);
+        extendExceptionStackTrace(methodName);
     }
 }
 
@@ -1968,6 +1978,7 @@ void CodeExecution::invokeVirtual(const char * methodName, const char * methodDe
     popFrame();
     if (returnType != T_EXTRA_VOID || exceptionUnhandled) {
         currentFrame->stack.push(returnValue);
+        extendExceptionStackTrace(methodName);
     }
 }
 
@@ -2028,6 +2039,7 @@ void CodeExecution::invokeSpecial(const JavaClass * jc, const char * methodName,
     popFrame();
     if (returnType != T_EXTRA_VOID || exceptionUnhandled) {
         currentFrame->stack.push(returnValue);
+        extendExceptionStackTrace(methodName);
     }
 }
 
@@ -2071,6 +2083,7 @@ void CodeExecution::invokeStatic(const JavaClass * jc, const char * methodName, 
 
     if (returnType != T_EXTRA_VOID || exceptionUnhandled) {
         currentFrame->stack.push(returnValue);
+        extendExceptionStackTrace(methodName);
     }
 }
 

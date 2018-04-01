@@ -8,7 +8,6 @@
 #include "Frame.h"
 #include <typeinfo>
 
-
 struct MethodInfo;
 struct RuntimeEnv;
 extern RuntimeEnv yrt;
@@ -110,9 +109,13 @@ private:
     void typeCast() const;
 
 private:
+    inline void extendExceptionStackTrace(const char * methodName) { exceptionStackTrace.push_back(methodName); }
+    inline void clearExceptionStackTrace() { exceptionStackTrace.clear(); }
+
+private:
     Frame * currentFrame{};
+    std::vector<const char *> exceptionStackTrace;
     bool exceptionUnhandled = false;
-    std::vector<const char *> stackTrace;
 };
 
 template <typename LoadType>
