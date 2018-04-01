@@ -44,9 +44,23 @@ public class ThrowExceptionTest {
         }
     }
 
+    public static void throwException2() throws GenericException {
+        throw new GenericException();
+    }
+
     public static void main(String[] args) throws GenericException {
+        IO.print("catchIt()\n");
         catchIt();
+        IO.print("throwAndCatch()\n");
         throwAndCatch();
+        IO.print("nestException\n");
         nestException();
+        IO.print("throwException2()\n");
+        try{
+            throwException2();
+        }catch (GenericException e){
+            IO.print("handled on main()\n");
+        }
+        IO.print("normal executing\n");
     }
 }

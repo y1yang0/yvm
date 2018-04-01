@@ -24,10 +24,10 @@ struct CodeAttrCore {
 };
 
 /**
- * \brief This class does actual bytecode interruption. To accomplish code execution, it needs 
- * sorts of information with regard to class file structure, runtime heap structure and function
- * calling stack,etc. So we set it as a friend class of that classes for convenience.
- */
+* \brief This class does actual bytecode interruption. To accomplish code execution, it needs
+* sorts of information with regard to class file structure, runtime heap structure and function
+* calling stack,etc. So we set it as a friend class of that classes for convenience.
+*/
 class CodeExecution {
 public:
     CodeExecution() : currentFrame(nullptr) {}
@@ -43,13 +43,13 @@ public:
 
 private:
     std::pair<MethodInfo *, const JavaClass*> findMethod(const JavaClass* jc, const char* methodName,
-                                                         const char* methodDescriptor);
+        const char* methodDescriptor);
     JType* getStaticField(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor);
     void putStaticField(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor, JType* value);
     JType* getInstanceField(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor,
-                            JObject* object, size_t offset = 0);
+        JObject* object, size_t offset = 0);
     void putInstanceField(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor,
-                          JObject* object, JType* value, size_t offset = 0);
+        JObject* object, JType* value, size_t offset = 0);
     CodeAttrCore getCodeAttrCore(const MethodInfo* m);
     bool checkInstanceof(const JavaClass * jc, u2 index, JType* objectref);
 
@@ -105,12 +105,13 @@ private:
     template <typename ReturnType>
     ReturnType* currentStackPop();
 
-    template <typename Type1,typename Type2>
+    template <typename Type1, typename Type2>
     void typeCast() const;
 
 private:
-    Frame* currentFrame{};
+    Frame * currentFrame{};
     bool exceptionUnhandled = false;
+    std::vector<const char *> stackTrace;
 };
 
 template <typename LoadType>
@@ -141,9 +142,10 @@ inline void CodeExecution::load2Stack<JRef>(u1 localIndex) {
 
 template <typename LoadType>
 void CodeExecution::loadArrayItem2Stack() {
-    JInt* index = currentStackPop<JInt>();
-    auto* arrayref = currentStackPop<JArray>();
-
+    JInt* index = (JInt*)currentFrame->stack.top();
+    currentFrame->stack.pop();
+    auto* arrayref = (JArray*)currentFrame->stack.top();
+    currentFrame->stack.pop();
     if (arrayref == nullptr) {
         throw std::runtime_error("null pointer");
     }
@@ -160,8 +162,11 @@ void CodeExecution::loadArrayItem2Stack() {
 
 template <>
 inline void CodeExecution::loadArrayItem2Stack<JRef>() {
-    auto* index = currentStackPop<JInt>();
-    auto* arrayref = currentStackPop<JArray>();
+    auto* index = dynamic_cast<JInt*>(currentFrame->stack.top());
+
+    currentFrame->stack.pop();
+    auto* arrayref = dynamic_cast<JArray*>(currentFrame->stack.top());
+    currentFrame->stack.pop();
     if (arrayref == nullptr) {
         throw std::runtime_error("null pointer");
     }
@@ -207,9 +212,12 @@ inline void CodeExecution::store2Local<JRef>(u1 index) {
 template <typename StoreType>
 void CodeExecution::storeArrayItem() {
     //store array item retriving from stack to array heap
-    auto* value = currentStackPop<StoreType>();
-    auto* index = currentStackPop<JInt>();
-    auto* arrayref = currentStackPop<JArray>();
+    StoreType* value = dynamic_cast<StoreType*>(currentFrame->stack.top());
+    currentFrame->stack.pop();
+    JInt* index = (JInt*)currentFrame->stack.top();
+    currentFrame->stack.pop();
+    JArray* arrayref = (JArray*)currentFrame->stack.top();
+    currentFrame->stack.pop();
     if (arrayref == nullptr) {
         throw std::runtime_error("null pointer");
     }
@@ -224,9 +232,12 @@ void CodeExecution::storeArrayItem() {
 
 template <>
 inline void CodeExecution::storeArrayItem<JRef>() {
-    JType* value = currentStackPop<JType>();
-    JInt* index = currentStackPop<JInt>();
-    JArray* arrayref = currentStackPop<JArray>();
+    JType* value = currentFrame->stack.top();
+    currentFrame->stack.pop();
+    JInt* index = (JInt*)currentFrame->stack.top();
+    currentFrame->stack.pop();
+    JArray* arrayref = (JArray*)currentFrame->stack.top();
+    currentFrame->stack.pop();
     if (arrayref == nullptr) {
         throw std::runtime_error("null pointer");
     }
@@ -241,19 +252,22 @@ inline void CodeExecution::storeArrayItem<JRef>() {
 
 template <typename ReturnType>
 inline ReturnType* CodeExecution::flowReturn() const {
-    auto* value = currentStackPop<ReturnType>();
+    auto* value = dynamic_cast<ReturnType*>(currentFrame->stack.top());
+    currentFrame->stack.pop();
     return value;
 }
 
 template <typename ReturnType>
 inline ReturnType* CodeExecution::currentStackPop() {
-    auto* value = currentStackPop<ReturnType>();
+    auto* value = dynamic_cast<ReturnType*>(currentFrame->stack.top());
+    currentFrame->stack.pop();
     return value;
 }
 
 template <typename Type1, typename Type2>
 inline void CodeExecution::typeCast() const {
-    auto * value = currentStackPop<Type1>();
+    auto * value = dynamic_cast<Type1*>(currentFrame->stack.top());
+    currentFrame->stack.pop();
     auto * result = new Type2;
     result->val = value->val;
     currentFrame->stack.push(result);

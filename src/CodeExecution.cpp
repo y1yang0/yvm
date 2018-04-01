@@ -32,8 +32,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 exceptionUnhandled = false;
             }
             else {
-
                 exceptionUnhandled = true;
+                return throwableObject;
             }
         }
 #ifdef YVM_DEBUG_SHOW_BYTECODE
@@ -1537,10 +1537,10 @@ void CodeExecution::loadConstantPoolItem2Stack(const JavaClass *jc, u2 index) {
 
 bool CodeExecution::handleException(const JavaClass* jc, const CodeAttrCore & ext,const  JObject* objectref, u4& op) {
     FOR_EACH(i,ext.exceptionTableLength) {
-        const char * catchTypeName = (char*)jc->getString(
+        const char * catchTypeName = jc->getString(
             dynamic_cast<CONSTANT_Class*>(jc->raw.constPoolInfo[ext.exceptionTable[i].catchType])->nameIndex);
 
-        if (hasInheritanceRelationship(yrt.ma->findJavaClass((char*)objectref->jc->getClassName()), yrt.ma->findJavaClass(catchTypeName))
+        if (hasInheritanceRelationship(yrt.ma->findJavaClass(objectref->jc->getClassName()), yrt.ma->findJavaClass(catchTypeName))
             && ext.exceptionTable[i].startPC <= op && op < ext.exceptionTable[i].endPC) {   // start<=op<end
             // If we found a proper exception handler, set current pc as handlerPC of this exception table item;
             op = ext.exceptionTable[i].handlerPC - 1;
@@ -1555,19 +1555,19 @@ bool CodeExecution::handleException(const JavaClass* jc, const CodeAttrCore & ex
 }
 
 std::tuple<JavaClass*, const char*, const char*> CodeExecution::parseFieldSymbolicReference(const JavaClass * jc, u2 index) {
-    const char * symbolicReferenceFieldName = (const char*)jc->getString(
+    const char * symbolicReferenceFieldName = jc->getString(
         dynamic_cast<CONSTANT_NameAndType*>(jc->raw.constPoolInfo[
             dynamic_cast<CONSTANT_Fieldref*>(jc->raw.constPoolInfo[index])->nameAndTypeIndex])->nameIndex);
 
-    const char * symbolicReferenceFieldDescriptor = (const char*)jc->getString(
+    const char * symbolicReferenceFieldDescriptor = jc->getString(
         dynamic_cast<CONSTANT_NameAndType*>(jc->raw.constPoolInfo[
             dynamic_cast<CONSTANT_Fieldref*>(jc->raw.constPoolInfo[index])->nameAndTypeIndex])->descriptorIndex);
 
-    JavaClass * symbolicReferenceClass = yrt.ma->loadClassIfAbsent((char*)jc->getString(
+    JavaClass * symbolicReferenceClass = yrt.ma->loadClassIfAbsent(jc->getString(
         dynamic_cast<CONSTANT_Class*>(jc->raw.constPoolInfo[
             dynamic_cast<CONSTANT_Fieldref*>(jc->raw.constPoolInfo[index])->classIndex])->nameIndex));
 
-    yrt.ma->linkClassIfAbsent((char*)symbolicReferenceClass->getClassName());
+    yrt.ma->linkClassIfAbsent(symbolicReferenceClass->getClassName());
 
     return std::make_tuple(symbolicReferenceClass,
         symbolicReferenceFieldName, 
@@ -1575,15 +1575,15 @@ std::tuple<JavaClass*, const char*, const char*> CodeExecution::parseFieldSymbol
 }
 
 std::tuple<JavaClass*, const char*, const char*> CodeExecution::parseInterfaceMethodSymbolicReference(const JavaClass * jc, u2 index){
-    const char * symbolicReferenceInterfaceMethodName = (const char*)jc->getString(
+    const char * symbolicReferenceInterfaceMethodName = jc->getString(
         dynamic_cast<CONSTANT_NameAndType*>(jc->raw.constPoolInfo[
             dynamic_cast<CONSTANT_InterfaceMethodref*>(jc->raw.constPoolInfo[index])->nameAndTypeIndex])->nameIndex);
 
-    const char * symbolicReferenceInterfaceMethodDescriptor = (const char*)jc->getString(
+    const char * symbolicReferenceInterfaceMethodDescriptor = jc->getString(
         dynamic_cast<CONSTANT_NameAndType*>(jc->raw.constPoolInfo[
             dynamic_cast<CONSTANT_InterfaceMethodref*>(jc->raw.constPoolInfo[index])->nameAndTypeIndex])->descriptorIndex);
 
-    JavaClass * symbolicReferenceInterfaceMethodClass = yrt.ma->loadClassIfAbsent((char*)jc->getString(
+    JavaClass * symbolicReferenceInterfaceMethodClass = yrt.ma->loadClassIfAbsent(jc->getString(
         dynamic_cast<CONSTANT_Class*>(jc->raw.constPoolInfo[
             dynamic_cast<CONSTANT_InterfaceMethodref*>(jc->raw.constPoolInfo[index])->classIndex])->nameIndex));
     yrt.ma->linkClassIfAbsent((char*)symbolicReferenceInterfaceMethodClass->getClassName());
@@ -1594,15 +1594,15 @@ std::tuple<JavaClass*, const char*, const char*> CodeExecution::parseInterfaceMe
 }
 
 std::tuple<JavaClass*, const char*, const char*> CodeExecution::parseMethodSymbolicReference(const JavaClass * jc, u2 index) {
-    const char * symbolicReferenceMethodName = (const char*)jc->getString(
+    const char * symbolicReferenceMethodName = jc->getString(
         dynamic_cast<CONSTANT_NameAndType*>(jc->raw.constPoolInfo[
             dynamic_cast<CONSTANT_Methodref*>(jc->raw.constPoolInfo[index])->nameAndTypeIndex])->nameIndex);
 
-    const char * symbolicReferenceMethodDescriptor = (const char*)jc->getString(
+    const char * symbolicReferenceMethodDescriptor =jc->getString(
         dynamic_cast<CONSTANT_NameAndType*>(jc->raw.constPoolInfo[
             dynamic_cast<CONSTANT_Methodref*>(jc->raw.constPoolInfo[index])->nameAndTypeIndex])->descriptorIndex);
 
-    JavaClass * symbolicReferenceMethodClass = yrt.ma->loadClassIfAbsent((char*)jc->getString(
+    JavaClass * symbolicReferenceMethodClass = yrt.ma->loadClassIfAbsent(jc->getString(
         dynamic_cast<CONSTANT_Class*>(jc->raw.constPoolInfo[
             dynamic_cast<CONSTANT_Methodref*>(jc->raw.constPoolInfo[index])->classIndex])->nameIndex));
     yrt.ma->linkClassIfAbsent((char*)symbolicReferenceMethodClass->getClassName());
@@ -1613,32 +1613,32 @@ std::tuple<JavaClass*, const char*, const char*> CodeExecution::parseMethodSymbo
 }
 
 JType * CodeExecution::getStaticField(JavaClass * parsedJc,const char * fieldName, const char * fieldDescriptor) {
-    yrt.ma->linkClassIfAbsent((char*)parsedJc->getClassName());
-    yrt.ma->initClassIfAbsent(*this, (char*)parsedJc->getClassName());
+    yrt.ma->linkClassIfAbsent(parsedJc->getClassName());
+    yrt.ma->initClassIfAbsent(*this, parsedJc->getClassName());
 
     FOR_EACH(i, parsedJc->raw.fieldsCount) {
         if (IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {
-            const char * n = (char*)parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
-            const char * d = (char*)parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
+            const char * n = parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
+            const char * d = parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
             if (strcmp(n, fieldName) == 0 && strcmp(d, fieldDescriptor)==0) {
                 return parsedJc->sfield.find(i)->second;
             }
         }
     }
     if (parsedJc->raw.superClass != 0) {
-        return getStaticField(yrt.ma->findJavaClass((char*)parsedJc->getSuperClassName()), fieldName, fieldDescriptor);
+        return getStaticField(yrt.ma->findJavaClass(parsedJc->getSuperClassName()), fieldName, fieldDescriptor);
     }
     return nullptr;
 }
 
 void CodeExecution::putStaticField(JavaClass * parsedJc, const char * fieldName, const char * fieldDescriptor, JType * value) {
-    yrt.ma->linkClassIfAbsent((char*)parsedJc->getClassName());
-    yrt.ma->initClassIfAbsent(*this, (char*)parsedJc->getClassName());
+    yrt.ma->linkClassIfAbsent(parsedJc->getClassName());
+    yrt.ma->initClassIfAbsent(*this, parsedJc->getClassName());
 
     FOR_EACH(i, parsedJc->raw.fieldsCount) {
         if (IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {
-            const char * n = (char*)parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
-            const char * d = (char*)parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
+            const char * n = parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
+            const char * d = parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
             if (strcmp(n, fieldName) == 0 && strcmp(d, fieldDescriptor) == 0) {
                 parsedJc->sfield.find(i)->second = value;
                 return;
@@ -1646,7 +1646,7 @@ void CodeExecution::putStaticField(JavaClass * parsedJc, const char * fieldName,
         }
     }
     if (parsedJc->raw.superClass != 0) {
-        putStaticField(yrt.ma->findJavaClass((char*)parsedJc->getSuperClassName()), fieldName, fieldDescriptor, value);
+        putStaticField(yrt.ma->findJavaClass(parsedJc->getSuperClassName()), fieldName, fieldDescriptor, value);
     }
 }
 
@@ -1656,15 +1656,15 @@ JType * CodeExecution::getInstanceField(JavaClass * parsedJc,const char * fieldN
     FOR_EACH(i, parsedJc->raw.fieldsCount) {
         if (!IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {
             howManyNonStaticFields++;
-            const char * n = (char*)parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
-            const char * d = (char*)parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
+            const char * n = parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
+            const char * d = parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
             if (strcmp(n, fieldName) == 0 && strcmp(d, fieldDescriptor) == 0) {
                  return yrt.jheap->objheap.find(object->offset)->second.at(i + offset);
             }
         }
     }
     if (parsedJc->raw.superClass != 0) {
-        return getInstanceField(yrt.ma->findJavaClass((char*)parsedJc->getSuperClassName()), fieldName, fieldDescriptor,
+        return getInstanceField(yrt.ma->findJavaClass(parsedJc->getSuperClassName()), fieldName, fieldDescriptor,
             object, offset + howManyNonStaticFields);
     }
     return nullptr;
@@ -1676,8 +1676,8 @@ void CodeExecution::putInstanceField(JavaClass * parsedJc, const char * fieldNam
     FOR_EACH(i, parsedJc->raw.fieldsCount) {
         if (!IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {
             howManyNonStaticFields++;
-            const char * n = (char*)parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
-            const char * d = (char*)parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
+            const char * n = parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
+            const char * d = parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
             if (strcmp(n, fieldName) == 0 && strcmp(d, fieldDescriptor) == 0) {
                 yrt.jheap->objheap.find(object->offset)->second.at(offset + i) = value;
                 return;
@@ -1685,7 +1685,7 @@ void CodeExecution::putInstanceField(JavaClass * parsedJc, const char * fieldNam
         }
     }
     if (parsedJc->raw.superClass != 0) {
-        putInstanceField(yrt.ma->findJavaClass((char*)parsedJc->getSuperClassName()), fieldName, fieldDescriptor, object,
+        putInstanceField(yrt.ma->findJavaClass(parsedJc->getSuperClassName()), fieldName, fieldDescriptor, object,
             value, offset + howManyNonStaticFields);
     }
 }
@@ -2030,9 +2030,9 @@ void CodeExecution::invokeVirtual(const char * methodName, const char * methodDe
     JType * returnValue{};
     if (invokingMethod.first) {
         if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
-            returnValue = cloneValue(invokeNative((char*)const_cast<JavaClass*>(invokingMethod.second)->getClassName(),
-                                                      (char*)invokingMethod.second->getString(invokingMethod.first->nameIndex),
-                                                      (char*)invokingMethod.second->getString(invokingMethod.first->descriptorIndex)));
+            returnValue = cloneValue(invokeNative(const_cast<JavaClass*>(invokingMethod.second)->getClassName(),
+                                                      invokingMethod.second->getString(invokingMethod.first->nameIndex),
+                                                      invokingMethod.second->getString(invokingMethod.first->descriptorIndex)));
         }
         else {
             
