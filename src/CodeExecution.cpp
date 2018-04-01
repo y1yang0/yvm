@@ -127,7 +127,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 currentFrame->stack.push(b);
             }break;
             case op_sipush: {
-                u2 byte = u2index(ext.code, op);
+                u2 byte = consumeU2(ext.code, op);
                 JInt * b = new JInt;
                 b->val = byte;
                 currentFrame->stack.push(b);
@@ -137,11 +137,11 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 loadConstantPoolItem2Stack(jc, static_cast<u2>(index));
             }break;
             case op_ldc_w: {
-                u2 index = u2index(ext.code, op);
+                u2 index = consumeU2(ext.code, op);
                 loadConstantPoolItem2Stack(jc, index);
             }break;
             case op_ldc2_w: {
-                u2 index = u2index(ext.code, op);
+                u2 index = consumeU2(ext.code, op);
                 if (typeid(*jc->raw.constPoolInfo[index]) == typeid(CONSTANT_Double)) {
                     auto val = dynamic_cast<CONSTANT_Double*>(jc->raw.constPoolInfo[index])->val;
                     JDouble * dval = new JDouble;
@@ -1043,7 +1043,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_ifeq: {
                 u4 currentOffset = op - 1;
-                int16_t branchindex = u2index(ext.code, op);
+                int16_t branchindex = consumeU2(ext.code, op);
                 auto * value = currentStackPop<JInt>();
                 if (value->val == 0) {
                     op = currentOffset + branchindex;
@@ -1052,7 +1052,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_ifne: {
                 u4 currentOffset = op - 1;
-                int16_t branchindex = u2index(ext.code, op);
+                int16_t branchindex = consumeU2(ext.code, op);
                 auto * value = currentStackPop<JInt>();
                 if (value->val != 0) {
                     op = currentOffset + branchindex;
@@ -1061,7 +1061,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_iflt: {
                 u4 currentOffset = op - 1;
-                int16_t branchindex = u2index(ext.code, op);
+                int16_t branchindex = consumeU2(ext.code, op);
                 auto * value = currentStackPop<JInt>();
                 if (value->val < 0) {
                     op = currentOffset + branchindex;
@@ -1070,7 +1070,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_ifge: {
                 u4 currentOffset = op - 1;
-                int16_t branchindex = u2index(ext.code, op);
+                int16_t branchindex = consumeU2(ext.code, op);
                 auto * value = currentStackPop<JInt>();
                 if (value->val >= 0) {
                     op = currentOffset + branchindex;
@@ -1079,7 +1079,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_ifgt: {
                 u4 currentOffset = op - 1;
-                int16_t branchindex = u2index(ext.code, op);
+                int16_t branchindex = consumeU2(ext.code, op);
                 auto * value = currentStackPop<JInt>();
                 if (value->val > 0) {
                     op = currentOffset + branchindex;
@@ -1088,7 +1088,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_ifle: {
                 u4 currentOffset = op - 1;
-                int16_t branchindex = u2index(ext.code, op);
+                int16_t branchindex = consumeU2(ext.code, op);
                 auto * value = currentStackPop<JInt>();
                 if (value->val <= 0) {
                     op = currentOffset + branchindex;
@@ -1097,7 +1097,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_if_icmpeq: {
                 u4 currentOffset = op - 1;
-                int16_t branchindex = u2index(ext.code, op);
+                int16_t branchindex = consumeU2(ext.code, op);
                 auto * value2 = currentStackPop<JInt>();
                 auto * value1 = currentStackPop<JInt>();
                 if (value1->val == value2->val) {
@@ -1108,7 +1108,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_if_icmpne: {
                 u4 currentOffset = op - 1;
-                int16_t branchindex = u2index(ext.code, op);
+                int16_t branchindex = consumeU2(ext.code, op);
                 auto * value2 = currentStackPop<JInt>();
                 auto * value1 = currentStackPop<JInt>();
                 if (value1->val != value2->val) {
@@ -1119,7 +1119,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_if_icmplt: {
                 u4 currentOffset = op - 1;
-                int16_t branchindex = u2index(ext.code, op);
+                int16_t branchindex = consumeU2(ext.code, op);
                 auto * value2 = currentStackPop<JInt>();
                 auto * value1 = currentStackPop<JInt>();
                 if (value1->val < value2->val) {
@@ -1130,7 +1130,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_if_icmpge: {
                 u4 currentOffset = op - 1;
-                int16_t branchindex = u2index(ext.code, op);
+                int16_t branchindex = consumeU2(ext.code, op);
                 auto * value2 = currentStackPop<JInt>();
                 auto * value1 = currentStackPop<JInt>();
                 if (value1->val >= value2->val) {
@@ -1141,7 +1141,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_if_icmpgt: {
                 u4 currentOffset = op - 1;
-                int16_t branchindex = u2index(ext.code, op);
+                int16_t branchindex = consumeU2(ext.code, op);
                 auto * value2 = currentStackPop<JInt>();
                 auto * value1 = currentStackPop<JInt>();
                 if (value1->val > value2->val) {
@@ -1152,7 +1152,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_if_icmple: {
                 u4 currentOffset = op - 1;
-                int16_t branchindex = u2index(ext.code, op);
+                int16_t branchindex = consumeU2(ext.code, op);
                 auto * value2 = currentStackPop<JInt>();
                 auto * value1 = currentStackPop<JInt>();
                 if (value1->val <= value2->val) {
@@ -1163,7 +1163,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_if_acmpeq: {
                 u4 currentOffset = op - 1;
-                int16_t branchindex = u2index(ext.code, op);
+                int16_t branchindex = consumeU2(ext.code, op);
                 auto * value2 = currentStackPop<JObject>();
                 auto * value1 = currentStackPop<JObject>();
                 if (value1->offset == value2->offset && value1->jc == value2->jc) {
@@ -1174,7 +1174,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_if_acmpne: {
                 u4 currentOffset = op - 1;
-                int16_t branchindex = u2index(ext.code, op);
+                int16_t branchindex = consumeU2(ext.code, op);
                 auto * value2 = currentStackPop<JObject>();
                 auto * value1 = currentStackPop<JObject>();
                 if (value1->offset != value2->offset || value1->jc != value2->jc) {
@@ -1185,7 +1185,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_goto: {
                 u4 currentOffset = op - 1;
-                int16_t branchindex = u2index(ext.code, op);
+                int16_t branchindex = consumeU2(ext.code, op);
                 op = currentOffset + branchindex;               
             }break;
             case op_jsr: {
@@ -1199,12 +1199,12 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 op++;
                 op++;
                 op++;   //3 bytes padding
-                int32_t defaultIndex = u4index(ext.code, op);
-                int32_t low = u4index(ext.code, op);
-                int32_t high = u4index(ext.code, op);
+                int32_t defaultIndex = consumeU4(ext.code, op);
+                int32_t low = consumeU4(ext.code, op);
+                int32_t high = consumeU4(ext.code, op);
                 std::vector<int32_t> jumpOffset;
                 FOR_EACH(i, high - low + 1) {
-                    jumpOffset.push_back(u4index(ext.code, op));
+                    jumpOffset.push_back(consumeU4(ext.code, op));
                 }
 
                 auto * index = currentStackPop<JInt>();
@@ -1221,11 +1221,11 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 op++;
                 op++;
                 op++;   //3 bytes padding
-                int32_t defaultIndex = u4index(ext.code, op);
-                int32_t npair = u4index(ext.code, op);
+                int32_t defaultIndex = consumeU4(ext.code, op);
+                int32_t npair = consumeU4(ext.code, op);
                 std::map<int32_t, int32_t> matchOffset;
                 FOR_EACH(i, npair) {
-                    matchOffset.insert(std::make_pair(u4index(ext.code, op), u4index(ext.code, op)));
+                    matchOffset.insert(std::make_pair(consumeU4(ext.code, op), consumeU4(ext.code, op)));
                 }
                 auto * key = currentStackPop<JInt>();
                 auto res = matchOffset.find(key->val);
@@ -1256,19 +1256,19 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 return nullptr;
             }break;
             case op_getstatic: {
-                u2 index = u2index(ext.code, op);
+                u2 index = consumeU2(ext.code, op);
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
                 JType * field = cloneValue(getStaticField(std::get<0>(symbolicRef), std::get<1>(symbolicRef), std::get<2>(symbolicRef)));
                 currentFrame->stack.push(field);
             }break;
             case op_putstatic: {
-                u2 index = u2index(ext.code, op);
+                u2 index = consumeU2(ext.code, op);
                 JType * value = currentStackPop<JType>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
                 putStaticField(std::get<0>(symbolicRef), std::get<1>(symbolicRef), std::get<2>(symbolicRef), value);
             }break;
             case op_getfield: {
-                u2 index = u2index(ext.code, op);
+                u2 index = consumeU2(ext.code, op);
                 JObject * objectref = currentStackPop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
                 JType * field = cloneValue(getInstanceField(std::get<0>(symbolicRef), std::get<1>(symbolicRef), std::get<2>(symbolicRef),
@@ -1278,7 +1278,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete objectref;
             }break;
             case op_putfield: {
-                u2 index = u2index(ext.code, op);
+                u2 index = consumeU2(ext.code, op);
                 JType * value = currentStackPop<JType>();
                 JObject * objectref = currentStackPop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
@@ -1288,7 +1288,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete objectref;
             }break;
             case op_invokevirtual: {
-                const u2 index = u2index(ext.code, op);
+                const u2 index = consumeU2(ext.code, op);
                 assert(typeid(*jc->raw.constPoolInfo[index]) == typeid(CONSTANT_Methodref));
                 
                 auto symbolicRef = parseMethodSymbolicReference(jc, index);
@@ -1305,7 +1305,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 
             }break;
             case op_invokespecial: {
-                u2 index = u2index(ext.code, op);
+                u2 index = consumeU2(ext.code, op);
                 std::tuple<JavaClass*, const char*, const char*> symbolicRef;
 
                 if (typeid(*jc->raw.constPoolInfo[index]) == typeid(CONSTANT_InterfaceMethodref)) {
@@ -1336,7 +1336,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_invokestatic: {
                 // Invoke a class (static) method
-                u2 index = u2index(ext.code, op);
+                u2 index = consumeU2(ext.code, op);
                 
                 if (typeid(*jc->raw.constPoolInfo[index]) == typeid(CONSTANT_InterfaceMethodref)) {
                     auto symbolicRef = parseInterfaceMethodSymbolicReference(jc, index);
@@ -1351,7 +1351,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 }
             }break;
             case op_invokeinterface: {
-                u2 index = u2index(ext.code, op);
+                u2 index = consumeU2(ext.code, op);
                 ++op;                       // read count and discard
                 ++op;                       //opcode padding 0;
 
@@ -1364,7 +1364,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 throw std::runtime_error("unsupported opcode [invokedynamic]");
             }break;
             case op_new: {
-                u2 index = u2index(ext.code, op);
+                u2 index = consumeU2(ext.code, op);
                 JObject * objectref = execNew(jc, index);
                 currentFrame->stack.push(objectref);
             }break;
@@ -1381,7 +1381,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete count;
             }break;
             case op_anewarray: {
-                u2 index = u2index(ext.code, op);
+                u2 index = consumeU2(ext.code, op);
                 JInt * count = currentStackPop<JInt>();
 
                 if (count->val < 0) {
@@ -1429,7 +1429,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 throw std::runtime_error("unsupported opcode [checkcast]");
             }break;
             case op_instanceof: {
-                u2 index = u2index(ext.code, op);
+                u2 index = consumeU2(ext.code, op);
                 auto * objectref = currentStackPop<JObject>();
                 if(objectref==nullptr) {
                     currentFrame->stack.push(new JInt(0));
@@ -1454,7 +1454,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_ifnull: {
                 u4 currentOffset = op - 1;
-                int16_t branchIndex = u2index(ext.code, op);
+                int16_t branchIndex = consumeU2(ext.code, op);
                 JObject * value = currentStackPop<JObject>();
                 if (value == nullptr) {
                     delete value;
@@ -1463,7 +1463,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_ifnonnull: {
                 u4 currentOffset = op - 1;
-                int16_t branchIndex = u2index(ext.code, op);
+                int16_t branchIndex = consumeU2(ext.code, op);
                 JObject * value = currentStackPop<JObject>();
                 if (value != nullptr) {
                     delete value;
@@ -1472,7 +1472,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_goto_w: {
                 u4 currentOffset = op - 1;
-                int32_t branchIndex = u4index(ext.code, op);
+                int32_t branchIndex = consumeU4(ext.code, op);
                 op = currentOffset + branchIndex;
             }break;
             case op_jsr_w: {

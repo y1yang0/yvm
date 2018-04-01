@@ -66,14 +66,14 @@ private:
     bool handleException(const JavaClass * jc, const CodeAttrCore & ext, const JObject * objectref, u4 & op);
 
 private:
-    static inline u2 u2index(const u1* code, u4& opidx) {
+    static inline u2 consumeU2(const u1* code, u4& opidx) {
         const u1 indexbyte1 = code[++opidx];
         const u1 indexbyte2 = code[++opidx];
         const u2 index = (indexbyte1 << 8) | indexbyte2;
         return index;
     }
 
-    static inline u4 u4index(const u1* code, u4& opidx) {
+    static inline u4 consumeU4(const u1* code, u4& opidx) {
         const u1 byte1 = code[++opidx];
         const u1 byte2 = code[++opidx];
         const u1 byte3 = code[++opidx];
@@ -141,10 +141,9 @@ inline void CodeExecution::load2Stack<JRef>(u1 localIndex) {
 
 template <typename LoadType>
 void CodeExecution::loadArrayItem2Stack() {
-    JInt* index = (JInt*)currentFrame->stack.top();
-    currentFrame->stack.pop();
-    auto* arrayref = (JArray*)currentFrame->stack.top();
-    currentFrame->stack.pop();
+    JInt* index = currentStackPop<JInt>();
+    auto* arrayref = currentStackPop<JArray>();
+
     if (arrayref == nullptr) {
         throw std::runtime_error("null pointer");
     }
@@ -161,11 +160,8 @@ void CodeExecution::loadArrayItem2Stack() {
 
 template <>
 inline void CodeExecution::loadArrayItem2Stack<JRef>() {
-    auto* index = dynamic_cast<JInt*>(currentFrame->stack.top());
-
-    currentFrame->stack.pop();
-    auto* arrayref = dynamic_cast<JArray*>(currentFrame->stack.top());
-    currentFrame->stack.pop();
+    auto* index = currentStackPop<JInt>();
+    auto* arrayref = currentStackPop<JArray>();
     if (arrayref == nullptr) {
         throw std::runtime_error("null pointer");
     }
@@ -211,12 +207,9 @@ inline void CodeExecution::store2Local<JRef>(u1 index) {
 template <typename StoreType>
 void CodeExecution::storeArrayItem() {
     //store array item retriving from stack to array heap
-    StoreType* value = dynamic_cast<StoreType*>(currentFrame->stack.top());
-    currentFrame->stack.pop();
-    JInt* index = (JInt*)currentFrame->stack.top();
-    currentFrame->stack.pop();
-    JArray* arrayref = (JArray*)currentFrame->stack.top();
-    currentFrame->stack.pop();
+    auto* value = currentStackPop<StoreType>();
+    auto* index = currentStackPop<JInt>();
+    auto* arrayref = currentStackPop<JArray>();
     if (arrayref == nullptr) {
         throw std::runtime_error("null pointer");
     }
@@ -231,12 +224,9 @@ void CodeExecution::storeArrayItem() {
 
 template <>
 inline void CodeExecution::storeArrayItem<JRef>() {
-    JType* value = currentFrame->stack.top();
-    currentFrame->stack.pop();
-    JInt* index = (JInt*)currentFrame->stack.top();
-    currentFrame->stack.pop();
-    JArray* arrayref = (JArray*)currentFrame->stack.top();
-    currentFrame->stack.pop();
+    JType* value = currentStackPop<JType>();
+    JInt* index = currentStackPop<JInt>();
+    JArray* arrayref = currentStackPop<JArray>();
     if (arrayref == nullptr) {
         throw std::runtime_error("null pointer");
     }
@@ -251,22 +241,19 @@ inline void CodeExecution::storeArrayItem<JRef>() {
 
 template <typename ReturnType>
 inline ReturnType* CodeExecution::flowReturn() const {
-    auto* value = dynamic_cast<ReturnType*>(currentFrame->stack.top());
-    currentFrame->stack.pop();
+    auto* value = currentStackPop<ReturnType>();
     return value;
 }
 
 template <typename ReturnType>
 inline ReturnType* CodeExecution::currentStackPop() {
-    auto* value = dynamic_cast<ReturnType*>(currentFrame->stack.top());
-    currentFrame->stack.pop();
+    auto* value = currentStackPop<ReturnType>();
     return value;
 }
 
 template <typename Type1, typename Type2>
 inline void CodeExecution::typeCast() const {
-    auto * value = dynamic_cast<Type1*>(currentFrame->stack.top());
-    currentFrame->stack.pop();
+    auto * value = currentStackPop<Type1>();
     auto * result = new Type2;
     result->val = value->val;
     currentFrame->stack.push(result);
