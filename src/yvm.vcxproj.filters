@@ -48,7 +48,7 @@
     <ClCompile Include="Utils.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Exception.cpp">
+    <ClCompile Include="JavaException.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -110,13 +110,10 @@
     <ClInclude Include="RBTree.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Stack.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="NativeMethod.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Exception.h">
+    <ClInclude Include="JavaException.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

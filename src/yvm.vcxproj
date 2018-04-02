@@ -118,7 +118,7 @@
     <ClCompile Include="CodeExecution.cpp" />
     <ClCompile Include="Debug.cpp" />
     <ClCompile Include="Descriptor.cpp" />
-    <ClCompile Include="Exception.cpp" />
+    <ClCompile Include="JavaException.cpp" />
     <ClCompile Include="JavaClass.cpp" />
     <ClCompile Include="JavaHeap.cpp" />
     <ClCompile Include="main.cpp" />
@@ -135,7 +135,7 @@
     <ClInclude Include="ConstantTag.h" />
     <ClInclude Include="Debug.h" />
     <ClInclude Include="Descriptor.h" />
-    <ClInclude Include="Exception.h" />
+    <ClInclude Include="JavaException.h" />
     <ClInclude Include="FileReader.h" />
     <ClInclude Include="Frame.h" />
     <ClInclude Include="JavaClass.h" />
@@ -146,7 +146,6 @@
     <ClInclude Include="Opcode.h" />
     <ClInclude Include="Option.h" />
     <ClInclude Include="RBTree.hpp" />
-    <ClInclude Include="Stack.h" />
     <ClInclude Include="Type.h" />
     <ClInclude Include="RuntimeEnv.h" />
     <ClInclude Include="Utils.h" />

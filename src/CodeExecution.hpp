@@ -7,7 +7,7 @@
 #include "ClassFile.h"
 #include "Frame.h"
 #include <typeinfo>
-#include "Exception.h"
+#include "JavaException.h"
 
 struct MethodInfo;
 struct RuntimeEnv;
@@ -51,9 +51,9 @@ private:
     bool checkInstanceof(const JavaClass * jc, u2 index, JType* objectref);
 
     std::tuple<JavaClass*, const char*, const char*> parseFieldSymbolicReference(const JavaClass* jc, u2 index);
-    std::tuple<JavaClass*, const char*, const char*> parseInterfaceMethodSymbolicReference(
-        const JavaClass* jc, u2 index);
+    std::tuple<JavaClass*, const char*, const char*> parseInterfaceMethodSymbolicReference(const JavaClass* jc, u2 index);
     std::tuple<JavaClass*, const char*, const char*> parseMethodSymbolicReference(const JavaClass* jc, u2 index);
+    std::tuple<JavaClass*> parseClassSymbolicReference(const JavaClass* jc, u2 index);
 
     JObject* execNew(const JavaClass* jc, u2 index);
     JType* execCode(const JavaClass* jc, CodeAttrCore && ext);
@@ -95,8 +95,7 @@ private:
 
 private:
     Frame * currentFrame{};
-    StackTrace exceptionStackTrace;
-    bool exceptionUnhandled = false;
+    JavaException exception;
 };
 
 template <typename LoadType>

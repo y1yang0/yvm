@@ -7,7 +7,7 @@ YVM是用C++写的一个Java虚拟机，现在支持Java大部分功能，不过
 + Java基本算术运算，流程控制语句，面向对象。
 + [RTTI](./javalib_src/ydk/test/InstanceofTest.java)
 + [字符串拼接(+,+=符号重载)](./javalib_src/ydk/test/StringConcatenation.java)
-+ [异常处理](./javalib_src/ydk/test/ThrowExceptionTest.java)
++ [异常处理(可输出stacktrace)](./javalib_src/ydk/test/ThrowExceptionTest.java)
 
 # 使用方法
 1. 配置src/main.cpp
@@ -22,7 +22,7 @@ int main() {
 
     YVM vm;
     vm.warmUp(ydk, sizeof(ydk) / sizeof(ydk[0]));
-    vm.callMain("ydk/test/InheritanceTest");
+    vm.callMain("ydk/test/InheritanceTest");	//要运行的Java程序
     system("pause");
     return 0;
 }
