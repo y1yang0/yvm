@@ -15,7 +15,6 @@ int main() {
     vm.callMain("ydk/test/InstanceofTest");
     vm.callMain("ydk/test/ThrowExceptionTest");
     vm.callMain("ydk/test/StackTraceTest");
-
     system("pause");
     return 0;
 }

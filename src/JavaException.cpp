@@ -11,13 +11,12 @@ void StackTrace::printStackTrace() {
     !detailedMsg.empty() ? printf("Reason:%s\n", detailedMsg.c_str()) : printf("");
 
     int deep = 0;
-    for(size_t i=1;i<exceptionStackTrace.size();i++) {
+    for (auto * x : exceptionStackTrace) {
         deep++;
-        for (int i = 0; i<deep; i++) {
+        for(int i=0;i<deep;i++) {
             printf("-");
         }
-
-        printf("By its caller %s()\n", exceptionStackTrace[i]);
+        printf("By its caller %s()\n", x);
     }
 }
 
@@ -26,6 +25,6 @@ void  StackTrace::setThrowExceptionInfo(JObject * throwableObject) {
     JObject * messageField = dynamic_cast<JObject*>(
         yrt.jheap->getObjectFieldByName(
             const_cast<JavaClass*>(throwableObject->jc), "message", "Ljava/lang/String;", throwableObject, 0)
-        ); 
-    detailedMsg = Converter::javastring2stdtring(messageField);
+        );
+    exceptionStackTrace.push_back(Converter::javastring2stdtring(messageField).c_str());
 }

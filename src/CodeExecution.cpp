@@ -30,6 +30,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 }
                 currentFrame->stack.push(throwableObject);
                 exception.sweepException();
+                exception.clearExceptionStackTrace();
             }
             else {
                 return throwableObject;
