@@ -66,22 +66,6 @@ private:
     JObject* pushMethodThisArgument(Frame * frame);
 
 private:
-    static inline u2 consumeU2(const u1* code, u4& opidx) {
-        const u1 indexbyte1 = code[++opidx];
-        const u1 indexbyte2 = code[++opidx];
-        const u2 index = (indexbyte1 << 8) | indexbyte2;
-        return index;
-    }
-
-    static inline u4 consumeU4(const u1* code, u4& opidx) {
-        const u1 byte1 = code[++opidx];
-        const u1 byte2 = code[++opidx];
-        const u1 byte3 = code[++opidx];
-        const u1 byte4 = code[++opidx];
-        const u4 res = (byte1 << 24) | (byte2 << 16) | (byte3 << 8) | (byte4);
-        return res;
-    }
-
     inline void popFrame() {
         Frame* f = yrt.frames.top();
         yrt.frames.pop();

@@ -17,26 +17,32 @@ struct JVoid BASE_OF_JTYPE {};
 typedef JVoid JRef;
 
 struct JDouble BASE_OF_JTYPE {
+    explicit JDouble() = default;
+    explicit JDouble(double val) :val(val) {}
     double val = 0.0;
 };
 
 struct JFloat BASE_OF_JTYPE {
+    explicit JFloat() = default;
+    explicit JFloat(float val) :val(val) {}
     float val = 0.0f;
 };
 
 struct JInt BASE_OF_JTYPE {
-    explicit JInt() {}
+    explicit JInt() = default;
     explicit JInt(int32_t val) : val(val) {}
     int32_t val = 0;
 };
 
 struct JLong BASE_OF_JTYPE {
+    explicit JLong() = default;
+    explicit JLong(int64_t val) : val(val) {}
     int64_t val = 0L;
 };
 
 struct JObject BASE_OF_JTYPE {
     size_t offset = 0;
-    const JavaClass* jc; // Reference to meta java class
+    const JavaClass* jc{}; // Reference to meta java class
 };
 
 struct JArray BASE_OF_JTYPE {

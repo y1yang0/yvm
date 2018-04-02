@@ -1,10 +1,9 @@
 #ifndef YVM_PARSEUTIL_H
 #define YVM_PARSEUTIL_H
 
-#include <string.h>
 #include "JavaType.h"
 #include <typeinfo>
-
+#include "Type.h"
 
 /**
  * \brief Utilities that widely used in all aspects
@@ -16,6 +15,25 @@
 /**
  * \brief Utilities for code execution engine
  */
+inline u1 consumeU1(const u1* code, u4& opidx) {
+    const u1 byte = code[++opidx];
+    return byte;
+}
+inline u2 consumeU2(const u1* code, u4& opidx) {
+    const u1 indexbyte1 = code[++opidx];
+    const u1 indexbyte2 = code[++opidx];
+    const u2 index = (indexbyte1 << 8) | indexbyte2;
+    return index;
+}
+
+inline u4 consumeU4(const u1* code, u4& opidx) {
+    const u1 byte1 = code[++opidx];
+    const u1 byte2 = code[++opidx];
+    const u1 byte3 = code[++opidx];
+    const u1 byte4 = code[++opidx];
+    const u4 res = (byte1 << 24) | (byte2 << 16) | (byte3 << 8) | (byte4);
+    return res;
+}
 
 JType* cloneValue(JType* value);
 bool hasInheritanceRelationship(const JavaClass * source, const JavaClass * super);

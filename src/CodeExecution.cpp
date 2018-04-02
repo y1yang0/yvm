@@ -52,97 +52,65 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 currentFrame->stack.push(obj);
             }break;
             case op_iconst_m1: {
-                JInt * ival = new JInt;
-                ival->val = -1;
-                currentFrame->stack.push(ival);
+                currentFrame->stack.push(new JInt(-1));
             }break;
             case op_iconst_0: {
-                JInt * ival = new JInt;
-                ival->val = 0;
-                currentFrame->stack.push(ival);
+                currentFrame->stack.push(new JInt(0));
             }break;
             case op_iconst_1: {
-                JInt * ival = new JInt;
-                ival->val = 1;
-                currentFrame->stack.push(ival);
+                currentFrame->stack.push(new JInt(1));
             }break;
             case op_iconst_2: {
-                JInt * ival = new JInt;
-                ival->val = 2;
-                currentFrame->stack.push(ival);
+                currentFrame->stack.push(new JInt(2));
             }break;
             case op_iconst_3: {
-                JInt * ival = new JInt;
-                ival->val = 3;
-                currentFrame->stack.push(ival);
+                currentFrame->stack.push(new JInt(3));
             }break;
             case op_iconst_4: {
-                JInt * ival = new JInt;
-                ival->val = 4;
-                currentFrame->stack.push(ival);
+                currentFrame->stack.push(new JInt(4));
             }break;
             case op_iconst_5: {
-                JInt * ival = new JInt;
-                ival->val = 5;
-                currentFrame->stack.push(ival);
+                currentFrame->stack.push(new JInt(5));
             }break;
             case op_lconst_0: {
-                JLong * lval = new JLong;
-                lval->val = 0;
-                currentFrame->stack.push(lval);
+                currentFrame->stack.push(new JLong(0));
             }break;
             case op_lconst_1: {
-                JLong * lval = new JLong;
-                lval->val = 1;
-                currentFrame->stack.push(lval);
+                currentFrame->stack.push(new JLong(1));
             }break;
             case op_fconst_0: {
-                JFloat * fval = new JFloat;
-                fval->val = 0.0f;
-                currentFrame->stack.push(fval);
+                currentFrame->stack.push(new JFloat(0.0f));
             }break;
             case op_fconst_1: {
-                JFloat * fval = new JFloat;
-                fval->val = 1.0f;
-                currentFrame->stack.push(fval);
+                currentFrame->stack.push(new JFloat(1.0f));
             }break;
             case op_fconst_2: {
-                JFloat * fval = new JFloat;
-                fval->val = 2.0f;
-                currentFrame->stack.push(fval);
+                currentFrame->stack.push(new JFloat(2.0f));
             }break;
             case op_dconst_0: {
-                JDouble * dval = new JDouble;
-                dval->val = 0.0;
-                currentFrame->stack.push(dval);
+                currentFrame->stack.push(new JDouble(0.0));
             }break;
             case op_dconst_1: {
-                JDouble * dval = new JDouble;
-                dval->val = 1.0;
-                currentFrame->stack.push(dval);
+                currentFrame->stack.push(new JDouble(1.0));
             }break;
             case op_bipush: {
-                u1 byte = ext.code[++op];
-                JInt * b = new JInt;
-                b->val = byte;
-                currentFrame->stack.push(b);
+                const u1 byte = consumeU1(ext.code, op);
+                currentFrame->stack.push(new JInt(byte));
             }break;
             case op_sipush: {
-                u2 byte = consumeU2(ext.code, op);
-                JInt * b = new JInt;
-                b->val = byte;
-                currentFrame->stack.push(b);
+                const u2 byte = consumeU2(ext.code, op);
+                currentFrame->stack.push(new JInt(byte));
             }break;
             case op_ldc: {
-                u1 index = ext.code[++op];
+                const u1 index = consumeU1(ext.code, op);
                 loadConstantPoolItem2Stack(jc, static_cast<u2>(index));
             }break;
             case op_ldc_w: {
-                u2 index = consumeU2(ext.code, op);
+                const u2 index = consumeU2(ext.code, op);
                 loadConstantPoolItem2Stack(jc, index);
             }break;
             case op_ldc2_w: {
-                u2 index = consumeU2(ext.code, op);
+                const u2 index = consumeU2(ext.code, op);
                 if (typeid(*jc->raw.constPoolInfo[index]) == typeid(CONSTANT_Double)) {
                     auto val = dynamic_cast<CONSTANT_Double*>(jc->raw.constPoolInfo[index])->val;
                     JDouble * dval = new JDouble;
@@ -159,23 +127,23 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 }
             }break;
             case op_iload: {
-                u1 index = ext.code[++op];
+                const u1 index = consumeU1(ext.code, op);
                 load2Stack<JInt>(index);
             }break;
             case op_lload: {
-                u1 index = ext.code[++op];
+                const u1 index = consumeU1(ext.code, op);
                 load2Stack<JLong>(index);
             }break;
             case op_fload: {
-                u1 index = ext.code[++op];
+                const u1 index = consumeU1(ext.code, op);
                 load2Stack<JFloat>(index);
             }break;
             case op_dload: {
-                u1 index = ext.code[++op];
+                const u1 index = consumeU1(ext.code, op);
                 load2Stack<JDouble>(index);
             }break;
             case op_aload: {
-                u1 index = ext.code[++op];
+                const u1 index = consumeU1(ext.code, op);
                 load2Stack<JRef>(index);
             }break;
             case op_iload_0: {
@@ -260,23 +228,23 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 loadArrayItem2Stack<JRef>();
             }break;
             case op_istore: {
-                u1 index = ext.code[++op];
+                const u1 index = consumeU1(ext.code, op);
                 store2Local<JInt>(index);
             }break;
             case op_lstore: {
-                u1 index = ext.code[++op];
+                const u1 index = consumeU1(ext.code, op);
                 store2Local<JLong>(index);
             }break;
             case op_fstore: {
-                u1 index = ext.code[++op];
+                const u1 index = consumeU1(ext.code, op);
                 store2Local<JFloat>(index);
             }break;
             case op_dstore: {
-                u1 index = ext.code[++op];
+                const u1 index = consumeU1(ext.code, op);
                 store2Local<JDouble>(index);
             }break;
             case op_astore: {
-                u1 index = ext.code[++op];
+                const u1 index = consumeU1(ext.code, op);
                 store2Local<JRef>(index);
             }break;
             case op_istore_0: {
@@ -532,8 +500,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JInt * value2 = currentStackPop<JInt>();
                 JInt * value1 = currentStackPop<JInt>();
 
-                JInt * result = new JInt;
-                result->val = value1->val + value2->val;
+                JInt * result = new JInt(value1->val + value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -543,8 +510,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JLong * value2 = currentStackPop<JLong>();
                 JLong * value1 = currentStackPop<JLong>();
 
-                JLong * result = new JLong;
-                result->val = value1->val + value2->val;
+                JLong * result = new JLong(value1->val + value2->val);   
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -554,8 +520,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JFloat * value2 = currentStackPop<JFloat>();
                 JFloat * value1 = currentStackPop<JFloat>();
 
-                JFloat * result = new JFloat;
-                result->val = value1->val + value2->val;
+                JFloat * result = new JFloat(value1->val + value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -565,8 +530,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JDouble * value2 = currentStackPop<JDouble>();
                 JDouble * value1 = currentStackPop<JDouble>();
 
-                JDouble * result = new JDouble;
-                result->val = value1->val + value2->val;
+                JDouble * result = new JDouble(value1->val + value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -576,8 +540,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JInt * value2 = currentStackPop<JInt>();
                 JInt * value1 = currentStackPop<JInt>();
 
-                JInt * result = new JInt;
-                result->val = value1->val - value2->val;
+                JInt * result = new JInt(value1->val - value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -587,8 +550,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JLong * value2 = currentStackPop<JLong>();
                 JLong * value1 = currentStackPop<JLong>();
 
-                JLong * result = new JLong;
-                result->val = value1->val - value2->val;
+                JLong * result = new JLong(value1->val - value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -598,8 +560,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JFloat * value2 = currentStackPop<JFloat>();
                 JFloat * value1 = currentStackPop<JFloat>();
 
-                JFloat * result = new JFloat;
-                result->val = value1->val - value2->val;
+                JFloat * result = new JFloat(value1->val - value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -609,8 +570,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JDouble * value2 = currentStackPop<JDouble>();
                 JDouble * value1 = currentStackPop<JDouble>();
 
-                JDouble * result = new JDouble;
-                result->val = value1->val - value2->val;
+                JDouble * result = new JDouble(value1->val - value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -620,8 +580,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JInt * value2 = currentStackPop<JInt>();
                 JInt * value1 = currentStackPop<JInt>();
 
-                JInt * result = new JInt;
-                result->val = value1->val * value2->val;
+                JInt * result = new JInt(value1->val * value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -631,8 +590,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JLong * value2 = currentStackPop<JLong>();
                 JLong * value1 = currentStackPop<JLong>();
 
-                JLong * result = new JLong;
-                result->val = value1->val * value2->val;
+                JLong * result = new JLong(value1->val * value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -642,8 +600,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JFloat * value2 = currentStackPop<JFloat>();
                 JFloat * value1 = currentStackPop<JFloat>();
 
-                JFloat * result = new JFloat;
-                result->val = value1->val * value2->val;
+                JFloat * result = new JFloat(value1->val * value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -653,8 +610,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JDouble * value2 = currentStackPop<JDouble>();
                 JDouble * value1 = currentStackPop<JDouble>();
 
-                JDouble * result = new JDouble;
-                result->val = value1->val * value2->val;
+                JDouble * result = new JDouble(value1->val * value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -664,8 +620,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JInt * value2 = currentStackPop<JInt>();
                 JInt * value1 = currentStackPop<JInt>();
 
-                JInt * result = new JInt;
-                result->val = value1->val / value2->val;
+                JInt * result = new JInt(value1->val / value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -675,8 +630,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JLong * value2 = currentStackPop<JLong>();
                 JLong * value1 = currentStackPop<JLong>();
 
-                JLong * result = new JLong;
-                result->val = value1->val / value2->val;
+                JLong * result = new JLong(value1->val / value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -686,8 +640,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JFloat * value2 = currentStackPop<JFloat>();
                 JFloat * value1 = currentStackPop<JFloat>();
 
-                JFloat * result = new JFloat;
-                result->val = value1->val / value2->val;
+                JFloat * result = new JFloat(value1->val / value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -697,8 +650,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JDouble * value2 = currentStackPop<JDouble>();
                 JDouble * value1 = currentStackPop<JDouble>();
 
-                JDouble * result = new JDouble;
-                result->val = value1->val / value2->val;
+                JDouble * result = new JDouble(value1->val / value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -848,8 +800,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JInt * value2 = currentStackPop<JInt>();
                 JInt * value1 = currentStackPop<JInt>();
 
-                JInt * result = new JInt;
-                result->val = value1->val & value2->val;
+                JInt * result = new JInt(value1->val & value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -859,8 +810,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JLong * value2 = currentStackPop<JLong>();
                 JLong * value1 = currentStackPop<JLong>();
 
-                JLong * result = new JLong;
-                result->val = value1->val & value2->val;
+                JLong * result = new JLong(value1->val & value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -870,8 +820,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JInt * value2 = currentStackPop<JInt>();
                 JInt * value1 = currentStackPop<JInt>();
 
-                JInt * result = new JInt;
-                result->val = value1->val | value2->val;
+                JInt * result = new JInt(value1->val | value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -881,8 +830,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JLong * value2 = currentStackPop<JLong>();
                 JLong * value1 = currentStackPop<JLong>();
 
-                JLong * result = new JLong;
-                result->val = value1->val | value2->val;
+                JLong * result = new JLong(value1->val | value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -892,8 +840,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JInt * value2 = currentStackPop<JInt>();
                 JInt * value1 = currentStackPop<JInt>();
 
-                JInt * result = new JInt;
-                result->val = value1->val & value2->val;
+                JInt * result = new JInt(value1->val & value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -903,8 +850,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 JLong * value2 = currentStackPop<JLong>();
                 JLong * value1 = currentStackPop<JLong>();
 
-                JLong * result = new JLong;
-                result->val = value1->val ^ value2->val;
+                JLong * result = new JLong(value1->val ^ value2->val);
                 currentFrame->stack.push(result);
 
                 delete value1;
@@ -1257,7 +1203,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 return nullptr;
             }break;
             case op_getstatic: {
-                u2 index = consumeU2(ext.code, op);
+                const u2 index = consumeU2(ext.code, op);
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
                 JType * field = cloneValue(getStaticField(std::get<0>(symbolicRef), std::get<1>(symbolicRef), std::get<2>(symbolicRef)));
                 currentFrame->stack.push(field);
@@ -1279,7 +1225,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete objectref;
             }break;
             case op_putfield: {
-                u2 index = consumeU2(ext.code, op);
+                const u2 index = consumeU2(ext.code, op);
                 JType * value = currentStackPop<JType>();
                 JObject * objectref = currentStackPop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
@@ -1306,7 +1252,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 
             }break;
             case op_invokespecial: {
-                u2 index = consumeU2(ext.code, op);
+                const u2 index = consumeU2(ext.code, op);
                 std::tuple<JavaClass*, const char*, const char*> symbolicRef;
 
                 if (typeid(*jc->raw.constPoolInfo[index]) == typeid(CONSTANT_InterfaceMethodref)) {
@@ -1337,7 +1283,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }break;
             case op_invokestatic: {
                 // Invoke a class (static) method
-                u2 index = consumeU2(ext.code, op);
+                const u2 index = consumeU2(ext.code, op);
                 
                 if (typeid(*jc->raw.constPoolInfo[index]) == typeid(CONSTANT_InterfaceMethodref)) {
                     auto symbolicRef = parseInterfaceMethodSymbolicReference(jc, index);
@@ -1352,7 +1298,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 }
             }break;
             case op_invokeinterface: {
-                u2 index = consumeU2(ext.code, op);
+                const u2 index = consumeU2(ext.code, op);
                 ++op;                       // read count and discard
                 ++op;                       //opcode padding 0;
 
@@ -1365,12 +1311,12 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 throw std::runtime_error("unsupported opcode [invokedynamic]");
             }break;
             case op_new: {
-                u2 index = consumeU2(ext.code, op);
+                const u2 index = consumeU2(ext.code, op);
                 JObject * objectref = execNew(jc, index);
                 currentFrame->stack.push(objectref);
             }break;
             case op_newarray: {
-                u1 atype = ext.code[++op];
+                const u1 atype = ext.code[++op];
                 JInt * count = currentStackPop<JInt>();
 
                 if (count->val < 0) {
@@ -1382,7 +1328,8 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 delete count;
             }break;
             case op_anewarray: {
-                u2 index = consumeU2(ext.code, op);
+                const u2 index = consumeU2(ext.code, op);
+                //TODO:FIX THIS BUG LATER!
                 JInt * count = currentStackPop<JInt>();
 
                 if (count->val < 0) {
