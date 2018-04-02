@@ -13,7 +13,7 @@
 
 JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
     for (decltype(ext.codeLength) op = 0; op < ext.codeLength; op++) {
-        if(exception.hasUnhandledException()) {
+        if(exceptionUnhandled) {
             op--;
             auto * throwableObject = currentStackPop<JObject>();
             if (throwableObject == nullptr) {
@@ -29,9 +29,11 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                     delete temp;
                 }
                 currentFrame->stack.push(throwableObject);
-                exception.sweepException();
+                exceptionUnhandled = false;
+                exceptionStackTrace.clearExceptionStackTrace();
             }
             else {
+                exceptionUnhandled = true;
                 return throwableObject;
             }
         }
@@ -1367,8 +1369,13 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                     currentFrame->stack.push(throwableObject);
                 }
                 else /* Exception can not handled within method handlers */{
-                    exception.markExpception();
-                    exception.setThrowExceptionInfo(throwableObject);
+                    expcetion.markExpception();
+                    exception.setThrowExceptionType(throwableObject->jc);     
+                    JObject * messageField = dynamic_cast<JObject*>(
+                        yrt.jheap->getObjectFieldByName(
+                            const_cast<JavaClass*>(throwableObject->jc), "message", "Ljava/lang/String;", throwableObject, 0)
+                    );
+                    exceptionStackTrace.setDetailedMessage(Converter::javastring2stdtring(messageField));
                     return throwableObject;
                 }
             }break;
@@ -1837,9 +1844,9 @@ void CodeExecution::invokeByName(JavaClass * jc,const char * methodName, const c
     if (returnType != T_EXTRA_VOID) {
         currentFrame->stack.push(returnValue);  
     }
-    if(exception.hasUnhandledException()) {
-        exception.extendExceptionStackTrace(methodName);
-        exception.printStackTrace();
+    if(exceptionUnhandled) {
+        exceptionStackTrace.extendExceptionStackTrace(methodName);
+        exceptionStackTrace.printStackTrace();
         std::exit(EXIT_FAILURE); 
     }
 }
@@ -1879,10 +1886,10 @@ void CodeExecution::invokeInterface(const JavaClass * jc, const char * methodNam
     }
 
     popFrame();
-    if (returnType != T_EXTRA_VOID ||exception.hasUnhandledException()) {
+    if (returnType != T_EXTRA_VOID ||exceptionUnhandled) {
         currentFrame->stack.push(returnValue);
-        if (exception.hasUnhandledException()) {
-            exception.extendExceptionStackTrace(methodName);
+        if (exceptionUnhandled) {
+            exceptionStackTrace.extendExceptionStackTrace(methodName);
         }
     }
 }
@@ -1924,10 +1931,10 @@ void CodeExecution::invokeVirtual(const char * methodName, const char * methodDe
     }
 
     popFrame();
-    if (returnType != T_EXTRA_VOID || exception.hasUnhandledException()) {
+    if (returnType != T_EXTRA_VOID || exceptionUnhandled) {
         currentFrame->stack.push(returnValue);
-        if (exception.hasUnhandledException()) {
-            exception.extendExceptionStackTrace(methodName);
+        if (exceptionUnhandled) {
+            exceptionStackTrace.extendExceptionStackTrace(methodName);
         }
     }
 }
@@ -1987,10 +1994,10 @@ void CodeExecution::invokeSpecial(const JavaClass * jc, const char * methodName,
     }
     
     popFrame();
-    if (returnType != T_EXTRA_VOID||exception.hasUnhandledException()) {
+    if (returnType != T_EXTRA_VOID||exceptionUnhandled) {
         currentFrame->stack.push(returnValue);
-        if (exception.hasUnhandledException()) {
-            exception.extendExceptionStackTrace(methodName);
+        if (exceptionUnhandled) {
+            exceptionStackTrace.extendExceptionStackTrace(methodName);
         }
     }
 }
@@ -2033,10 +2040,10 @@ void CodeExecution::invokeStatic(const JavaClass * jc, const char * methodName, 
     }
     popFrame();
 
-    if (returnType != T_EXTRA_VOID||exception.hasUnhandledException()) {
+    if (returnType != T_EXTRA_VOID||exceptionUnhandled) {
         currentFrame->stack.push(returnValue);
-        if (exception.hasUnhandledException()) {
-            exception.extendExceptionStackTrace(methodName);
+        if (exceptionUnhandled) {
+            exceptionStackTrace.extendExceptionStackTrace(methodName);
         }
     }
 }
