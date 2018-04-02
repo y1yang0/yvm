@@ -13,8 +13,9 @@ int main() {
     vm.callMain("ydk/test/BubbleSortTest");
     vm.callMain("ydk/test/StringConcatenation");
     vm.callMain("ydk/test/InstanceofTest");
-    vm.callMain("ydk/test/ThrowExceptionTest");
-    vm.callMain("ydk/test/StackTraceTest");
+    //vm.callMain("ydk/test/ThrowExceptionTest");
+    //vm.callMain("ydk/test/StackTraceTest");
+    vm.callMain("ydk/test/QuickSort");
     system("pause");
     return 0;
 }
