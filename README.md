@@ -37,12 +37,15 @@ int main() {
 + `java.lang.Throwable`
 
 # 运行效果
-0. helloworld
++ helloworld
 ![](./public/hw.png)
 ![](./public/helloworld.png)
-1. 冒泡排序
++ 冒泡排序
 ![](./public/bubbletest.png)
 ![](./public/bbb.png)
++ 异常调用栈轨迹
+![](./public/stj.png)
+![](./public/stc.png)
 
 # License
 Code licensed under the MIT License.
@@ -64,7 +67,7 @@ Code licensed under the MIT License.
 + `src/RuntimeEnv.h` 运行时数据。拥有堆，调用栈，和方法区数据
 + `src/CodeExecution.h` 执行引擎，现在是解释执行
 
-### {Public design, private implementation}
+## {Public design, private implementation}
 1. YVM中类只有一种权威表示,即"package/foo/Bar",任何其他表示如"java.lang.Object","Thread.class"都拒绝加载
 2. 根据JVM SPEC,虚拟机执行引擎会直接操纵JDK一些类,如`java/lang/Class`,,`java/lang/String`.为了实现一个"Runnable"的JVM，这里使用重写的同名类(位于javalib)代替。
 3.  YVM不支持(未来也不打算)JavaSE6及其之前版本编译器编译的`.class`

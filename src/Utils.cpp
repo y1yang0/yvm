@@ -1,6 +1,22 @@
 #include "Utils.h"
 #include "JavaClass.h"
+#include "RuntimeEnv.h"
 
+std::string Converter::javastring2stdtring(JObject * objectref) {
+    if(objectref==nullptr) {
+        return std::string();
+    }
+    JArray * chararr = dynamic_cast<JArray*>(
+        yrt.jheap->getObjectFieldByName(
+            yrt.ma->findJavaClass("java/lang/String"),"value", "[C", objectref, 0));
+
+    std::string str;
+    for (int i = 0; i<chararr->length; i++) {
+        JInt * ch = dynamic_cast<JInt*>(yrt.jheap->getArrayItem(*chararr, i));
+        str += (char)ch->val;
+    }
+    return str;
+}
 
 JType* cloneValue(JType* value) {
      if (value == nullptr) {
@@ -40,11 +56,11 @@ JType* cloneValue(JType* value) {
 }
 
 bool hasInheritanceRelationship(const JavaClass* source, const JavaClass* super) {
-    if(strcmp((char*)source->getClassName(),(char*)super->getClassName())==0) {
+    if(strcmp(source->getClassName(),super->getClassName())==0) {
         return true;
     }
     if(source->hasSuperClass()) {
-        return hasInheritanceRelationship(yrt.ma->loadClassIfAbsent((char*)source->getSuperClassName()), super);
+        return hasInheritanceRelationship(yrt.ma->loadClassIfAbsent(source->getSuperClassName()), super);
     }
     return false;
 }

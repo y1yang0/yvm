@@ -7,6 +7,7 @@
 #include "ClassFile.h"
 #include "Frame.h"
 #include <typeinfo>
+#include "Exception.h"
 
 struct MethodInfo;
 struct RuntimeEnv;
@@ -93,12 +94,8 @@ private:
     void typeCast() const;
 
 private:
-    inline void extendExceptionStackTrace(const char * methodName) { exceptionStackTrace.push_back(methodName); }
-    inline void clearExceptionStackTrace() { exceptionStackTrace.clear(); }
-
-private:
     Frame * currentFrame{};
-    std::vector<const char *> exceptionStackTrace;
+    StackTrace exceptionStackTrace;
     bool exceptionUnhandled = false;
 };
 

@@ -118,6 +118,7 @@
     <ClCompile Include="CodeExecution.cpp" />
     <ClCompile Include="Debug.cpp" />
     <ClCompile Include="Descriptor.cpp" />
+    <ClCompile Include="Exception.cpp" />
     <ClCompile Include="JavaClass.cpp" />
     <ClCompile Include="JavaHeap.cpp" />
     <ClCompile Include="main.cpp" />
@@ -134,6 +135,7 @@
     <ClInclude Include="ConstantTag.h" />
     <ClInclude Include="Debug.h" />
     <ClInclude Include="Descriptor.h" />
+    <ClInclude Include="Exception.h" />
     <ClInclude Include="FileReader.h" />
     <ClInclude Include="Frame.h" />
     <ClInclude Include="JavaClass.h" />

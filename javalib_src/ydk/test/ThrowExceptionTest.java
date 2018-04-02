@@ -3,7 +3,12 @@ package ydk.test;
 import ydk.lang.IO;
 
 class GenericException extends Throwable{
-
+    public GenericException(){
+        super();
+    }
+    public GenericException(String msg){
+        super(msg);
+    }
 }
 
 public class ThrowExceptionTest {
@@ -45,7 +50,20 @@ public class ThrowExceptionTest {
     }
 
     public static void throwException2() throws GenericException {
-        throw new GenericException();
+        IO.print("deeply exception occurred\n");
+        throw new GenericException("this exception hidden deeply");
+    }
+    public static void unhandledExceptionDeep3() throws GenericException{
+        throw new GenericException("deep exception thrown");
+    }
+    public static void unhandledExceptionDeep2() throws GenericException{
+        unhandledExceptionDeep3();
+    }
+    public static void unhandledExceptionDeep1() throws GenericException{
+        unhandledExceptionDeep2();
+    }
+    public static void unhandledException() throws GenericException{
+        unhandledExceptionDeep1();
     }
 
     public static void main(String[] args) throws GenericException {
@@ -62,5 +80,6 @@ public class ThrowExceptionTest {
             IO.print("handled on main()\n");
         }
         IO.print("normal executing\n");
+        unhandledException();
     }
 }

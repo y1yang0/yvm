@@ -30,7 +30,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 }
                 currentFrame->stack.push(throwableObject);
                 exceptionUnhandled = false;
-                clearExceptionStackTrace();
+                exceptionStackTrace.clearExceptionStackTrace();
             }
             else {
                 exceptionUnhandled = true;
@@ -1368,8 +1368,14 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                     }
                     currentFrame->stack.push(throwableObject);
                 }
-                else /*exception can not handled within method handlers*/{
+                else /* Exception can not handled within method handlers */{
                     exceptionUnhandled = true;
+                    exceptionStackTrace.setThrowExceptionType(throwableObject->jc);     
+                    JObject * messageField = dynamic_cast<JObject*>(
+                        yrt.jheap->getObjectFieldByName(
+                            const_cast<JavaClass*>(throwableObject->jc), "message", "Ljava/lang/String;", throwableObject, 0)
+                    );
+                    exceptionStackTrace.setDetailedMessage(Converter::javastring2stdtring(messageField));
                     return throwableObject;
                 }
             }break;
@@ -1727,7 +1733,7 @@ std::pair<MethodInfo *, const JavaClass*> CodeExecution::findMethod(const JavaCl
     }
     // Find corresponding method at object's super class unless it's an instance of
     if (jc->raw.superClass != 0) {
-        JavaClass * superClass = yrt.ma->loadClassIfAbsent((const char *)(jc->getSuperClassName()));
+        JavaClass * superClass = yrt.ma->loadClassIfAbsent(jc->getSuperClassName());
         auto methodPair = findMethod(jc, methodName, methodDescriptor);
         if (methodPair.first) {
             return methodPair;
@@ -1736,7 +1742,7 @@ std::pair<MethodInfo *, const JavaClass*> CodeExecution::findMethod(const JavaCl
     // Find corresponding method at object's all interfaces if at least one interface class existing
     if (jc->raw.interfacesCount>0) {
         FOR_EACH(eachInterface, jc->raw.interfacesCount) {
-            const auto * interfaceName = (const char *)jc->getString(dynamic_cast<CONSTANT_Class*>(jc->raw.constPoolInfo[jc->raw.interfaces[eachInterface]])->nameIndex);
+            const auto * interfaceName = jc->getString(dynamic_cast<CONSTANT_Class*>(jc->raw.constPoolInfo[jc->raw.interfaces[eachInterface]])->nameIndex);
             JavaClass * interfaceClass = yrt.ma->loadClassIfAbsent(interfaceName);
             auto * methodInfo = interfaceClass->getMethod(methodName, methodDescriptor);
             if (methodInfo && (!IS_METHOD_ABSTRACT(methodInfo->accessFlags)
@@ -1827,21 +1833,13 @@ void CodeExecution::invokeByName(JavaClass * jc,const char * methodName, const c
         returnValue = cloneValue(execCode(jc, std::move(ext)));
     }
     popFrame();
-    if (returnType != T_EXTRA_VOID ) {
-        currentFrame->stack.push(returnValue);
-        extendExceptionStackTrace(methodName);
+    if (returnType != T_EXTRA_VOID) {
+        currentFrame->stack.push(returnValue);  
     }
     if(exceptionUnhandled) {
-        assert(!exceptionStackTrace.empty());
-        [&]()->void {
-            std::cerr << "----------Unhandled Exception----------\n";
-            std::cerr << "Thrown at " << exceptionStackTrace[0] << "()\n";
-            for (auto * x : exceptionStackTrace) {
-                std::cerr << "By its caller " << x << "()\n";
-            }
-            std::cerr << "---------------------------------------\n";
-        }();
-        std::exit(EXIT_FAILURE);
+        exceptionStackTrace.extendExceptionStackTrace(methodName);
+        exceptionStackTrace.printStackTrace();
+        std::exit(EXIT_FAILURE); 
     }
 }
 
@@ -1880,9 +1878,11 @@ void CodeExecution::invokeInterface(const JavaClass * jc, const char * methodNam
     }
 
     popFrame();
-    if (returnType != T_EXTRA_VOID || exceptionUnhandled) {
+    if (returnType != T_EXTRA_VOID ||exceptionUnhandled) {
         currentFrame->stack.push(returnValue);
-        extendExceptionStackTrace(methodName);
+        if (exceptionUnhandled) {
+            exceptionStackTrace.extendExceptionStackTrace(methodName);
+        }
     }
 }
 
@@ -1925,7 +1925,9 @@ void CodeExecution::invokeVirtual(const char * methodName, const char * methodDe
     popFrame();
     if (returnType != T_EXTRA_VOID || exceptionUnhandled) {
         currentFrame->stack.push(returnValue);
-        extendExceptionStackTrace(methodName);
+        if (exceptionUnhandled) {
+            exceptionStackTrace.extendExceptionStackTrace(methodName);
+        }
     }
 }
 
@@ -1984,9 +1986,11 @@ void CodeExecution::invokeSpecial(const JavaClass * jc, const char * methodName,
     }
     
     popFrame();
-    if (returnType != T_EXTRA_VOID || exceptionUnhandled) {
+    if (returnType != T_EXTRA_VOID||exceptionUnhandled) {
         currentFrame->stack.push(returnValue);
-        extendExceptionStackTrace(methodName);
+        if (exceptionUnhandled) {
+            exceptionStackTrace.extendExceptionStackTrace(methodName);
+        }
     }
 }
 
@@ -2028,9 +2032,11 @@ void CodeExecution::invokeStatic(const JavaClass * jc, const char * methodName, 
     }
     popFrame();
 
-    if (returnType != T_EXTRA_VOID || exceptionUnhandled) {
+    if (returnType != T_EXTRA_VOID||exceptionUnhandled) {
         currentFrame->stack.push(returnValue);
-        extendExceptionStackTrace(methodName);
+        if (exceptionUnhandled) {
+            exceptionStackTrace.extendExceptionStackTrace(methodName);
+        }
     }
 }
 

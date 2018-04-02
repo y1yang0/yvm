@@ -4,6 +4,7 @@
 #include "JavaType.h"
 #include <typeinfo>
 #include "Type.h"
+#include <string>
 
 /**
  * \brief Utilities that widely used in all aspects
@@ -11,6 +12,14 @@
 
 #define FOR_EACH(iter,var) for(decltype(var) iter =0; iter < var;iter++)
 #define SHOULD_NOT_REACH_HERE static_assert(true,"Program should not reach here, it's a vital logical error\n");
+
+
+struct Converter {
+    /**
+    * \brief Convert java.lang.String object to a stl string
+    */
+    static std::string javastring2stdtring(JObject * objectref);
+};
 
 /**
  * \brief Utilities for code execution engine
