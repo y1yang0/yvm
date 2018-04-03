@@ -2,13 +2,16 @@
 #include "MethodArea.h"
 #include "Frame.h"
 #include "JavaHeap.h"
+#include "JavaClass.h"
 
 #include <iostream>
 #include <random>
 #include <string>
 
+extern thread_local StackFrames frames;
+
 JType * ydk_lang_IO_print_str(RuntimeEnv * env){
-    JObject * str = (JObject*)env->frames.top()->locals[0];
+    JObject * str = (JObject*)frames.top()->locals[0];
     auto & fields = env->jheap->getObject(str);
     JArray * chararr = (JArray*)fields[0];
     auto & lengthAndData = env->jheap->getArray(chararr);
@@ -24,13 +27,13 @@ JType * ydk_lang_IO_print_str(RuntimeEnv * env){
 }
 
 JType * ydk_lang_IO_print_I(RuntimeEnv * env) {
-    JInt * num = (JInt*)env->frames.top()->locals[0];
+    JInt * num = (JInt*)frames.top()->locals[0];
     std::cout << num->val;
     return nullptr;
 }
 
 JType * ydk_lang_IO_print_C(RuntimeEnv * env) {
-    JInt * num = (JInt*)env->frames.top()->locals[0];
+    JInt * num = (JInt*)frames.top()->locals[0];
     std::cout << (char)num->val;
     return nullptr;
 }
@@ -42,8 +45,8 @@ JType* ydk_lang_Math_random(RuntimeEnv* env) {
 }
 
 JType* java_lang_stringbuilder_append_I(RuntimeEnv* env) {
-    JObject * instance = dynamic_cast<JObject*>(env->frames.top()->locals[0]);
-    JInt * numParameter = dynamic_cast<JInt*>(env->frames.top()->locals[1]);
+    JObject * instance = dynamic_cast<JObject*>(frames.top()->locals[0]);
+    JInt * numParameter = dynamic_cast<JInt*>(frames.top()->locals[1]);
     std::string str{};
 
     JArray * arr = dynamic_cast<JArray*>(env->jheap->getObjectFieldByOffset(*instance, 0));
@@ -62,8 +65,8 @@ JType* java_lang_stringbuilder_append_I(RuntimeEnv* env) {
 }
 
 JType* java_lang_stringbuilder_append_C(RuntimeEnv* env) {
-    JObject * instance = dynamic_cast<JObject*>(env->frames.top()->locals[0]);
-    JInt * numParameter = dynamic_cast<JInt*>(env->frames.top()->locals[1]);
+    JObject * instance = dynamic_cast<JObject*>(frames.top()->locals[0]);
+    JInt * numParameter = dynamic_cast<JInt*>(frames.top()->locals[1]);
     std::string str{};
 
     JArray * arr = dynamic_cast<JArray*>(env->jheap->getObjectFieldByOffset(*instance, 0));
@@ -82,8 +85,8 @@ JType* java_lang_stringbuilder_append_C(RuntimeEnv* env) {
 }
 
 JType* java_lang_stringbuilder_append_str(RuntimeEnv* env) {
-    JObject * instance = dynamic_cast<JObject*>(env->frames.top()->locals[0]);
-    JObject * strParameter = dynamic_cast<JObject*>(env->frames.top()->locals[1]);
+    JObject * instance = dynamic_cast<JObject*>(frames.top()->locals[0]);
+    JObject * strParameter = dynamic_cast<JObject*>(frames.top()->locals[1]);
     std::string str{};
 
     JArray * arr = dynamic_cast<JArray*>(env->jheap->getObjectFieldByOffset(*instance, 0));
@@ -105,7 +108,7 @@ JType* java_lang_stringbuilder_append_str(RuntimeEnv* env) {
 }
 
 JType* java_lang_stringbuilder_tostring(RuntimeEnv* env) {
-    JObject * instance = dynamic_cast<JObject*>(env->frames.top()->locals[0]);
+    JObject * instance = dynamic_cast<JObject*>(frames.top()->locals[0]);
     JArray * value = dynamic_cast<JArray*>(env->jheap->getObjectFieldByOffset(*instance, 0));
     char *carr = new char[value->length];
     for(int i=0;i<value->length;i++) {
@@ -116,4 +119,43 @@ JType* java_lang_stringbuilder_tostring(RuntimeEnv* env) {
     delete[] carr;
     
     return str;
+}
+std::mutex noSubThreadMtx;
+
+JType* java_lang_thread_start(RuntimeEnv* env) {
+    JObject * instance = dynamic_cast<JObject*>(frames.top()->locals[0]);
+    JObject* runnableTask =
+        dynamic_cast<JObject*>(env->jheap->getObjectFieldByName(
+            env->ma->findJavaClass("java/lang/Thread"), "task", "Ljava/lang/Runnable;", instance, 0));
+    std::thread nativeNewThread([=](){
+        //std::lock_guard<std::mutex> mguard(noSubThreadMtx);
+        noSubThreadMtx.lock();
+        yrt.aliveThreadCount++;
+        noSubThreadMtx.unlock();
+
+        std::cout << "----------------------------\n";
+        std::cout << std::this_thread::get_id() << "\n";
+        std::cout << "----------------------------\n";
+       
+        const char * name = runnableTask->jc->getClassName();
+        auto* jc = yrt.ma->loadClassIfAbsent(name);
+        yrt.ma->linkClassIfAbsent(name);
+        // For each exuection thread, we have a code exeuction engine
+        Frame * frame = new Frame;
+        frame->stack.push(runnableTask);
+        frames.push(frame);
+        CodeExecution exec{ frame };
+
+        yrt.ma->initClassIfAbsent(exec, name);
+        // Push object reference and since Runnable.run() has no parameter, so we dont 
+        // need to push arguments since Runnable.run() has no parameter
+       
+        exec.invokeInterface(jc, "run", "()V");
+
+        yrt.aliveThreadCount--;
+        yrt.noSubThreadCndVar.notify_one();
+    });
+    nativeNewThread.detach();
+
+    return nullptr;
 }

@@ -6,7 +6,6 @@
 #include <deque>
 
 struct JType;
-
 struct Frame {
     std::deque<JType*> locals;
     std::stack<JType*> stack;
@@ -22,5 +21,7 @@ struct Frame {
         }
     }
 };
+
+typedef std::stack<Frame*> StackFrames;
 
 #endif //YVM_JAVAFRAME_H

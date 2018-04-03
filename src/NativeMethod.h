@@ -14,5 +14,6 @@ JType* java_lang_stringbuilder_append_C(RuntimeEnv* env);
 JType* java_lang_stringbuilder_append_str(RuntimeEnv* env);
 JType* java_lang_stringbuilder_tostring(RuntimeEnv* env);
 
+JType* java_lang_thread_start(RuntimeEnv* env);
 #endif
 

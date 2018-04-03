@@ -36,7 +36,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
             }
         }
 #ifdef YVM_DEBUG_SHOW_BYTECODE
-        for (int i = 0; i<yrt.frames.size(); i++) {
+        for (int i = 0; i<frames.size(); i++) {
             std::cout << "-";
         }
         Inspector::printOpcode(ext.code, op);
@@ -1388,7 +1388,9 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 }
             }break;
             case op_monitorenter: {
-                throw std::runtime_error("unsupported opcode [monitorenter]");
+                // static std::lock_guard<std::mutex> monitorLock(monitorMutex);
+                //JType * ref = currentStackPop<JType>();
+                //assert(typeid(*ref) == typeid(JObject) || typeid(*ref) == typeid(JArray));
             }break;
             case op_monitorexit: {
                 throw std::runtime_error("unsupported opcode [monitorexit]");
@@ -1815,7 +1817,7 @@ void CodeExecution::invokeByName(JavaClass * jc,const char * methodName, const c
     }
 
 #ifdef YVM_DEBUG_SHOW_EXEC_FLOW
-    for(int i=0;i<yrt.frames.size();i++){
+    for(int i=0;i<frames.size();i++){
         std::cout << "-";
     }
     std::cout <<"Execute " << jc->getClassName() << "::" << methodName << "() " << methodDescriptor << "\n";
@@ -1824,8 +1826,8 @@ void CodeExecution::invokeByName(JavaClass * jc,const char * methodName, const c
     // Actual method calling routine
     Frame * frame = new Frame;
     frame->locals.resize(ext.maxLocal);
-    yrt.frames.push(frame);
-    currentFrame = yrt.frames.top();
+    frames.push(frame);
+    currentFrame = frames.top();
 
     JType * returnValue{};
     if (IS_METHOD_NATIVE(m->accessFlags)) {
@@ -1849,7 +1851,7 @@ void CodeExecution::invokeInterface(const JavaClass * jc, const char * methodNam
 
     const auto invokingMethod = findMethod(jc, methodName, methodDescriptor);
 #ifdef YVM_DEBUG_SHOW_EXEC_FLOW
-    for (int i = 0; i<yrt.frames.size(); i++) {
+    for (int i = 0; i<frames.size(); i++) {
         std::cout << "-";
     }
     std::cout << "Execute " << const_cast<JavaClass*>(invokingMethod.second)->getClassName() << "::" << methodName << "() " << methodDescriptor << "\n";
@@ -1864,11 +1866,11 @@ void CodeExecution::invokeInterface(const JavaClass * jc, const char * methodNam
     auto parameter = std::get<1>(parameterAndReturnType);
     Frame * frame = new Frame;
     pushMethodArguments(frame,parameter);
-    auto * objectref = pushMethodThisArgument(frame);
+    pushMethodThisArgument(frame);
 
     CodeAttrCore ext = getCodeAttrCore(invokingMethod.first);
     frame->locals.resize(ext.maxLocal);
-    yrt.frames.push(frame);
+    frames.push(frame);
     this->currentFrame = frame;
     
     JType * returnValue{};
@@ -1895,13 +1897,13 @@ void CodeExecution::invokeVirtual(const char * methodName, const char * methodDe
     Frame * frame = new Frame;
     pushMethodArguments(frame, parameter);
     auto * objectref = pushMethodThisArgument(frame);
-    yrt.frames.push(frame);
+    frames.push(frame);
     this->currentFrame = frame;
 
     auto invokingMethod = findMethod(objectref->jc, methodName, methodDescriptor);
     auto ext = getCodeAttrCore(invokingMethod.first);
 #ifdef YVM_DEBUG_SHOW_EXEC_FLOW
-    for (int i = 0; i<yrt.frames.size(); i++) {
+    for (int i = 0; i<frames.size(); i++) {
         std::cout << "-";
     }
     std::cout << "Execute " << const_cast<JavaClass*>(invokingMethod.second)->getClassName() << "::" << methodName << "() " << methodDescriptor << "\n";
@@ -1943,12 +1945,12 @@ void CodeExecution::invokeSpecial(const JavaClass * jc, const char * methodName,
     Frame * frame = new Frame;
     pushMethodArguments(frame, parameter);
     auto * objectref = pushMethodThisArgument(frame);
-    yrt.frames.push(frame);
+    frames.push(frame);
     this->currentFrame = frame;
 
     const auto invokingMethod = findMethod(jc, methodName, methodDescriptor);
 #ifdef YVM_DEBUG_SHOW_EXEC_FLOW
-    for (int i = 0; i<yrt.frames.size(); i++) {
+    for (int i = 0; i<frames.size(); i++) {
         std::cout << "-";
     }
     std::cout << "Execute " << const_cast<JavaClass*>(invokingMethod.second)->getClassName() << "::" << methodName << "() " << methodDescriptor << "\n";
@@ -2003,7 +2005,7 @@ void CodeExecution::invokeStatic(const JavaClass * jc, const char * methodName, 
 
     const auto invokingMethod = findMethod(jc, methodName, methodDescriptor);
 #ifdef YVM_DEBUG_SHOW_EXEC_FLOW
-    for (int i = 0; i<yrt.frames.size(); i++) {
+    for (int i = 0; i<frames.size(); i++) {
         std::cout << "-";
     }
     std::cout << "Execute " << const_cast<JavaClass*>(invokingMethod.second)->getClassName() << "::" << methodName << "() " << methodDescriptor << "\n";
@@ -2021,7 +2023,7 @@ void CodeExecution::invokeStatic(const JavaClass * jc, const char * methodName, 
     auto parameter = std::get<1>(parameterAndReturnType);
     pushMethodArguments(frame, parameter);
     
-    yrt.frames.push(frame);
+    frames.push(frame);
     this->currentFrame = frame;
 
     JType * returnValue{};

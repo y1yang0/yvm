@@ -22,25 +22,30 @@ JavaHeap::~JavaHeap(){
 }
 
 void JavaHeap::putObjectFieldByOffset(const JObject & object, size_t fieldOffset, JType * value) {
+    std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
     auto fields = objheap.find(object.offset);
-    fields->second[fieldOffset] = new JType;
+    fields->second [fieldOffset] = new JType;
     fields->second[fieldOffset] = value;
 }
 
 void JavaHeap::putArrayItem(const JArray & array, size_t index, JType * value){
+    std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
     arrheap.find(array.offset)->second.second[index] = value;
 }
 
 JType * JavaHeap::getArrayItem(const JArray & array, size_t index){
+    std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
     return arrheap.find(array.offset)->second.second[index];
 }
 
 JType * JavaHeap::getObjectFieldByOffset(const JObject & object, size_t fieldOffset){
+    std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
     auto & fields = objheap.find(object.offset)->second;
     return fields[fieldOffset];
 }
 
 void JavaHeap::removeArray(const JArray* arr) {
+    std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
     if(arr==nullptr) {
         return;
     }
@@ -48,6 +53,7 @@ void JavaHeap::removeArray(const JArray* arr) {
 }
 
 void JavaHeap::createSuperFields(const JavaClass & javaClass, const JObject * object) {
+    std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
     if (javaClass.raw.superClass != 0) {
         const JavaClass * superClass = yrt.ma->findJavaClass((char*)javaClass.getSuperClassName());
         FOR_EACH(i, superClass->raw.fieldsCount) {
@@ -87,6 +93,7 @@ void JavaHeap::createSuperFields(const JavaClass & javaClass, const JObject * ob
 }
 
 JObject * JavaHeap::createObject(const JavaClass & javaClass) {
+    std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
     JObject * object = new JObject;
     object->jc = &javaClass;
     object->offset = objheap.empty() ? 0 : (--objheap.end())->first + 1;
@@ -129,6 +136,8 @@ JObject * JavaHeap::createObject(const JavaClass & javaClass) {
 }
 
 JArray * JavaHeap::createPODArray(int atype, int length){
+    std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
+
     JArray * arr = new JArray;
     arr->length = length;
     arr->offset = arrheap.empty() ? 0 : (--arrheap.end())->first + 1;
@@ -169,6 +178,7 @@ JArray * JavaHeap::createPODArray(int atype, int length){
 }
 
 JArray * JavaHeap::createObjectArray(const JavaClass & jc, int length){
+    std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
     JArray * arr = new JArray;
     arr->length = length;
     arr->offset = arrheap.empty() ? 0 : (--arrheap.end())->first + 1;
@@ -182,6 +192,7 @@ JArray * JavaHeap::createObjectArray(const JavaClass & jc, int length){
 }
 
 JArray * JavaHeap::createCharArray(const char * source, int length) {
+    std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
     JArray * arr = new JArray;
     arr->length = length;
     arr->offset = arrheap.empty() ? 0 : (--arrheap.end())->first + 1;
@@ -196,6 +207,7 @@ JArray * JavaHeap::createCharArray(const char * source, int length) {
 
 JType * JavaHeap::getObjectFieldByName(JavaClass * parsedJc, const char * fieldName, const char * fieldDescriptor,
     JObject * object, size_t offset) {
+    std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
     size_t howManyNonStaticFields = 0;
     FOR_EACH(i, parsedJc->raw.fieldsCount) {
         if (!IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {
@@ -216,6 +228,7 @@ JType * JavaHeap::getObjectFieldByName(JavaClass * parsedJc, const char * fieldN
 
 void JavaHeap::putObjectFieldByName(JavaClass * parsedJc, const char * fieldName, const char * fieldDescriptor,
     JObject * object, JType * value, size_t offset) {
+    std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
     size_t howManyNonStaticFields = 0;
     FOR_EACH(i, parsedJc->raw.fieldsCount) {
         if (!IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {

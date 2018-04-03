@@ -4,6 +4,7 @@
 #include "JavaType.h"
 #include <map>
 #include <vector>
+#include <mutex>
 
 
 using namespace std;
@@ -53,8 +54,8 @@ public:
     JType* getArrayItem(const JArray& array, size_t index);
     
 
-    auto& getObject(JObject* object) {return (objheap.find(object->offset))->second;}
-    auto& getArray(JArray* array) {return (arrheap.find(array->offset))->second;}
+    auto& getObject(JObject* object) { std::lock_guard<std::recursive_mutex> lockMA(heapMutex); return (objheap.find(object->offset))->second;}
+    auto& getArray(JArray* array) { std::lock_guard<std::recursive_mutex> lockMA(heapMutex); return (arrheap.find(array->offset))->second;}
 
     void removeArray(const JArray * arr);
 
@@ -62,6 +63,7 @@ private:
     void createSuperFields(const JavaClass& javaClass, const JObject* object);
 
 private:
+    std::recursive_mutex heapMutex;
     map<size_t, vector<JType*>> objheap;
     map<size_t, pair<size_t, JType**>> arrheap;
 };

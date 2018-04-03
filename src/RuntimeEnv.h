@@ -3,7 +3,9 @@
 
 #include <stack>
 #include <map>
+#include <condition_variable>
 #include "Type.h"
+#include "Frame.h"
 
 
 struct JType;
@@ -17,9 +19,12 @@ struct RuntimeEnv {
 
     MethodArea* ma;
     JavaHeap* jheap;
-    std::stack<Frame*> frames;
     std::map<std::string, JType*(*)(RuntimeEnv* env)> nativeMethods;
+
+    int16_t aliveThreadCount;
+    std::condition_variable noSubThreadCndVar;
 };
 
 extern RuntimeEnv yrt;
+extern thread_local StackFrames frames;
 #endif // !YVM_YRUNTIME_H

@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <string.h>
 #include "ClassFile.h"
+#include <mutex>
 class CodeExecution;
 class JavaClass;
 
@@ -23,6 +24,8 @@ public:
 
 public:
     inline JavaClass* loadClassIfAbsent(const char* jcName) {
+        std::lock_guard<std::recursive_mutex> lockMA(maMutex);
+
         JavaClass* jc = findJavaClass(jcName);
         if (jc) {
             return jc;
@@ -34,6 +37,8 @@ public:
     }
 
     inline void linkClassIfAbsent(const char* jcName) {
+        std::lock_guard<std::recursive_mutex> lockMA(maMutex);
+
         bool linked = false;
         for (auto* p : linkedClasses) {
             if (strcmp(p, jcName) == 0) {
@@ -46,6 +51,8 @@ public:
     }
 
     inline void initClassIfAbsent(CodeExecution& exec, const char* jcName) {
+        std::lock_guard<std::recursive_mutex> lockMA(maMutex);
+
         bool inited = false;
         for (auto* p : initedClasses) {
             if (strcmp(p, jcName) == 0) {
@@ -58,6 +65,8 @@ public:
     }
 
 private:
+    std::recursive_mutex maMutex;
+
     std::vector<const char *> linkedClasses;
     std::vector<const char *> initedClasses;
     std::map<std::string, JavaClass *> classTable;

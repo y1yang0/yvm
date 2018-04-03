@@ -18,6 +18,8 @@ MethodArea::~MethodArea() {
 }
 
 JavaClass * MethodArea::findJavaClass(const char* jcName) {
+    std::lock_guard<std::recursive_mutex> lockMA(maMutex);
+
     const auto pos = classTable.find(jcName);
     if (pos != classTable.end()) {
         return pos->second;
@@ -28,6 +30,8 @@ JavaClass * MethodArea::findJavaClass(const char* jcName) {
 }
 
 bool MethodArea::loadJavaClass(const char * jcName) {
+    std::lock_guard<std::recursive_mutex> lockMA(maMutex);
+
     auto path = parseNameToPath(jcName);
 
     if (path.length() != 0 && !findJavaClass(jcName)) {
@@ -55,6 +59,8 @@ bool MethodArea::loadJavaClass(const char * jcName) {
 }
 
 void MethodArea::linkJavaClass(const char * jcName) {
+    std::lock_guard<std::recursive_mutex> lockMA(maMutex);
+
     JavaClass * javaClass = yrt.ma->findJavaClass(jcName);
     FOR_EACH(fieldOffset, javaClass->raw.fieldsCount) {
         char * descriptor = (char*)javaClass->getString(javaClass->raw.fields[fieldOffset].descriptorIndex);
@@ -128,11 +134,14 @@ void MethodArea::linkJavaClass(const char * jcName) {
 }
 
 void MethodArea::initJavaClass(CodeExecution & exec, const char * jcName){
+    std::lock_guard<std::recursive_mutex> lockMA(maMutex);
     initedClasses.push_back(jcName);
     exec.invokeByName(yrt.ma->findJavaClass(jcName), "<clinit>", "()V");
 }
 
 bool MethodArea::removeJavaClass(const char * jcName) {
+    std::lock_guard<std::recursive_mutex> lockMA(maMutex);
+
     auto pos = classTable.find(jcName);
     if (pos != classTable.end()) {
         classTable.erase(pos);

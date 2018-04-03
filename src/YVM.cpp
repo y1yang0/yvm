@@ -26,7 +26,8 @@ static const char*((nativeFunctionTable[])[4]) = {
     {"java/lang/StringBuilder", "append", "(I)Ljava/lang/StringBuilder;", FORCE(java_lang_stringbuilder_append_I)},
     {"java/lang/StringBuilder", "append", "(C)Ljava/lang/StringBuilder;", FORCE(java_lang_stringbuilder_append_C)},
     {"java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",FORCE(java_lang_stringbuilder_append_str)},
-    {"java/lang/StringBuilder", "toString", "()Ljava/lang/String;", FORCE(java_lang_stringbuilder_tostring)}
+    {"java/lang/StringBuilder", "toString", "()Ljava/lang/String;", FORCE(java_lang_stringbuilder_tostring)},
+    {"java/lang/Thread", "start", "()V", FORCE(java_lang_thread_start)}
 };
 
 YVM::YVM() {
@@ -48,7 +49,7 @@ bool YVM::linkClass(const char* name) {
     return true;
 }
 
-bool YVM::initClass(const char* name) {
+bool YVM::initClass(CodeExecution& exec,const  char* name) {
     if (!yrt.ma->findJavaClass(name)) {
         // It's not an logical endurable error, so we throw and linkage exception to denote it;
         throw std::runtime_error("InitializationException: Class haven't been loaded into YVM yet!");
@@ -58,10 +59,24 @@ bool YVM::initClass(const char* name) {
 }
 
 void YVM::callMain(const char* name) {
-    auto* jc = yrt.ma->loadClassIfAbsent(name);
-    yrt.ma->linkClassIfAbsent(name);
-    yrt.ma->initClassIfAbsent(exec, name);
-    exec.invokeByName(jc, "main", "([Ljava/lang/String;)V");
+    std::mutex noSubThreadMtx;
+
+    std::thread mainThread([&](){
+        std::lock_guard<std::mutex> mguard(noSubThreadMtx);
+        yrt.aliveThreadCount++;
+        auto* jc = yrt.ma->loadClassIfAbsent(name);
+        yrt.ma->linkClassIfAbsent(name);
+        // For each exuection thread, we have a code exeuction engine
+        CodeExecution exec{};
+        yrt.ma->initClassIfAbsent(exec, name);
+        exec.invokeByName(jc, "main", "([Ljava/lang/String;)V");
+    });
+    mainThread.join();
+
+    std::unique_lock<std::mutex> lock(noSubThreadMtx);
+    while(yrt.aliveThreadCount!=0) {
+        yrt.noSubThreadCndVar.wait(lock);
+    }
 }
 
 void YVM::registerNativeMethod(const char* className, const char* name, const char* descriptor,

@@ -2,6 +2,8 @@
 #define YVM_JAVAOBJECT_H
 
 #include <cstdint>
+#include <atomic>
+#include <thread>
 
 class JavaClass;
 
@@ -41,13 +43,21 @@ struct JLong BASE_OF_JTYPE {
 };
 
 struct JObject BASE_OF_JTYPE {
-    size_t offset = 0;
-    const JavaClass* jc{}; // Reference to meta java class
+    explicit JObject() { std::atomic_init<int64_t>(&counter, 0); }
+
+    size_t offset = 0;              // Offset on java heap
+    const JavaClass* jc{};          // Reference to meta java class
+    std::atomic<int64_t> counter;   // Atomic counter
+    std::thread::id ownerID;
 };
 
 struct JArray BASE_OF_JTYPE {
-    int length = 0; // Length of java array
-    size_t offset = 0;
+    explicit JArray() { std::atomic_init<int64_t>(&counter, 0); }
+
+    int length = 0;                 // Length of java array
+    size_t offset = 0;              // Offset on java heap
+    std::atomic<int64_t> counter;   // Atomic counter
+    std::thread::id ownerID;
 };
 
 #endif // !YVM_OBJECT_H

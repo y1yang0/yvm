@@ -31,6 +31,7 @@ struct CodeAttrCore {
 class CodeExecution {
 public:
     CodeExecution() : currentFrame(nullptr) {}
+    CodeExecution(Frame * frame) : currentFrame(frame) {}
 
     ~CodeExecution() { currentFrame = nullptr; }
 
@@ -68,11 +69,11 @@ private:
 
 private:
     inline void popFrame() {
-        Frame* f = yrt.frames.top();
-        yrt.frames.pop();
+        Frame* f = frames.top();
+        frames.pop();
         delete f;
-        if (!yrt.frames.empty()) {
-            currentFrame = yrt.frames.top();
+        if (!frames.empty()) {
+            currentFrame = frames.top();
         }
     }
 

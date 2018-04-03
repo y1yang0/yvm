@@ -6,6 +6,7 @@ std::string Converter::javastring2stdtring(JObject * objectref) {
     if(objectref==nullptr) {
         return std::string();
     }
+
     JArray * chararr = dynamic_cast<JArray*>(
         yrt.jheap->getObjectFieldByName(
             yrt.ma->findJavaClass("java/lang/String"),"value", "[C", objectref, 0));

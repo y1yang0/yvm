@@ -8,6 +8,7 @@ YVM是用C++写的一个Java虚拟机，现在支持Java大部分功能，不过
 + [RTTI](./javalib_src/ydk/test/InstanceofTest.java)
 + [字符串拼接(+,+=符号重载)](./javalib_src/ydk/test/StringConcatenation.java)
 + [异常处理(可输出stacktrace)](./javalib_src/ydk/test/ThrowExceptionTest.java)
++ [创建异步线程!](./javalib_src/ydk/test/CreateAsyncThreadsTest.java)
 
 # 使用方法
 1. 配置src/main.cpp
@@ -36,6 +37,8 @@ int main() {
 + `java.lang.StringBuilder`
 + `java.lang.Throwable`
 + `java.lang.Math(::random())`
++ `java.lang.Runnable`
++ `java.lang.Thread`
 
 # 运行效果
 + helloworld
@@ -47,6 +50,9 @@ int main() {
 + 异常调用栈轨迹
 ![](./public/stj.png)
 ![](./public/stc.png)
++ 创建线程
+![](./public/create_async_java.png)
+![](./public/create_async_console.png)
 
 # License
 Code licensed under the MIT License.
