@@ -1,8 +1,10 @@
 #include "NativeMethod.h"
 #include "MethodArea.h"
 #include "Frame.h"
-#include <iostream>
 #include "JavaHeap.h"
+
+#include <iostream>
+#include <random>
 #include <string>
 
 JType * ydk_lang_IO_print_str(RuntimeEnv * env){
@@ -31,6 +33,12 @@ JType * ydk_lang_IO_print_C(RuntimeEnv * env) {
     JInt * num = (JInt*)env->frames.top()->locals[0];
     std::cout << (char)num->val;
     return nullptr;
+}
+
+JType* ydk_lang_Math_random(RuntimeEnv* env) {
+    std::default_random_engine dre;
+    std::uniform_int_distribution<int> realD;
+    return new JDouble(realD(dre));
 }
 
 JType* java_lang_stringbuilder_append_I(RuntimeEnv* env) {

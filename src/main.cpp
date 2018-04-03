@@ -1,4 +1,6 @@
 #include "YVM.h"
+#include <random>
+#include <iostream>
 
 int main() {
     const char* ydk[] = {
@@ -13,9 +15,10 @@ int main() {
     vm.callMain("ydk/test/BubbleSortTest");
     vm.callMain("ydk/test/StringConcatenation");
     vm.callMain("ydk/test/InstanceofTest");
-    //vm.callMain("ydk/test/ThrowExceptionTest");
-    //vm.callMain("ydk/test/StackTraceTest");
+    vm.callMain("ydk/test/ThrowExceptionTest");
+    vm.callMain("ydk/test/StackTraceTest");
     vm.callMain("ydk/test/QuickSort");
+    vm.callMain("ydk/test/MathTest");
     system("pause");
     return 0;
 }

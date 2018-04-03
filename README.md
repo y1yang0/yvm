@@ -35,6 +35,7 @@ int main() {
 + `java.lang.String`
 + `java.lang.StringBuilder`
 + `java.lang.Throwable`
++ `java.lang.Math(::random())`
 
 # 运行效果
 + helloworld
@@ -49,7 +50,6 @@ int main() {
 
 # License
 Code licensed under the MIT License.
-
 
 
 {↓ For developers who want to explore more...}
