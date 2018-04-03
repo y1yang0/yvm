@@ -8,6 +8,8 @@
 #include "NativeMethod.h"
 
 JavaHeap::~JavaHeap(){
+    std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
+
     for (auto start = objheap.begin(); start != objheap.end(); start++) {
         for (auto * item : start->second) {
             delete item;
@@ -54,6 +56,7 @@ void JavaHeap::removeArray(const JArray* arr) {
 
 void JavaHeap::createSuperFields(const JavaClass & javaClass, const JObject * object) {
     std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
+
     if (javaClass.raw.superClass != 0) {
         const JavaClass * superClass = yrt.ma->findJavaClass((char*)javaClass.getSuperClassName());
         FOR_EACH(i, superClass->raw.fieldsCount) {
@@ -94,6 +97,7 @@ void JavaHeap::createSuperFields(const JavaClass & javaClass, const JObject * ob
 
 JObject * JavaHeap::createObject(const JavaClass & javaClass) {
     std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
+
     JObject * object = new JObject;
     object->jc = &javaClass;
     object->offset = objheap.empty() ? 0 : (--objheap.end())->first + 1;

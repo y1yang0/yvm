@@ -59,24 +59,28 @@ bool YVM::initClass(CodeExecution& exec,const  char* name) {
 }
 
 void YVM::callMain(const char* name) {
-    std::mutex noSubThreadMtx;
-
-    std::thread mainThread([&](){
-        std::lock_guard<std::mutex> mguard(noSubThreadMtx);
+    std::thread mainThread([=](){
+        yrt.aliveThreadCounterMutex.lock();
         yrt.aliveThreadCount++;
+        yrt.aliveThreadCounterMutex.unlock();
+
         auto* jc = yrt.ma->loadClassIfAbsent(name);
         yrt.ma->linkClassIfAbsent(name);
         // For each exuection thread, we have a code exeuction engine
         CodeExecution exec{};
         yrt.ma->initClassIfAbsent(exec, name);
         exec.invokeByName(jc, "main", "([Ljava/lang/String;)V");
+
+        yrt.aliveThreadCounterMutex.lock();
+        yrt.aliveThreadCount--;
+        yrt.aliveThreadCounterMutex.unlock();
+
+        std::unique_lock<std::mutex> lock(yrt.aliveThreadCounterMutex);
+        while (yrt.aliveThreadCount != 0) {
+            yrt.noSubThreadCndVar.wait(lock);
+        }
     });
     mainThread.join();
-
-    std::unique_lock<std::mutex> lock(noSubThreadMtx);
-    while(yrt.aliveThreadCount!=0) {
-        yrt.noSubThreadCndVar.wait(lock);
-    }
 }
 
 void YVM::registerNativeMethod(const char* className, const char* name, const char* descriptor,

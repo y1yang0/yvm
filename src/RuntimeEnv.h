@@ -21,6 +21,7 @@ struct RuntimeEnv {
     JavaHeap* jheap;
     std::map<std::string, JType*(*)(RuntimeEnv* env)> nativeMethods;
 
+    std::mutex aliveThreadCounterMutex;
     int16_t aliveThreadCount;
     std::condition_variable noSubThreadCndVar;
 };

@@ -120,18 +120,18 @@ JType* java_lang_stringbuilder_tostring(RuntimeEnv* env) {
     
     return str;
 }
-std::mutex noSubThreadMtx;
 
 JType* java_lang_thread_start(RuntimeEnv* env) {
     JObject * instance = dynamic_cast<JObject*>(frames.top()->locals[0]);
     JObject* runnableTask =
-        dynamic_cast<JObject*>(env->jheap->getObjectFieldByName(
-            env->ma->findJavaClass("java/lang/Thread"), "task", "Ljava/lang/Runnable;", instance, 0));
+        (JObject*)cloneValue(dynamic_cast<JObject*>(env->jheap->getObjectFieldByName(
+            env->ma->findJavaClass("java/lang/Thread"), "task", "Ljava/lang/Runnable;", instance, 0)));
+
     std::thread nativeNewThread([=](){
         //std::lock_guard<std::mutex> mguard(noSubThreadMtx);
-        noSubThreadMtx.lock();
+        yrt.aliveThreadCounterMutex.lock();
         yrt.aliveThreadCount++;
-        noSubThreadMtx.unlock();
+        yrt.aliveThreadCounterMutex.unlock();
 
         std::cout << "----------------------------\n";
         std::cout << std::this_thread::get_id() << "\n";
@@ -152,7 +152,9 @@ JType* java_lang_thread_start(RuntimeEnv* env) {
        
         exec.invokeInterface(jc, "run", "()V");
 
+        yrt.aliveThreadCounterMutex.lock();
         yrt.aliveThreadCount--;
+        yrt.aliveThreadCounterMutex.unlock();
         yrt.noSubThreadCndVar.notify_one();
     });
     nativeNewThread.detach();
