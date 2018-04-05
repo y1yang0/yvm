@@ -11,24 +11,13 @@ YVM是用C++写的一个Java虚拟机，现在支持Java大部分功能，不过
 + [创建异步线程!](./javalib_src/ydk/test/CreateAsyncThreadsTest.java)
 
 # 使用方法
-1. 配置src/main.cpp
-```cpp
-#include "YVM.h"
-
-int main() {
-    const char * ydk[] = {
-    	//该项目java lib文件所在的绝对路径
-        R"(C:\Users\Cthulhu\Desktop\yvm\javalib)"
-    };
-
-    YVM vm;
-    vm.warmUp(ydk, sizeof(ydk) / sizeof(ydk[0]));
-    vm.callMain("ydk/test/InheritanceTest");	//要运行的Java程序
-    system("pause");
-    return 0;
-}
+0. 支持G++7.0,MSVC 2017,CMakeLists直接编译即可
+1. 运行
+```bash
+# --runtime为在YVM上运行的Java程序所必须的运行时,多个值用";"分隔
+# 后面指定运行程序的全修饰名，注意不能使用".".如'java/lang/Object'而不是'java.lang.Object'
+./yvm --runtime=C:\Users\Cthulhu\Desktop\yvm\javalib ydk/test/QuickSort
 ```
-2. 支持G++7.0,MSVC 2017,直接编译运行即可
 
 # 关于JDK
 部分JDK类是JVM运行攸关的,但由于JDK比较复杂不便于初期开发,所以这里用重写过的JDK代替,源码参见[javalib_src](./javalib_src)目录,编译后`*.class`文件位于[javalib](./javalib)
