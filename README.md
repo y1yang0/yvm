@@ -1,4 +1,6 @@
 # YVM
+[中文](https://github.com/racaljk/yvm/blob/master/README.md) | [English](https://github.com/racaljk/yvm/blob/master/README.EN.md)
+
 YVM是用C++写的一个Java虚拟机，现在支持Java大部分功能，不过还有很多bug等待修复。
 感兴趣的朋友pull request/fork/star吧！
 
