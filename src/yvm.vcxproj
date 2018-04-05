@@ -124,6 +124,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MethodArea.cpp" />
     <ClCompile Include="NativeMethod.cpp" />
+    <ClCompile Include="ObjectMonitor.cpp" />
     <ClCompile Include="RuntimeEnv.cpp" />
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="YVM.cpp" />
@@ -143,6 +144,7 @@
     <ClInclude Include="MethodArea.h" />
     <ClInclude Include="JavaType.h" />
     <ClInclude Include="NativeMethod.h" />
+    <ClInclude Include="ObjectMonitor.h" />
     <ClInclude Include="Opcode.h" />
     <ClInclude Include="Option.h" />
     <ClInclude Include="RBTree.hpp" />

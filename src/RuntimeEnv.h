@@ -22,7 +22,7 @@ struct RuntimeEnv {
     std::map<std::string, JType*(*)(RuntimeEnv* env)> nativeMethods;
 
     std::mutex aliveThreadCounterMutex;
-    int16_t aliveThreadCount;
+    int32_t aliveThreadCount;
     std::condition_variable noSubThreadCndVar;
 };
 

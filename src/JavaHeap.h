@@ -5,6 +5,8 @@
 #include <map>
 #include <vector>
 #include <mutex>
+#include "ObjectMonitor.h"
+#include "Utils.h"
 
 
 using namespace std;
@@ -59,6 +61,12 @@ public:
 
     void removeArray(const JArray * arr);
 
+    bool hasObjectMonitor(const JType * ref);
+
+    void createObjectMonitor(const JType * ref);
+
+    ObjectMonitor* findObjectMonitor(const JType * ref);
+
 private:
     void createSuperFields(const JavaClass& javaClass, const JObject* object);
 
@@ -66,6 +74,7 @@ private:
     std::recursive_mutex heapMutex;
     map<size_t, vector<JType*>> objheap;
     map<size_t, pair<size_t, JType**>> arrheap;
+    map<size_t, ObjectMonitor*> monitorheap;
 };
 
 

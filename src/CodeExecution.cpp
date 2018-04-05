@@ -1376,7 +1376,7 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 throw std::runtime_error("unsupported opcode [checkcast]");
             }break;
             case op_instanceof: {
-                u2 index = consumeU2(ext.code, op);
+                const u2 index = consumeU2(ext.code, op);
                 auto * objectref = currentStackPop<JObject>();
                 if(objectref==nullptr) {
                     currentFrame->stack.push(new JInt(0));
@@ -1388,12 +1388,28 @@ JType * CodeExecution::execCode(const JavaClass * jc, CodeAttrCore && ext) {
                 }
             }break;
             case op_monitorenter: {
-                // static std::lock_guard<std::mutex> monitorLock(monitorMutex);
-                //JType * ref = currentStackPop<JType>();
-                //assert(typeid(*ref) == typeid(JObject) || typeid(*ref) == typeid(JArray));
+                JType * ref = currentStackPop<JType>();
+                
+                if(ref==nullptr) {
+                    throw std::runtime_error("null pointer");
+                }
+
+                if (!yrt.jheap->hasObjectMonitor(ref)) {
+                    yrt.jheap->createObjectMonitor(ref);
+                }
+                yrt.jheap->findObjectMonitor(ref)->enter(std::this_thread::get_id());
             }break;
             case op_monitorexit: {
-                throw std::runtime_error("unsupported opcode [monitorexit]");
+                JType * ref = currentStackPop<JType>();
+
+                if (ref == nullptr) {
+                    throw std::runtime_error("null pointer");
+                }
+                if (!yrt.jheap->hasObjectMonitor(ref)) {
+                    yrt.jheap->createObjectMonitor(ref);
+                }
+                yrt.jheap->findObjectMonitor(ref)->exit();
+
             }break;
             case op_wide: {
                 throw std::runtime_error("unsupported opcode [wide]");

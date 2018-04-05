@@ -128,14 +128,9 @@ JType* java_lang_thread_start(RuntimeEnv* env) {
             env->ma->findJavaClass("java/lang/Thread"), "task", "Ljava/lang/Runnable;", instance, 0)));
 
     std::thread nativeNewThread([=](){
-        //std::lock_guard<std::mutex> mguard(noSubThreadMtx);
         yrt.aliveThreadCounterMutex.lock();
         yrt.aliveThreadCount++;
         yrt.aliveThreadCounterMutex.unlock();
-
-        std::cout << "----------------------------\n";
-        std::cout << std::this_thread::get_id() << "\n";
-        std::cout << "----------------------------\n";
        
         const char * name = runnableTask->jc->getClassName();
         auto* jc = yrt.ma->loadClassIfAbsent(name);

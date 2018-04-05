@@ -250,3 +250,43 @@ void JavaHeap::putObjectFieldByName(JavaClass * parsedJc, const char * fieldName
             value, offset + howManyNonStaticFields);
     }
 }
+
+
+bool JavaHeap::hasObjectMonitor(const JType * ref) {
+    std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
+    if (typeid(*ref) == typeid(JObject)) {
+        return monitorheap.find(dynamic_cast<const JObject*>(ref)->offset) != monitorheap.end();
+    }
+    else if (typeid(*ref) == typeid(JArray)) {
+        return monitorheap.find(dynamic_cast<const JArray*>(ref)->offset) != monitorheap.end();
+    }
+    else {
+        SHOULD_NOT_REACH_HERE
+    }
+
+}
+void JavaHeap::createObjectMonitor(const JType * ref) {
+    std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
+    if (typeid(*ref) == typeid(JObject)) {
+        monitorheap.insert(std::make_pair(dynamic_cast<const JObject*>(ref)->offset, new ObjectMonitor()));
+    }
+    else if (typeid(*ref) == typeid(JArray)) {
+        monitorheap.insert(std::make_pair(dynamic_cast<const JArray*>(ref)->offset, new ObjectMonitor()));
+    }
+    else {
+        SHOULD_NOT_REACH_HERE
+    }
+
+}
+ObjectMonitor* JavaHeap::findObjectMonitor(const JType * ref) {
+    std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
+    if (typeid(*ref) == typeid(JObject)) {
+        return monitorheap.find(dynamic_cast<const JObject*>(ref)->offset)->second;
+    }
+    else if (typeid(*ref) == typeid(JArray)) {
+        return monitorheap.find(dynamic_cast<const JArray*>(ref)->offset)->second;
+    }
+    else {
+        SHOULD_NOT_REACH_HERE
+    }
+}

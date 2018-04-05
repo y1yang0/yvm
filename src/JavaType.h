@@ -43,21 +43,17 @@ struct JLong BASE_OF_JTYPE {
 };
 
 struct JObject BASE_OF_JTYPE {
-    explicit JObject() { std::atomic_init<int64_t>(&counter, 0); }
+    explicit JObject() { }
 
     size_t offset = 0;              // Offset on java heap
     const JavaClass* jc{};          // Reference to meta java class
-    std::atomic<int64_t> counter;   // Atomic counter
-    std::thread::id ownerID;
 };
 
 struct JArray BASE_OF_JTYPE {
-    explicit JArray() { std::atomic_init<int64_t>(&counter, 0); }
+    explicit JArray() { }
 
     int length = 0;                 // Length of java array
     size_t offset = 0;              // Offset on java heap
-    std::atomic<int64_t> counter;   // Atomic counter
-    std::thread::id ownerID;
 };
 
 #endif // !YVM_OBJECT_H
