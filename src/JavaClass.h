@@ -23,27 +23,32 @@ public:
     explicit JavaClass(const char* classFilePath);
     ~JavaClass();
     JavaClass(const JavaClass& rhs) { this->raw = rhs.raw; }
-    
+
 
 public:
-    inline decltype(auto) getString(u2 index) const {
+    decltype(auto) getString(u2 index) const {
         return reinterpret_cast<const char*>(dynamic_cast<CONSTANT_Utf8*>(raw.constPoolInfo[index])->bytes);
     }
-    inline decltype(auto) getClassName() const {
+
+    decltype(auto) getClassName() const {
         return getString(dynamic_cast<CONSTANT_Class*>(raw.constPoolInfo[raw.thisClass])->nameIndex);
     }
-    inline decltype(auto) getSuperClassName() const {
-        return raw.superClass == 0 ? nullptr : getString(dynamic_cast<CONSTANT_Class*>(raw.constPoolInfo[raw.superClass])->nameIndex);
+
+    decltype(auto) getSuperClassName() const {
+        return raw.superClass == 0
+                   ? nullptr
+                   : getString(dynamic_cast<CONSTANT_Class*>(raw.constPoolInfo[raw.superClass])->nameIndex);
     }
-    inline bool hasSuperClass() const {
+
+    bool hasSuperClass() const {
         return raw.superClass != 0;
     }
-    
+
     void parseClassFile();
-    
+
     std::vector<u2> getInterfacesIndex() const;
     MethodInfo* getMethod(const char* methodName, const char* methodDescriptor) const;
-    
+
 
 private:
     bool parseConstantPool(u2 cpCount);

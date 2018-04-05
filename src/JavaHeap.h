@@ -25,7 +25,7 @@ public:
     JArray* createObjectArray(const JavaClass& jc, int length);
     JArray* createCharArray(const char* source, int length);
 
-    
+
     /**
      * \brief Get the specified non-static field by given offset. *You should call this method
      * only if you are clearly about the memory layout of an object.*
@@ -48,24 +48,31 @@ public:
      * \return The specified field if it was existed
      */
     JType* getObjectFieldByName(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor,
-        JObject* object, size_t offset = 0);
+                                JObject* object, size_t offset = 0);
     void putObjectFieldByName(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor,
-        JObject* object, JType* value, size_t offset = 0);
+                              JObject* object, JType* value, size_t offset = 0);
 
     void putArrayItem(const JArray& array, size_t index, JType* value);
     JType* getArrayItem(const JArray& array, size_t index);
-    
 
-    auto& getObject(JObject* object) { std::lock_guard<std::recursive_mutex> lockMA(heapMutex); return (objheap.find(object->offset))->second;}
-    auto& getArray(JArray* array) { std::lock_guard<std::recursive_mutex> lockMA(heapMutex); return (arrheap.find(array->offset))->second;}
 
-    void removeArray(const JArray * arr);
+    auto& getObject(JObject* object) {
+        std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
+        return (objheap.find(object->offset))->second;
+    }
 
-    bool hasObjectMonitor(const JType * ref);
+    auto& getArray(JArray* array) {
+        std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
+        return (arrheap.find(array->offset))->second;
+    }
 
-    void createObjectMonitor(const JType * ref);
+    void removeArray(const JArray* arr);
 
-    ObjectMonitor* findObjectMonitor(const JType * ref);
+    bool hasObjectMonitor(const JType* ref);
+
+    void createObjectMonitor(const JType* ref);
+
+    ObjectMonitor* findObjectMonitor(const JType* ref);
 
 private:
     void createSuperFields(const JavaClass& javaClass, const JObject* object);

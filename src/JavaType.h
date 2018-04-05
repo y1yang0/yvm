@@ -20,13 +20,13 @@ typedef JVoid JRef;
 
 struct JDouble BASE_OF_JTYPE {
     explicit JDouble() = default;
-    explicit JDouble(double val) :val(val) {}
+    explicit JDouble(double val) : val(val) {}
     double val = 0.0;
 };
 
 struct JFloat BASE_OF_JTYPE {
     explicit JFloat() = default;
-    explicit JFloat(float val) :val(val) {}
+    explicit JFloat(float val) : val(val) {}
     float val = 0.0f;
 };
 
@@ -45,15 +45,15 @@ struct JLong BASE_OF_JTYPE {
 struct JObject BASE_OF_JTYPE {
     explicit JObject() { }
 
-    size_t offset = 0;              // Offset on java heap
-    const JavaClass* jc{};          // Reference to meta java class
+    size_t offset = 0; // Offset on java heap
+    const JavaClass* jc{}; // Reference to meta java class
 };
 
 struct JArray BASE_OF_JTYPE {
     explicit JArray() { }
 
-    int length = 0;                 // Length of java array
-    size_t offset = 0;              // Offset on java heap
+    int length = 0; // Length of java array
+    size_t offset = 0; // Offset on java heap
 };
 
 #endif // !YVM_OBJECT_H

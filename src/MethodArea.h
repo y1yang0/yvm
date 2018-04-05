@@ -13,7 +13,7 @@ class JavaClass;
 
 class MethodArea {
 public:
-    MethodArea(const char *searchPath[], int howManySearchPath);
+    MethodArea(const char* searchPath[], int howManySearchPath);
     ~MethodArea();
 
     JavaClass* findJavaClass(const char* jcName);
@@ -23,20 +23,18 @@ public:
     void initJavaClass(CodeExecution& exec, const char* jcName);
 
 public:
-    inline JavaClass* loadClassIfAbsent(const char* jcName) {
+    JavaClass* loadClassIfAbsent(const char* jcName) {
         std::lock_guard<std::recursive_mutex> lockMA(maMutex);
 
         JavaClass* jc = findJavaClass(jcName);
         if (jc) {
             return jc;
         }
-        else {
-            loadJavaClass(jcName);
-            return findJavaClass(jcName);
-        }
+        loadJavaClass(jcName);
+        return findJavaClass(jcName);
     }
 
-    inline void linkClassIfAbsent(const char* jcName) {
+    void linkClassIfAbsent(const char* jcName) {
         std::lock_guard<std::recursive_mutex> lockMA(maMutex);
 
         bool linked = false;
@@ -50,7 +48,7 @@ public:
         }
     }
 
-    inline void initClassIfAbsent(CodeExecution& exec, const char* jcName) {
+    void initClassIfAbsent(CodeExecution& exec, const char* jcName) {
         std::lock_guard<std::recursive_mutex> lockMA(maMutex);
 
         bool inited = false;

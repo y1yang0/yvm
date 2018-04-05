@@ -1,6 +1,6 @@
 #include "YVM.h"
 
-int main(int argc, const char * argv[]) {
+int main(int argc, const char* argv[]) {
     const char* ydk[] = {
         R"(C:\Users\Cthulhu\Desktop\yvm\javalib)",
     };

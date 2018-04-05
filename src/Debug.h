@@ -67,8 +67,9 @@ public:
             for (auto& k : cell) {
                 cout << "|";
                 cout << k;
-                for (int p = 0; (columnWidth - 2 - k.length()) > 0 && p < (columnWidth - 2 - k.length()); p++) cout <<
-                    " ";
+                for (int p = 0; (columnWidth - 2 - k.length()) > 0 && p < (columnWidth - 2 - k.length()); p++)
+                    cout <<
+                        " ";
                 cout << "|";
             }
             cout << "\n";

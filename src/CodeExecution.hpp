@@ -31,7 +31,7 @@ struct CodeAttrCore {
 class CodeExecution {
 public:
     CodeExecution() : currentFrame(nullptr) {}
-    CodeExecution(Frame * frame) : currentFrame(frame) {}
+    CodeExecution(Frame* frame) : currentFrame(frame) {}
 
     ~CodeExecution() { currentFrame = nullptr; }
 
@@ -40,35 +40,36 @@ public:
     void invokeSpecial(const JavaClass* jc, const char* methodName, const char* methodDescriptor);
     void invokeStatic(const JavaClass* jc, const char* methodName, const char* methodDescriptor);
     void invokeVirtual(const char* methodName, const char* methodDescriptor);
-    JType* invokeNative(const char * className, const char * methodName, const char * methodDescriptor);
+    JType* invokeNative(const char* className, const char* methodName, const char* methodDescriptor);
 
 private:
     std::pair<MethodInfo *, const JavaClass*> findMethod(const JavaClass* jc, const char* methodName,
-        const char* methodDescriptor);
+                                                         const char* methodDescriptor);
     JType* getStaticField(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor);
     void putStaticField(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor, JType* value);
 
     CodeAttrCore getCodeAttrCore(const MethodInfo* m);
-    bool checkInstanceof(const JavaClass * jc, u2 index, JType* objectref);
+    bool checkInstanceof(const JavaClass* jc, u2 index, JType* objectref);
 
     std::tuple<JavaClass*, const char*, const char*> parseFieldSymbolicReference(const JavaClass* jc, u2 index);
-    std::tuple<JavaClass*, const char*, const char*> parseInterfaceMethodSymbolicReference(const JavaClass* jc, u2 index);
+    std::tuple<JavaClass*, const char*, const char*> parseInterfaceMethodSymbolicReference(
+        const JavaClass* jc, u2 index);
     std::tuple<JavaClass*, const char*, const char*> parseMethodSymbolicReference(const JavaClass* jc, u2 index);
     std::tuple<JavaClass*> parseClassSymbolicReference(const JavaClass* jc, u2 index);
 
     JObject* execNew(const JavaClass* jc, u2 index);
-    JType* execCode(const JavaClass* jc, CodeAttrCore && ext);
+    JType* execCode(const JavaClass* jc, CodeAttrCore&& ext);
 
-    void loadConstantPoolItem2Stack(const JavaClass *jc, u2 index);
+    void loadConstantPoolItem2Stack(const JavaClass* jc, u2 index);
 
-    bool handleException(const JavaClass * jc, const CodeAttrCore & ext, const JObject * objectref, u4 & op);
+    bool handleException(const JavaClass* jc, const CodeAttrCore& ext, const JObject* objectref, u4& op);
 
     void pushMethodArguments(Frame* frame, std::vector<int>& parameter);
 
-    JObject* pushMethodThisArgument(Frame * frame);
+    JObject* pushMethodThisArgument(Frame* frame);
 
 private:
-    inline void popFrame() {
+    void popFrame() {
         Frame* f = frames.top();
         frames.pop();
         delete f;
@@ -95,12 +96,12 @@ private:
     void typeCast() const;
 
 private:
-    Frame * currentFrame{};
+    Frame* currentFrame{};
     JavaException exception;
 };
 
 template <typename LoadType>
-inline void CodeExecution::load2Stack(u1 localIndex) {
+void CodeExecution::load2Stack(u1 localIndex) {
     auto* pushingV = new LoadType;
     pushingV->val = dynamic_cast<LoadType*>(currentFrame->locals[localIndex])->val;
     currentFrame->stack.push(pushingV);
@@ -178,7 +179,7 @@ inline void CodeExecution::loadArrayItem2Stack<JRef>() {
 }
 
 template <typename StoreType>
-inline void CodeExecution::store2Local(u1 index) {
+void CodeExecution::store2Local(u1 index) {
     auto* value = dynamic_cast<StoreType*>(currentFrame->stack.top());
     currentFrame->stack.pop();
     currentFrame->locals[index] = value;
@@ -236,24 +237,24 @@ inline void CodeExecution::storeArrayItem<JRef>() {
 }
 
 template <typename ReturnType>
-inline ReturnType* CodeExecution::flowReturn() const {
+ReturnType* CodeExecution::flowReturn() const {
     auto* value = dynamic_cast<ReturnType*>(currentFrame->stack.top());
     currentFrame->stack.pop();
     return value;
 }
 
 template <typename ReturnType>
-inline ReturnType* CodeExecution::currentStackPop() {
+ReturnType* CodeExecution::currentStackPop() {
     auto* value = dynamic_cast<ReturnType*>(currentFrame->stack.top());
     currentFrame->stack.pop();
     return value;
 }
 
 template <typename Type1, typename Type2>
-inline void CodeExecution::typeCast() const {
-    auto * value = dynamic_cast<Type1*>(currentFrame->stack.top());
+void CodeExecution::typeCast() const {
+    auto* value = dynamic_cast<Type1*>(currentFrame->stack.top());
     currentFrame->stack.pop();
-    auto * result = new Type2;
+    auto* result = new Type2;
     result->val = value->val;
     currentFrame->stack.push(result);
     delete value;

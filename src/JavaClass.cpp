@@ -9,7 +9,7 @@
 #include "Debug.h"
 #include "YVM.h"
 
-JavaClass::JavaClass(const char *classFilePath) : reader(classFilePath) {
+JavaClass::JavaClass(const char* classFilePath) : reader(classFilePath) {
     raw.constPoolInfo = nullptr;
     raw.fields = nullptr;
     raw.methods = nullptr;
@@ -22,7 +22,7 @@ JavaClass::~JavaClass() {
     }
 }
 
-std::vector<u2>  JavaClass::getInterfacesIndex() const {
+std::vector<u2> JavaClass::getInterfacesIndex() const {
     if (raw.interfacesCount == 0)
         return std::vector<u2>();
     std::vector<u2> v;
@@ -32,12 +32,12 @@ std::vector<u2>  JavaClass::getInterfacesIndex() const {
     return v;
 }
 
-MethodInfo * JavaClass::getMethod(const char * methodName, const char * methodDescriptor) const {
+MethodInfo* JavaClass::getMethod(const char* methodName, const char* methodDescriptor) const {
     FOR_EACH(i, raw.methodsCount) {
         assert(typeid(*raw.constPoolInfo[raw.methods[i].nameIndex]) == typeid(CONSTANT_Utf8));
 
-        const char * mn = (char*)getString(raw.methods[i].nameIndex);
-        const char * md = (char*)getString(raw.methods[i].descriptorIndex);
+        const char* mn = (char*)getString(raw.methods[i].nameIndex);
+        const char* md = (char*)getString(raw.methods[i].descriptorIndex);
         if (strcmp(mn, methodName) == 0 && strcmp(md, methodDescriptor) == 0) {
             return &raw.methods[i];
         }
@@ -62,7 +62,7 @@ void JavaClass::parseClassFile() {
         goto error;
     }
     raw.constPoolCount = reader.readget2();
-    if (raw.constPoolCount>0 && !parseConstantPool(raw.constPoolCount)) {
+    if (raw.constPoolCount > 0 && !parseConstantPool(raw.constPoolCount)) {
         std::cerr << __func__ << ":Failed to parse constant pool\n";
         exit(EXIT_FAILURE);
     }
@@ -78,7 +78,7 @@ void JavaClass::parseClassFile() {
     raw.thisClass = reader.readget2();
     raw.superClass = reader.readget2();
     raw.interfacesCount = reader.readget2();
-    if (raw.interfacesCount>0 && !parseInterface(raw.interfacesCount)) {
+    if (raw.interfacesCount > 0 && !parseInterface(raw.interfacesCount)) {
         std::cerr << __func__ << ":Failed to parse interfaces\n";
         exit(EXIT_FAILURE);
     }
@@ -87,7 +87,7 @@ void JavaClass::parseClassFile() {
 #endif
 
     raw.fieldsCount = reader.readget2();
-    if (raw.fieldsCount>0 && !parseField(raw.fieldsCount)) {
+    if (raw.fieldsCount > 0 && !parseField(raw.fieldsCount)) {
         std::cerr << __func__ << ":Failed to parse fields\n";
         exit(EXIT_FAILURE);
     }
@@ -96,7 +96,7 @@ void JavaClass::parseClassFile() {
 #endif
 
     raw.methodsCount = reader.readget2();
-    if (raw.methodsCount>0 && !parseMethod(raw.methodsCount)) {
+    if (raw.methodsCount > 0 && !parseMethod(raw.methodsCount)) {
         std::cerr << __func__ << ":Failed to parse methods\n";
         exit(EXIT_FAILURE);
     }
@@ -105,13 +105,13 @@ void JavaClass::parseClassFile() {
 #endif
 
     raw.attributesCount = reader.readget2();
-    if (raw.attributesCount>0 && !parseAttribute(raw.attributes, raw.attributesCount)) {
+    if (raw.attributesCount > 0 && !parseAttribute(raw.attributes, raw.attributesCount)) {
         std::cerr << __func__ << ":Failed to parse class file's attributes\n";
         exit(EXIT_FAILURE);
     }
 #ifdef YVM_DEBUG_SHOW_CLASS_ATTRIBUTE
     Inspector::printClassFileAttrs(*this);
-#endif 
+#endif
 
 
     if (!reader.haveNoExtraBytes()) {
@@ -138,15 +138,15 @@ bool JavaClass::parseConstantPool(u2 cpCount) {
     // started from 1 to constant_pool_count-1
     for (int i = 1; i <= cpCount - 1; i++) {
         u1 tag = reader.readget1();
-        ConstantPoolInfo *slot;
+        ConstantPoolInfo* slot;
         switch (tag) {
-        case ConstantTag::TAG_Class: {
+        case TAG_Class: {
             slot = new CONSTANT_Class();
             dynamic_cast<CONSTANT_Class *>(slot)->nameIndex = reader.readget2();
             raw.constPoolInfo[i] = dynamic_cast<CONSTANT_Class *>(slot);
             break;
         }
-        case ConstantTag::TAG_Fieldref: {
+        case TAG_Fieldref: {
             slot = new CONSTANT_Fieldref();
             dynamic_cast<CONSTANT_Fieldref *>(slot)->classIndex = reader.readget2();
             dynamic_cast<CONSTANT_Fieldref *>(slot)->nameAndTypeIndex = reader.readget2();
@@ -154,7 +154,7 @@ bool JavaClass::parseConstantPool(u2 cpCount) {
             break;
         }
 
-        case ConstantTag::TAG_Methodref: {
+        case TAG_Methodref: {
             slot = new CONSTANT_Methodref();
             dynamic_cast<CONSTANT_Methodref *>(slot)->classIndex = reader.readget2();
             dynamic_cast<CONSTANT_Methodref *>(slot)->nameAndTypeIndex = reader.readget2();
@@ -162,7 +162,7 @@ bool JavaClass::parseConstantPool(u2 cpCount) {
             break;
         }
 
-        case ConstantTag::TAG_InterfaceMethodref: {
+        case TAG_InterfaceMethodref: {
             slot = new CONSTANT_InterfaceMethodref();
             dynamic_cast<CONSTANT_InterfaceMethodref *>(slot)->classIndex = reader.readget2();
             dynamic_cast<CONSTANT_InterfaceMethodref *>(slot)->nameAndTypeIndex = reader.readget2();
@@ -170,13 +170,13 @@ bool JavaClass::parseConstantPool(u2 cpCount) {
             break;
         }
 
-        case ConstantTag::TAG_String: {
+        case TAG_String: {
             slot = new CONSTANT_String();
             dynamic_cast<CONSTANT_String *>(slot)->stringIndex = reader.readget2();
             raw.constPoolInfo[i] = dynamic_cast<CONSTANT_String *>(slot);
             break;
         }
-        case ConstantTag::TAG_Integer: {
+        case TAG_Integer: {
             slot = new CONSTANT_Integer();
             dynamic_cast<CONSTANT_Integer *>(slot)->bytes = reader.readget4();
             dynamic_cast<CONSTANT_Integer *>(slot)->val = dynamic_cast<CONSTANT_Integer *>(slot)->bytes;
@@ -184,7 +184,7 @@ bool JavaClass::parseConstantPool(u2 cpCount) {
             raw.constPoolInfo[i] = dynamic_cast<CONSTANT_Integer *>(slot);
             break;
         }
-        case ConstantTag::TAG_Float: {
+        case TAG_Float: {
             slot = new CONSTANT_Float();
             dynamic_cast<CONSTANT_Float *>(slot)->bytes = reader.readget4();
 
@@ -192,62 +192,67 @@ bool JavaClass::parseConstantPool(u2 cpCount) {
             raw.constPoolInfo[i] = dynamic_cast<CONSTANT_Float *>(slot);
             break;
         }
-        case ConstantTag::TAG_Long: {
+        case TAG_Long: {
             slot = new CONSTANT_Long();
             dynamic_cast<CONSTANT_Long *>(slot)->highBytes = reader.readget4();
             dynamic_cast<CONSTANT_Long *>(slot)->lowBytes = reader.readget4();
 
-            dynamic_cast<CONSTANT_Long *>(slot)->val = (((int64_t)dynamic_cast<CONSTANT_Long *>(slot)->highBytes) << 32) + dynamic_cast<CONSTANT_Long *>(slot)->lowBytes;
-            raw.constPoolInfo[i++] = dynamic_cast<CONSTANT_Long *>(slot);  // All 8-byte constants take up two slot in the constant_pool table
+            dynamic_cast<CONSTANT_Long *>(slot)->val = (((int64_t)dynamic_cast<CONSTANT_Long *>(slot)->highBytes) << 32)
+                + dynamic_cast<CONSTANT_Long *>(slot)->lowBytes;
+            raw.constPoolInfo[i++] = dynamic_cast<CONSTANT_Long *>(slot);
+            // All 8-byte constants take up two slot in the constant_pool table
             raw.constPoolInfo[i] = nullptr;
             break;
         }
-        case ConstantTag::TAG_Double: {
+        case TAG_Double: {
             slot = new CONSTANT_Double();
             dynamic_cast<CONSTANT_Double *>(slot)->highBytes = reader.readget4();
             dynamic_cast<CONSTANT_Double *>(slot)->lowBytes = reader.readget4();
 
-            int64_t val = (((int64_t)dynamic_cast<CONSTANT_Double *>(slot)->highBytes) << 32) + dynamic_cast<CONSTANT_Double *>(slot)->lowBytes;
+            int64_t val = (((int64_t)dynamic_cast<CONSTANT_Double *>(slot)->highBytes) << 32) + dynamic_cast<
+                CONSTANT_Double *>(slot)->lowBytes;
             dynamic_cast<CONSTANT_Double *>(slot)->val = *(double*)&val;
-            raw.constPoolInfo[i++] = dynamic_cast<CONSTANT_Double *>(slot);  // All 8-byte constants take up two slot in the constant_pool table
+            raw.constPoolInfo[i++] = dynamic_cast<CONSTANT_Double *>(slot);
+            // All 8-byte constants take up two slot in the constant_pool table
             raw.constPoolInfo[i] = nullptr;
             break;
         }
-        case ConstantTag::TAG_NameAndType: {
+        case TAG_NameAndType: {
             slot = new CONSTANT_NameAndType();
             dynamic_cast<CONSTANT_NameAndType *>(slot)->nameIndex = reader.readget2();
             dynamic_cast<CONSTANT_NameAndType *>(slot)->descriptorIndex = reader.readget2();
             raw.constPoolInfo[i] = dynamic_cast<CONSTANT_NameAndType *>(slot);
             break;
         }
-        case ConstantTag::TAG_Utf8: {
+        case TAG_Utf8: {
             slot = new CONSTANT_Utf8();
             u2 len = reader.readget2();
             dynamic_cast<CONSTANT_Utf8 *>(slot)->length = len;
-            dynamic_cast<CONSTANT_Utf8 *>(slot)->bytes = new u1[len + 1];    //The utf8 string is not end with '\0' since we do not need to reserve extra 1 byte
+            dynamic_cast<CONSTANT_Utf8 *>(slot)->bytes = new u1[len + 1];
+            //The utf8 string is not end with '\0' since we do not need to reserve extra 1 byte
             for (int k = 0; k < len; k++) {
                 dynamic_cast<CONSTANT_Utf8 *>(slot)->bytes[k] = reader.readget1();
             }
-            dynamic_cast<CONSTANT_Utf8 *>(slot)->bytes[len] = '\0';//End with '\0' for simplicity
+            dynamic_cast<CONSTANT_Utf8 *>(slot)->bytes[len] = '\0'; //End with '\0' for simplicity
 
             raw.constPoolInfo[i] = dynamic_cast<CONSTANT_Utf8 *>(slot);
             // Todo: support unicode string ; here we just add null-char at the end of char array
             break;
         }
-        case ConstantTag::TAG_MethodHandle: {
+        case TAG_MethodHandle: {
             slot = new CONSTANT_MethodHandle();
             dynamic_cast<CONSTANT_MethodHandle *>(slot)->referenceKind = reader.readget1();
             dynamic_cast<CONSTANT_MethodHandle *>(slot)->referenceIndex = reader.readget2();
             raw.constPoolInfo[i] = dynamic_cast<CONSTANT_MethodHandle *>(slot);
             break;
         }
-        case ConstantTag::TAG_MethodType: {
+        case TAG_MethodType: {
             slot = new CONSTANT_MethodType();
             dynamic_cast<CONSTANT_MethodType *>(slot)->descriptorIndex = reader.readget2();
             raw.constPoolInfo[i] = dynamic_cast<CONSTANT_MethodType *>(slot);
             break;
         }
-        case ConstantTag::TAG_InvokeDynamic: {
+        case TAG_InvokeDynamic: {
             slot = new CONSTANT_InvokeDynamic();
             dynamic_cast<CONSTANT_InvokeDynamic *>(slot)->bootstrapMethodAttrIndex = reader.readget2();
             dynamic_cast<CONSTANT_InvokeDynamic *>(slot)->nameAndTypeIndex = reader.readget2();
@@ -307,7 +312,7 @@ bool JavaClass::parseMethod(u2 methodCount) {
     return true;
 }
 
-bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
+bool JavaClass::parseAttribute(AttributeInfo** (&attrs), u2 attributeCount) {
     attrs = new AttributeInfo*[attributeCount];
 
     if (attrs == nullptr) {
@@ -315,16 +320,16 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
         return false;
     }
 
-    for (decltype(attributeCount) i = 0; i<attributeCount; i++) {
+    for (decltype(attributeCount) i = 0; i < attributeCount; i++) {
         const u2 attrStrIndex = reader.readget2();
 
         if (typeid(*raw.constPoolInfo[attrStrIndex]) != typeid(CONSTANT_Utf8)) {
             return false;
         }
 
-        char * attrName = (char *)dynamic_cast<CONSTANT_Utf8*>(raw.constPoolInfo[attrStrIndex])->bytes;
+        char* attrName = (char *)dynamic_cast<CONSTANT_Utf8*>(raw.constPoolInfo[attrStrIndex])->bytes;
         IS_ATTR_ConstantValue(attrName) {
-            auto * attr = new ATTR_ConstantValue;
+            auto* attr = new ATTR_ConstantValue;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->constantValueIndex = reader.readget2();
@@ -333,7 +338,7 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             continue;
         }
         IS_ATTR_Code(attrName) {
-            auto * attr = new ATTR_Code;
+            auto* attr = new ATTR_Code;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->maxStack = reader.readget2();
@@ -361,7 +366,7 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             continue;
         }
         IS_ATTR_StackMapTable(attrName) {
-            auto * attr = new ATTR_StackMapTable;
+            auto* attr = new ATTR_StackMapTable;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->numberOfEntries = reader.readget2();
@@ -369,35 +374,36 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             FOR_EACH(k, attr->numberOfEntries) {
                 u1 frameType = reader.readget1();
                 if (IS_STACKFRAME_same_frame(frameType)) {
-                    auto * frame = new Frame_Same();
+                    auto* frame = new Frame_Same();
                     attr->entries[k] = frame;
                 }
                 else if (IS_STACKFRAME_same_locals_1_stack_item_frame(frameType)) {
-                    auto * frame = new Frame_Same_locals_1_stack_item;
+                    auto* frame = new Frame_Same_locals_1_stack_item;
                     frame->stack = new VerificationTypeInfo*[1];
                     frame->stack[0] = determineVerificationType(reader.readget1());
                     attr->entries[k] = frame;
                 }
                 else if (IS_STACKFRAME_same_locals_1_stack_item_frame_extended(frameType)) {
-                    auto * frame = new Frame_Same_locals_1_stack_item_extended;
+                    auto* frame = new Frame_Same_locals_1_stack_item_extended;
                     frame->offsetDelta = reader.readget2();
                     frame->stack = new VerificationTypeInfo*[1];
                     frame->stack[0] = determineVerificationType(reader.readget1());
                     attr->entries[k] = frame;
                 }
                 else if (IS_STACKFRAME_chop_frame(frameType)) {
-                    auto * frame = new Frame_Chop;
+                    auto* frame = new Frame_Chop;
                     frame->offsetDelta = reader.readget2();
                     attr->entries[k] = frame;
                 }
                 else if (IS_STACKFRAME_same_frame_extended(frameType)) {
-                    auto * frame = new Frame_Same_frame_extended;
+                    auto* frame = new Frame_Same_frame_extended;
                     frame->offsetDelta = reader.readget2();
                     attr->entries[k] = frame;
                 }
                 else if (IS_STACKFRAME_append_frame(frameType)) {
-                    auto * frame = new Frame_Append;
-                    frame->frameType = frameType;   // It's important to store current frame type since ~Frame_Append need it to release memory
+                    auto* frame = new Frame_Append;
+                    frame->frameType = frameType;
+                    // It's important to store current frame type since ~Frame_Append need it to release memory
                     frame->offsetDelta = reader.readget2();
                     frame->stack = new VerificationTypeInfo*[frameType - 251];
                     FOR_EACH(p, frameType - 251) {
@@ -406,7 +412,7 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
                     attr->entries[k] = frame;
                 }
                 else if (IS_STACKFRAME_full_frame(frameType)) {
-                    auto * frame = new Frame_Full;
+                    auto* frame = new Frame_Full;
                     frame->offsetDelta = reader.readget2();
                     frame->numberOfLocals = reader.readget2();
                     frame->locals = new VerificationTypeInfo*[frame->numberOfLocals];
@@ -428,7 +434,7 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             continue;
         }
         IS_ATTR_Exceptions(attrName) {
-            auto * attr = new ATTR_Exception;
+            auto* attr = new ATTR_Exception;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->numberOfExceptions = reader.readget2();
@@ -440,7 +446,7 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             continue;
         }
         IS_ATTR_InnerClasses(attrName) {
-            auto * attr = new ATTR_InnerClasses;
+            auto* attr = new ATTR_InnerClasses;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->numberOfClasses = reader.readget2();
@@ -455,7 +461,7 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             continue;
         }
         IS_ATTR_EnclosingMethod(attrName) {
-            auto * attr = new ATTR_EnclosingMethod;
+            auto* attr = new ATTR_EnclosingMethod;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->classIndex = reader.readget2();
@@ -464,14 +470,14 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             continue;
         }
         IS_ATTR_Synthetic(attrName) {
-            auto * attr = new ATTR_Synthetic;
+            auto* attr = new ATTR_Synthetic;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attrs[i] = attr;
             continue;
         }
         IS_ATTR_Signature(attrName) {
-            auto * attr = new ATTR_Signature;
+            auto* attr = new ATTR_Signature;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->signatureIndex = reader.readget2();
@@ -479,7 +485,7 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             continue;
         }
         IS_ATTR_SourceFile(attrName) {
-            auto * attr = new ATTR_SourceFile;
+            auto* attr = new ATTR_SourceFile;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->sourceFileIndex = reader.readget2();
@@ -487,7 +493,7 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             continue;
         }
         IS_ATTR_SourceDebugExtension(attrName) {
-            auto * attr = new ATTR_SourceDebugExtension;
+            auto* attr = new ATTR_SourceDebugExtension;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->debugExtension = new u1[attr->attributeLength];
@@ -498,7 +504,7 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             continue;
         }
         IS_ATTR_LineNumberTable(attrName) {
-            auto * attr = new ATTR_LineNumberTable;
+            auto* attr = new ATTR_LineNumberTable;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->lineNumberTableLength = reader.readget2();
@@ -511,7 +517,7 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             continue;
         }
         IS_ATTR_LocalVariableTable(attrName) {
-            auto * attr = new ATTR_LocalVariableTable;
+            auto* attr = new ATTR_LocalVariableTable;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->localVariableTableLength = reader.readget2();
@@ -527,11 +533,12 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             continue;
         }
         IS_ATTR_LocalVariableTypeTable(attrName) {
-            auto * attr = new ATTR_LocalVariableTypeTable;
+            auto* attr = new ATTR_LocalVariableTypeTable;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->localVariableTypeTableLength = reader.readget2();
-            attr->localVariableTypeTable = new ATTR_LocalVariableTypeTable::_localVariableTypeTable[attr->localVariableTypeTableLength];
+            attr->localVariableTypeTable = new ATTR_LocalVariableTypeTable::_localVariableTypeTable[attr->
+                localVariableTypeTableLength];
             FOR_EACH(k, attr->localVariableTypeTableLength) {
                 attr->localVariableTypeTable[k].startPC = reader.readget2();
                 attr->localVariableTypeTable[k].length = reader.readget2();
@@ -543,14 +550,14 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             continue;
         }
         IS_ATTR_Deprecated(attrName) {
-            auto * attr = new ATTR_Deprecated;
+            auto* attr = new ATTR_Deprecated;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attrs[i] = attr;
             continue;
         }
         IS_ATTR_RuntimeVisibleAnnotations(attrName) {
-            auto * attr = new ATTR_RuntimeVisibleAnnotations;
+            auto* attr = new ATTR_RuntimeVisibleAnnotations;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->numAnnotations = reader.readget2();
@@ -562,7 +569,7 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             continue;
         }
         IS_ATTR_RuntimeInvisibleAnnotations(attrName) {
-            auto * attr = new ATTR_RuntimeInvisibleAnnotations;
+            auto* attr = new ATTR_RuntimeInvisibleAnnotations;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->numAnnotations = reader.readget2();
@@ -574,14 +581,16 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             continue;
         }
         IS_ATTR_RuntimeVisibleParameterAnnotations(attrName) {
-            auto * attr = new ATTR_RuntimeVisibleParameterAnnotations;
+            auto* attr = new ATTR_RuntimeVisibleParameterAnnotations;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->numParameters = reader.readget1();
-            attr->parameterAnnotations = new ATTR_RuntimeVisibleParameterAnnotations::_parameterAnnotations[attr->numParameters];
+            attr->parameterAnnotations = new ATTR_RuntimeVisibleParameterAnnotations::_parameterAnnotations[attr->
+                numParameters];
             FOR_EACH(k, attr->numParameters) {
                 attr->parameterAnnotations[k].numAnnotations = reader.readget2();
-                attr->parameterAnnotations[k].annotations = new Annotation[attr->parameterAnnotations[k].numAnnotations];
+                attr->parameterAnnotations[k].annotations = new Annotation[attr->parameterAnnotations[k].numAnnotations
+                ];
                 FOR_EACH(p, attr->parameterAnnotations[k].numAnnotations) {
                     attr->parameterAnnotations[k].annotations[p] = readToAnnotationStructure();
                 }
@@ -590,14 +599,16 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             continue;
         }
         IS_ATTR_RuntimeInvisibleParameterAnnotations(attrName) {
-            auto * attr = new ATTR_RuntimeInvisibleParameterAnnotations;
+            auto* attr = new ATTR_RuntimeInvisibleParameterAnnotations;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->numParameters = reader.readget1();
-            attr->parameterAnnotations = new ATTR_RuntimeInvisibleParameterAnnotations::_parameterAnnotations[attr->numParameters];
+            attr->parameterAnnotations = new ATTR_RuntimeInvisibleParameterAnnotations::_parameterAnnotations[attr->
+                numParameters];
             FOR_EACH(k, attr->numParameters) {
                 attr->parameterAnnotations[k].numAnnotations = reader.readget2();
-                attr->parameterAnnotations[k].annotations = new Annotation[attr->parameterAnnotations[k].numAnnotations];
+                attr->parameterAnnotations[k].annotations = new Annotation[attr->parameterAnnotations[k].numAnnotations
+                ];
                 FOR_EACH(p, attr->parameterAnnotations[k].numAnnotations) {
                     attr->parameterAnnotations[k].annotations[p] = readToAnnotationStructure();
                 }
@@ -606,7 +617,7 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             continue;
         }
         IS_ATTR_RuntimeVisibleTypeAnnotations(attrName) {
-            auto * attr = new ATTR_RuntimeVisibleTypeAnnotations;
+            auto* attr = new ATTR_RuntimeVisibleTypeAnnotations;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->numAnnotations = reader.readget2();
@@ -617,7 +628,8 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
 
                 // read to target_path
                 attr->annotations[k].targetPath.pathLength = reader.readget1();
-                attr->annotations[k].targetPath.path = new TypeAnnotation::TypePath::_path[attr->annotations[k].targetPath.pathLength];
+                attr->annotations[k].targetPath.path = new TypeAnnotation::TypePath::_path[attr->annotations[k]
+                                                                                           .targetPath.pathLength];
                 FOR_EACH(p, attr->annotations[k].targetPath.pathLength) {
                     attr->annotations[k].targetPath.path[p].typePathKind = reader.readget1();
                     attr->annotations[k].targetPath.path[p].typeArgumentIndex = reader.readget1();
@@ -625,7 +637,8 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
 
                 attr->annotations[k].typeIndex = reader.readget2();
                 attr->annotations[k].numElementValuePairs = reader.readget2();
-                attr->annotations[k].elementValuePairs = new TypeAnnotation::_elementValuePairs[attr->annotations[k].numElementValuePairs];
+                attr->annotations[k].elementValuePairs = new TypeAnnotation::_elementValuePairs[attr->annotations[k].
+                    numElementValuePairs];
                 FOR_EACH(p, attr->annotations[k].numElementValuePairs) {
                     attr->annotations[k].elementValuePairs[p].elementNameIndex = reader.readget2();
                     attr->annotations[k].elementValuePairs[p].value = readToElementValueStructure();
@@ -635,7 +648,7 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             continue;
         }
         IS_ATTR_RuntimeInvisibleTypeAnnotations(attrName) {
-            auto * attr = new ATTR_RuntimeInvisibleTypeAnnotations;
+            auto* attr = new ATTR_RuntimeInvisibleTypeAnnotations;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->numAnnotations = reader.readget2();
@@ -646,7 +659,8 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
 
                 // read to target_path
                 attr->annotations[k].targetPath.pathLength = reader.readget1();
-                attr->annotations[k].targetPath.path = new TypeAnnotation::TypePath::_path[attr->annotations[k].targetPath.pathLength];
+                attr->annotations[k].targetPath.path = new TypeAnnotation::TypePath::_path[attr->annotations[k]
+                                                                                           .targetPath.pathLength];
                 FOR_EACH(p, attr->annotations[k].targetPath.pathLength) {
                     attr->annotations[k].targetPath.path[p].typePathKind = reader.readget1();
                     attr->annotations[k].targetPath.path[p].typeArgumentIndex = reader.readget1();
@@ -654,7 +668,8 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
 
                 attr->annotations[k].typeIndex = reader.readget2();
                 attr->annotations[k].numElementValuePairs = reader.readget2();
-                attr->annotations[k].elementValuePairs = new TypeAnnotation::_elementValuePairs[attr->annotations[k].numElementValuePairs];
+                attr->annotations[k].elementValuePairs = new TypeAnnotation::_elementValuePairs[attr->annotations[k].
+                    numElementValuePairs];
                 FOR_EACH(p, attr->annotations[k].numElementValuePairs) {
                     attr->annotations[k].elementValuePairs[p].elementNameIndex = reader.readget2();
                     attr->annotations[k].elementValuePairs[p].value = readToElementValueStructure();
@@ -664,7 +679,7 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             continue;
         }
         IS_ATTR_AnnotationDefault(attrName) {
-            auto * attr = new ATTR_AnnotationDefault;
+            auto* attr = new ATTR_AnnotationDefault;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->defaultValue = readToElementValueStructure();
@@ -672,7 +687,7 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             continue;
         }
         IS_ATTR_BootstrapMethods(attrName) {
-            auto * attr = new ATTR_BootstrapMethods;
+            auto* attr = new ATTR_BootstrapMethods;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->numBootstrapMethods = reader.readget2();
@@ -690,7 +705,7 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
             continue;
         }
         IS_ATTR_MethodParameters(attrName) {
-            auto * attr = new ATTR_MethodParameter;
+            auto* attr = new ATTR_MethodParameter;
             attr->attributeNameIndex = attrStrIndex;
             attr->attributeLength = reader.readget4();
             attr->parameterCount = reader.readget1();
@@ -700,44 +715,43 @@ bool JavaClass::parseAttribute(AttributeInfo ** (&attrs), u2 attributeCount) {
                 attr->parameters[k].accessFlags = reader.readget2();
             }
             attrs[i] = attr;
-            continue;
         }
     }
 
     return true;
 }
 
-VerificationTypeInfo *JavaClass::determineVerificationType(u1 tag) {
+VerificationTypeInfo* JavaClass::determineVerificationType(u1 tag) {
     switch (tag) {
-    case VariableInfoTag::ITEM_Top: {
+    case ITEM_Top: {
         return new VariableInfo_Top();
     }
-    case VariableInfoTag::ITEM_Integer: {
+    case ITEM_Integer: {
         return new VariableInfo_Integer;
     }
-    case VariableInfoTag::ITEM_Float: {
+    case ITEM_Float: {
         return new VariableInfo_Float;
     }
-    case VariableInfoTag::ITEM_Null: {
+    case ITEM_Null: {
         return new VariableInfo_Null;
     }
-    case VariableInfoTag::ITEM_UninitializedThis: {
+    case ITEM_UninitializedThis: {
         return new VariableInfo_UninitializedThis;
     }
-    case VariableInfoTag::ITEM_Object: {
-        auto *x = new VariableInfo_Object;
+    case ITEM_Object: {
+        auto* x = new VariableInfo_Object;
         x->cpoolIndex = reader.readget2();
         return x;
     }
-    case VariableInfoTag::ITEM_Uninitialized: {
-        auto *x = new VariableInfo_Uninitialized;
+    case ITEM_Uninitialized: {
+        auto* x = new VariableInfo_Uninitialized;
         x->offset = reader.readget2();
         return x;
     }
-    case VariableInfoTag::ITEM_Long: {
+    case ITEM_Long: {
         return new VariableInfo_Long;
     }
-    case VariableInfoTag::ITEM_Double: {
+    case ITEM_Double: {
         return new VariableInfo_Double;
     }
     default:
@@ -747,38 +761,38 @@ VerificationTypeInfo *JavaClass::determineVerificationType(u1 tag) {
     SHOULD_NOT_REACH_HERE
 }
 
-TargetInfo *JavaClass::determineTargetType(u1 tag) {
+TargetInfo* JavaClass::determineTargetType(u1 tag) {
     if (tag == 0x00 || tag == 0x01) {
-        auto * t = new Target_TypeParameter;
+        auto* t = new Target_TypeParameter;
         t->typeParameterIndex = reader.readget1();
         return t;
     }
-    else if (tag == 0x10) {
-        auto * t = new Target_SuperType;
+    if (tag == 0x10) {
+        auto* t = new Target_SuperType;
         t->superTypeIndex = reader.readget2();
         return t;
     }
-    else if (tag == 0x11 || tag == 0x12) {
-        auto * t = new Target_TypeParameterBound;
+    if (tag == 0x11 || tag == 0x12) {
+        auto* t = new Target_TypeParameterBound;
         t->typeParameterIndex = reader.readget1();
         t->boundIndex = reader.readget1();
         return t;
     }
-    else if (tag == 0x13 || tag == 0x14 || tag == 0x15) {
+    if (tag == 0x13 || tag == 0x14 || tag == 0x15) {
         return new Target_Empty;
     }
-    else if (tag == 0x16) {
-        auto * t = new Target_FormalParameter;
+    if (tag == 0x16) {
+        auto* t = new Target_FormalParameter;
         t->formalParameter = reader.readget1();
         return t;
     }
-    else if (tag == 0x17) {
-        auto * t = new Target_Throws;
+    if (tag == 0x17) {
+        auto* t = new Target_Throws;
         t->throwsTypeIndex = reader.readget2();
         return t;
     }
-    else if (tag == 0x40 || tag == 0x41) {
-        auto * t = new Target_LocalVar;
+    if (tag == 0x40 || tag == 0x41) {
+        auto* t = new Target_LocalVar;
         t->tableLength = reader.readget2();
         FOR_EACH(i, t->tableLength) {
             t->table[i].startPc = reader.readget2();
@@ -787,18 +801,18 @@ TargetInfo *JavaClass::determineTargetType(u1 tag) {
         }
         return t;
     }
-    else if (tag == 0x42) {
-        auto * t = new Target_Catch;
+    if (tag == 0x42) {
+        auto* t = new Target_Catch;
         t->exceptionTableIndex = reader.readget2();
         return t;
     }
-    else if (tag >= 0x43 && tag <= 0x46) {
-        auto * t = new Target_Offset;
+    if (tag >= 0x43 && tag <= 0x46) {
+        auto* t = new Target_Offset;
         t->offset = reader.readget2();
         return t;
     }
-    else if (tag >= 0x47 && tag <= 0x4B) {
-        auto * t = new Target_TypeArgument;
+    if (tag >= 0x47 && tag <= 0x4B) {
+        auto* t = new Target_TypeArgument;
         t->offset = reader.readget2();
         t->typeArgumentIndex = reader.readget1();
         return t;
@@ -817,7 +831,7 @@ Annotation JavaClass::readToAnnotationStructure() {
     return a;
 }
 
-ElementValue * JavaClass::readToElementValueStructure() {
+ElementValue* JavaClass::readToElementValueStructure() {
     char tag = reader.readget1();
     switch (tag) {
     case 'B':
@@ -830,28 +844,28 @@ ElementValue * JavaClass::readToElementValueStructure() {
     case 'Z':
     case 's': {
         // const_value_index of union
-        auto * e = new ElementValue_ConstantValueIndex;
+        auto* e = new ElementValue_ConstantValueIndex;
         e->constValueIndex = reader.readget2();
         return e;
     }
     case 'e': {
-        auto * e = new ElementValue_EnumConstValue;
+        auto* e = new ElementValue_EnumConstValue;
         e->typeNameIndex = reader.readget2();
         e->constNameIndex = reader.readget2();
         break;
     }
     case 'c': {
-        auto * e = new ElementValue_ClassInfoIndex;
+        auto* e = new ElementValue_ClassInfoIndex;
         e->classInfoIndex = reader.readget2();
         return e;
     }
     case '@': {
-        auto * e = new ElementValue_Annotation;
+        auto* e = new ElementValue_Annotation;
         e->annotationValue = readToAnnotationStructure();
         return e;
     }
     case '[': {
-        auto *e = new ElementValue_ArrayValue;
+        auto* e = new ElementValue_ArrayValue;
         e->numValues = reader.readget2();
         e->values = new ElementValue *[e->numValues];
         FOR_EACH(i, e->numValues) {

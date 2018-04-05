@@ -13,8 +13,8 @@ void ObjectMonitor::enter(std::thread::id tid) {
             monitorCnt++;
             entered = true;
         }
-        else {        
-            cv.wait(lock, [=] {return monitorCnt==0; });
+        else {
+            cv.wait(lock, [=] { return monitorCnt == 0; });
             entered = true;
         }
     }
@@ -24,7 +24,7 @@ void ObjectMonitor::enter(std::thread::id tid) {
 void ObjectMonitor::exit() {
     std::unique_lock<std::mutex> lock(internalMtx);
 
-    if(!entered) {
+    if (!entered) {
         throw std::runtime_error("illegal monitor state");
     }
 

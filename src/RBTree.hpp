@@ -27,19 +27,19 @@ public:
     };
 
 public:
-    inline explicit RBTree() {
+    explicit RBTree() {
         root = nullptr;
     }
 
-    inline ~RBTree() {
+    ~RBTree() {
         clear();
     }
 
-    inline bool empty() {
+    bool empty() {
         return root == nullptr ? true : false;
     }
 
-    inline void clear() {
+    void clear() {
         recursiveClear(root);
         root = nullptr;
     }
@@ -69,15 +69,15 @@ private:
     void transplant(Node* u, Node* v);
 
 private:
-    inline bool isRed(Node* node) const {
+    bool isRed(Node* node) const {
         return node->black == false;
     }
 
-    inline bool isBlack(Node* node) const {
+    bool isBlack(Node* node) const {
         return node->black == true;
     }
 
-    inline bool exist(Node* node) const {
+    bool exist(Node* node) const {
         return node != nullptr;
     }
 
@@ -96,7 +96,7 @@ void RBTree<_KeyType, _ValueType>::add(_ResolvedKeyType key, _ResolvedValueType 
             traverse->value = value;
             return;
         }
-        else if (key < traverse->key) {
+        if (key < traverse->key) {
             validNode = traverse;
             insertLeft = true;
             traverse = traverse->left;
@@ -142,7 +142,7 @@ void RBTree<_KeyType, _ValueType>::del(_ResolvedKeyType key) {
         if (key == traverse->key) {
             break;
         }
-        else if (key < traverse->key) {
+        if (key < traverse->key) {
             traverse = traverse->left;
         }
         else if (key > traverse->key) {
@@ -167,17 +167,15 @@ void RBTree<_KeyType, _ValueType>::del(_ResolvedKeyType key) {
             }
             return;
         }
-        else {
-            if (traverse->parent->left == traverse) {
-                traverse->parent->left = nullptr;
-                delete temp;
-                return;
-            }
-            else if (traverse->parent->right == traverse) {
-                traverse->parent->right = nullptr;
-                delete temp;
-                return;
-            }
+        if (traverse->parent->left == traverse) {
+            traverse->parent->left = nullptr;
+            delete temp;
+            return;
+        }
+        if (traverse->parent->right == traverse) {
+            traverse->parent->right = nullptr;
+            delete temp;
+            return;
         }
     }
     else if (traverse->left == nullptr && traverse->right != nullptr) {
@@ -233,7 +231,7 @@ bool RBTree<_KeyType, _ValueType>::exist(_ResolvedKeyType key) {
         if (key == traverse->key) {
             break;
         }
-        else if (key < traverse->key) {
+        if (key < traverse->key) {
             traverse = traverse->left;
         }
         else if (key > traverse->key) {
@@ -253,7 +251,7 @@ _ValueType RBTree<_KeyType, _ValueType>::get(_ResolvedKeyType key) {
         if (key == traverse->key) {
             break;
         }
-        else if (key < traverse->key) {
+        if (key < traverse->key) {
             traverse = traverse->left;
         }
         else if (key > traverse->key) {

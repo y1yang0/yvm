@@ -5,14 +5,14 @@
 #include <thread>
 #include <condition_variable>
 
-class ObjectMonitor{
+class ObjectMonitor {
 public:
     void enter(std::thread::id tid);
     void exit();
 
 private:
     std::mutex internalMtx;
-    
+
     volatile bool entered = false;
     int32_t monitorCnt = 0;
     std::thread::id owner;

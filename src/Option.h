@@ -6,7 +6,6 @@
 #undef YVM_DEBUG_SHOW_SIZEOF_ALL_TYPE
 
 
-
 /*
  * defint to show executing bytecode and current class of method, method name and
  * method descriptor
@@ -15,10 +14,10 @@
 #undef  YVM_DEBUG_SHOW_EXEC_FLOW
 
 
- /*
- * define to output *.class parsing result, which contains constant pool table,
- * fields, methods, class access flag, interfaces, etc
- */
+/*
+* define to output *.class parsing result, which contains constant pool table,
+* fields, methods, class access flag, interfaces, etc
+*/
 #undef YVM_DEBUG_CLASS_FILE
 #ifdef YVM_DEBUG_CLASS_FILE
 #define YVM_DEBUG_SHOW_VERSION
@@ -32,4 +31,3 @@
 
 
 #endif // !YVM_OPTION_H
-

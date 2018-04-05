@@ -58,7 +58,7 @@ DEF_CONSTANT_WITH_3_FIELDS(NameAndType,u2,nameIndex,u2,descriptorIndex);
 // It's a special structure whose a field is an array of dynamic size
 // We need override destructor functions to realse these memory while the object was destorying
 struct CONSTANT_Utf8 : public ConstantPoolInfo {
-    static const u1 tag = ConstantTag::TAG_Utf8;
+    static const u1 tag = TAG_Utf8;
     u2 length;
     u1* bytes;
 

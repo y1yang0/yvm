@@ -18,7 +18,7 @@ struct Converter {
     /**
     * \brief Convert java.lang.String object to a stl string
     */
-    static std::string javastring2stdtring(JObject * objectref);
+    static std::string javastring2stdtring(JObject* objectref);
 };
 
 /**
@@ -28,6 +28,7 @@ inline u1 consumeU1(const u1* code, u4& opidx) {
     const u1 byte = code[++opidx];
     return byte;
 }
+
 inline u2 consumeU2(const u1* code, u4& opidx) {
     const u1 indexbyte1 = code[++opidx];
     const u1 indexbyte2 = code[++opidx];
@@ -45,7 +46,7 @@ inline u4 consumeU4(const u1* code, u4& opidx) {
 }
 
 JType* cloneValue(JType* value);
-bool hasInheritanceRelationship(const JavaClass * source, const JavaClass * super);
+bool hasInheritanceRelationship(const JavaClass* source, const JavaClass* super);
 
 #define IS_COMPUTATIONAL_TYPE_1(value) (typeid(*value)!=typeid(JDouble) && typeid(*value)!=typeid(JLong))
 #define IS_COMPUTATIONAL_TYPE_2(value) (typeid(*value)==typeid(JDouble) || typeid(*value)==typeid(JLong))

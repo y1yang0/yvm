@@ -17,7 +17,7 @@ public:
         fin.close();
     }
 
-    inline bool openFile(char* filePath) {
+    bool openFile(char* filePath) {
         if (!fin.is_open()) {
             fin.open(filePath, std::ios::binary);
             return fin.is_open();
@@ -25,21 +25,21 @@ public:
         return true;
     }
 
-    inline bool haveNoExtraBytes() {
+    bool haveNoExtraBytes() {
         return fin.peek() == EOF;
     }
 
-    inline u4 readget4() {
+    u4 readget4() {
         fin.read(u4buf, 4);
         return getu4(u4buf);
     }
 
-    inline u2 readget2() {
+    u2 readget2() {
         fin.read(u2buf, 2);
         return getu2(u2buf);
     }
 
-    inline u1 readget1() {
+    u1 readget1() {
         fin.read(u1buf, 1);
         return getu1(u1buf);
     };
