@@ -6,6 +6,7 @@
 #include <vector>
 #include <algorithm>
 #include <string.h>
+#include <set>
 #include "ClassFile.h"
 #include <mutex>
 class CodeExecution;
@@ -65,8 +66,8 @@ public:
 private:
     std::recursive_mutex maMutex;
 
-    std::vector<const char *> linkedClasses;
-    std::vector<const char *> initedClasses;
+    std::set<const char *> linkedClasses;
+    std::set<const char *> initedClasses;
     std::map<std::string, JavaClass *> classTable;
     std::vector<std::string> searchPaths;
 

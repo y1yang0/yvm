@@ -143,12 +143,12 @@ void MethodArea::linkJavaClass(const char* jcName) {
             }
         }
     }
-    linkedClasses.push_back((const char*)javaClass->getClassName());
+    linkedClasses.insert(javaClass->getClassName());
 }
 
 void MethodArea::initJavaClass(CodeExecution& exec, const char* jcName) {
     std::lock_guard<std::recursive_mutex> lockMA(maMutex);
-    initedClasses.push_back(jcName);
+    initedClasses.insert(jcName);
     exec.invokeByName(yrt.ma->findJavaClass(jcName), "<clinit>", "()V");
 }
 
