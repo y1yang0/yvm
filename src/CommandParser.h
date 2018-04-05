@@ -1,7 +1,11 @@
+#ifndef YVM_COMMANDPARSER_H
+#define YVM_COMMANDPARSER_H
+
 #include<iostream>
 #include<string>
 #include<map>
 #include<vector>
+
 using namespace std;
 struct Flag
 {
@@ -20,6 +24,10 @@ struct Flag
 		}
 		std::cout << std::endl;
 	}
+
+    inline std::vector<std::string>& getFlagValues() { return attributes
+	    ; }
+
 private:
 	std::string SimpleName;
 	std::string FullName;
@@ -31,10 +39,8 @@ struct Parser
 {
 	Parser() {
 	}
-	void Parse(int argc, char ** argv) {
-	commandName= argv[1];
-		for (int i = 2; i < argc; i++)
-		{
+	void parse(int argc, char ** argv) {
+		for (int i = 1; i < argc; i++){
 			parseHelper(argv[i]);
 		}
 	}
@@ -63,7 +69,6 @@ struct Parser
 			}
 		}
 		else if (temp_string.substr(0, 1) == "-") {
-
 			temp_string.erase(0, 1);
 			size_t pos = temp_string.find_first_of('=');
 			if (pos != string::npos) {
@@ -82,6 +87,8 @@ struct Parser
 					}
 				}
 			}
+		}else {
+            runningProgram = temp_string;
 		}
 	}
 
@@ -113,24 +120,16 @@ struct Parser
 			s.getAttributes();
 		}
 	}
-//private:
+
+    inline const std::string & getRunningProgram() const { return runningProgram; }
+
+    inline std::vector<std::string> &getFlagByName(const std::string & str) { return Flags.at(SimpleNames.find(str)->second).getFlagValues(); }
+
+private:
+    std::string runningProgram;
 	int theIndex = -1;
-	std::string commandName;
 	std::map<std::string, int> SimpleNames;
 	std::map<std::string, int> FullNames;
 	std::vector<Flag> Flags;
 };
-
-void main(int argc,char **argv) {
-	std::cout << argc << " " << std::endl;
-	Parser *aParse = new Parser();
-	aParse->addFlag("h", "help", "this is the operation help");
-	aParse->addFlag("d", "debug", "the inforamation debug");
-	aParse->addFlag("w", "wocao", "just a Wocao ");
-	aParse->Parse(argc, argv);
-	std::cout << aParse->commandName << std::endl;
-	aParse->getFlags();
-	
-	
-
-}
+#endif

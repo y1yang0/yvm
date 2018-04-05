@@ -122,5 +122,8 @@
     <ClInclude Include="ObjectMonitor.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="CommandParser.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

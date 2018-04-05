@@ -1,23 +1,25 @@
 #include "YVM.h"
+#include "CommandParser.h"
 
-int main(int argc, const char* argv[]) {
-    const char* ydk[] = {
-        R"(C:\Users\Cthulhu\Desktop\yvm\javalib)",
-    };
+int main(int argc, char* argv[]) {
+    Parser cparser;
+    cparser.addFlag("h", "help", "List help documentations and uasges.");
+    cparser.addFlag("rt", "runtime", "Attach java runtime libraries of this YVM.");
+    cparser.addFlag("sp", "searchpath", "Add *.class searching path.");
+    cparser.parse(argc, argv);
+    
+    auto & runtimeLibs = cparser.getFlagByName("rt");
+    auto & searchLibs = cparser.getFlagByName("sp");
+    runtimeLibs.insert(runtimeLibs.end(), searchLibs.begin(), searchLibs.end());
 
     YVM vm;
-    vm.warmUp(ydk, sizeof(ydk) / sizeof(ydk[0]));
-    vm.callMain("ydk/test/InheritanceTest");
-    vm.callMain("ydk/test/HelloWorldTest");
-    vm.callMain("ydk/test/BubbleSortTest");
-    vm.callMain("ydk/test/StringConcatenation");
-    vm.callMain("ydk/test/InstanceofTest");
-    //vm.callMain("ydk/test/ThrowExceptionTest");
-    //vm.callMain("ydk/test/StackTraceTest");
-    vm.callMain("ydk/test/QuickSort");
-    vm.callMain("ydk/test/MathTest");
-    vm.callMain("ydk/test/CreateAsyncThreadsTest");
-    vm.callMain("ydk/test/SynchronizedBlockTest");
+    vm.warmUp(runtimeLibs);
+    auto & runningProgram = cparser.getRunningProgram();
+    if(runningProgram.empty()) {
+        std::cerr << " Fatal error: no running program specified.\n";
+        return 1;
+    }
+    vm.callMain(cparser.getRunningProgram().c_str());
     system("pause");
     return 0;
 }

@@ -5,9 +5,9 @@
 #include "Descriptor.h"
 
 
-MethodArea::MethodArea(const char* searchPath[], int howManySearchPath) {
-    for (int i = 0; i < howManySearchPath; i++) {
-        searchPaths.emplace_back(searchPath[i]);
+MethodArea::MethodArea(const std::vector<std::string> & libPaths) {
+    for(const auto & path :libPaths) {
+        searchPaths.push_back(path);
     }
 }
 

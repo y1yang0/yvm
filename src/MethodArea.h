@@ -13,7 +13,7 @@ class JavaClass;
 
 class MethodArea {
 public:
-    MethodArea(const char* searchPath[], int howManySearchPath);
+    MethodArea(const std::vector<std::string> & libPaths);
     ~MethodArea();
 
     JavaClass* findJavaClass(const char* jcName);

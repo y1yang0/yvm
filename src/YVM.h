@@ -18,7 +18,7 @@ public:
     static void registerNativeMethod(const char* className, const char* name, const char* descriptor,
                                      JType*(*func)(RuntimeEnv* env));
 
-    void warmUp(const char* libraryPath[], int howManySearchPath) const;
+    void warmUp(const std::vector<std::string> & libPaths) const;
 
 };
 

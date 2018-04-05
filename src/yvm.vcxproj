@@ -133,6 +133,7 @@
     <ClInclude Include="AccessFlag.h" />
     <ClInclude Include="ClassFile.h" />
     <ClInclude Include="CodeExecution.hpp" />
+    <ClInclude Include="CommandParser.h" />
     <ClInclude Include="ConstantTag.h" />
     <ClInclude Include="Debug.h" />
     <ClInclude Include="Descriptor.h" />
