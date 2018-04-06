@@ -22,7 +22,7 @@ void StackTrace::printStackTrace() {
 
 void StackTrace::setThrowExceptionInfo(JObject* throwableObject) {
     throwExceptionClass = throwableObject->jc;
-    JObject* messageField = dynamic_cast<JObject*>(
+    auto* messageField = dynamic_cast<JObject*>(
         yrt.jheap->getObjectFieldByName(
             const_cast<JavaClass*>(throwableObject->jc), "message", "Ljava/lang/String;", throwableObject, 0)
     );

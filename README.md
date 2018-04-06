@@ -10,7 +10,8 @@ YVM是用C++写的一个Java虚拟机，现在支持Java大部分功能，不过
 + [RTTI](./javalib_src/ydk/test/InstanceofTest.java)
 + [字符串拼接(+,+=符号重载)](./javalib_src/ydk/test/StringConcatenation.java)
 + [异常处理(可输出stacktrace)](./javalib_src/ydk/test/ThrowExceptionTest.java)
-+ [创建异步线程!](./javalib_src/ydk/test/CreateAsyncThreadsTest.java)
++ [创建异步线程](./javalib_src/ydk/test/CreateAsyncThreadsTest.java)
++ [Synchronized(支持对象锁)](./javalib_src/ydk/test/SynchronizedBlockTest.java)
 
 # 使用方法
 0. 支持G++7.0,MSVC 2017,CMakeLists直接编译即可
@@ -41,9 +42,12 @@ YVM是用C++写的一个Java虚拟机，现在支持Java大部分功能，不过
 + 异常调用栈轨迹
 ![](./public/stj.png)
 ![](./public/stc.png)
-+ 创建线程
-![](./public/create_async_java.png)
-![](./public/create_async_console.png)
++ 原生多线程
+![](./public/without_synchronized_java.png)
+![](./public/without_synchronized_console.png)
++ Synchronized保护下的多线程
+![](./public/synchronized_java.png)
+![](./public/synchronized_console.png)
 
 # License
 Code licensed under the MIT License.

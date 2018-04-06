@@ -8,6 +8,7 @@ This is a homemade Java virtual machine written by c++, the main components are 
 + [String concatenation](./javalib_src/ydk/test/StringConcatenation.java)
 + [Exception handling](./javalib_src/ydk/test/ThrowExceptionTest.java)
 + [Async native threads](./javalib_src/ydk/test/CreateAsyncThreadsTest.java)
++ [Synchronized block with object lock](./javalib_src/ydk/test/SynchronizedBlockTest.java)
 
 # Usage
 0. You can use `G++7.0`/`MSVC 2017` to compile it with -std=c++11 or newer. And using cmake is also available, we don't need to set any building options.
@@ -38,9 +39,12 @@ Rewrote JDK classes are as follows:
 + print stack trace when exception occurred
 ![](./public/stj.png)
 ![](./public/stc.png)
-+ create 1:1 native thread!
-![](./public/create_async_java.png)
-![](./public/create_async_console.png)
++ native multithreading
+![](./public/without_synchronized_java.png)
+![](./public/without_synchronized_console.png)
++ multithreading with synchronized(){}
+![](./public/synchronized_java.png)
+![](./public/synchronized_console.png)
 
 # License
 Code licensed under the MIT License.

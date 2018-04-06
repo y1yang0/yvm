@@ -46,6 +46,7 @@ std::string peelArrayComponentTypeFrom(const char* descriptor);
 std::tuple<int, std::vector<int>> peelMethodParameterAndType(const char* descriptor);
 
 #define IS_SIGNATURE_POLYMORPHIC_METHOD(className,methodName)\
-    (strcmp(className,"java/lang/invoke/MethodHandle")==0 && (strcmp(methodName,"invokeExtract")==0||strcmp(methodName,"invoke")==0))
+    (strcmp(className,"java/lang/invoke/MethodHandle")==0 && \
+    (strcmp(methodName,"invokeExtract")==0||strcmp(methodName,"invoke")==0))
 
 #endif // !YVM_DESCRIPTOR_H
