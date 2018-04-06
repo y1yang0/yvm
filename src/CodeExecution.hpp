@@ -256,7 +256,7 @@ ReturnType* CodeExecution::currentStackPop() {
 }
 
 template <typename ResultType, typename CallableObjectType>
-inline void CodeExecution::binaryArithmetic(CallableObjectType op) {
+void CodeExecution::binaryArithmetic(CallableObjectType op) {
     auto* value2 = currentStackPop<ResultType>();
     auto* value1 = currentStackPop<ResultType>();
     auto* result = new ResultType;
@@ -267,7 +267,7 @@ inline void CodeExecution::binaryArithmetic(CallableObjectType op) {
 }
 
 template <typename ResultType, typename CallableObjectType>
-inline void CodeExecution::unaryArithmetic(CallableObjectType op) {
+void CodeExecution::unaryArithmetic(CallableObjectType op) {
     auto* ival = currentStackPop<ResultType>();
     ival->val = op(ival->val);
     currentFrame->stack.push(ival);

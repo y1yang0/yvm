@@ -2,7 +2,6 @@
 #include "Debug.h"
 #include "AccessFlag.h"
 #include "ClassFile.h"
-#include <iostream>
 #include "Opcode.h"
 #include "JavaClass.h"
 #include "JavaHeap.h"
@@ -10,6 +9,8 @@
 #include <cassert>
 #include "Descriptor.h"
 #include <cmath>
+#include <iostream>
+#include <functional>
 
 JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
     for (decltype(ext.codeLength) op = 0; op < ext.codeLength; op++) {
@@ -674,7 +675,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
         }
             break;
         case op_frem: {
-            binaryArithmetic<JFloat>(std::fmod<float,float>);
+            binaryArithmetic<JFloat>(std::fmod<float, float>);
         }
             break;
         case op_drem: {
@@ -698,53 +699,60 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
         }
             break;
         case op_ishl: {
-            binaryArithmetic<JInt>(
-                [](int32_t a,int32_t b)->int32_t{
+            binaryArithmetic<JInt>([](int32_t a,int32_t b)-> int32_t
+            {
                 return a * std::pow(2, b & 0x1f);
-            });
+             });
         }
             break;
         case op_lshl: {
             binaryArithmetic<JLong>(
-                [](int64_t a, int64_t b)->int64_t {
+            [](int64_t a, int64_t b)-> int64_t
+            {
                 return a * std::pow(2, b & 0x3f);
             });
         }
             break;
         case op_ishr: {
             binaryArithmetic<JInt>(
-                [](int32_t a, int32_t b)->int32_t {
-                return std::floor(a / std::pow(2,b & 0x1f));
+            [](int32_t a, int32_t b)-> int32_t
+            {
+                return std::floor(a / std::pow(2, b & 0x1f));
             });
         }
             break;
         case op_lshr: {
             binaryArithmetic<JLong>(
-                [](int64_t a, int64_t b)->int64_t {
+            [](int64_t a, int64_t b)-> int64_t
+            {
                 return std::floor(a / std::pow(2, b & 0x3f));
             });
         }
             break;
         case op_iushr: {
             binaryArithmetic<JInt>(
-                [](int32_t a, int32_t b)->int32_t {
-                    if(a>0) {
-                        return a >> (b & 0x1f);
-                    }else if(a <0) {
-                        return (a >> (b & 0x1f)) + (2 << ~(b & 0x1f));
-                    }else {
-                        throw std::runtime_error("0 is not handled");
-                    }
+            [](int32_t a, int32_t b)-> int32_t
+            {
+                if (a > 0) {
+                    return a >> (b & 0x1f);
+                }
+                else if (a < 0) {
+                    return (a >> (b & 0x1f)) + (2 << ~(b & 0x1f));
+                }
+                else {
+                    throw std::runtime_error("0 is not handled");
+                }
             });
         }
             break;
         case op_lushr: {
             binaryArithmetic<JLong>(
-                [](int64_t a, int64_t b)->int64_t {
-                if (a>0) {
+            [](int64_t a, int64_t b)-> int64_t
+            {
+                if (a > 0) {
                     return a >> (b & 0x3f);
                 }
-                else if (a <0) {
+                else if (a < 0) {
                     return (a >> (b & 0x1f)) + (2L << ~(b & 0x3f));
                 }
                 else {
@@ -774,7 +782,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
         }
             break;
         case op_lxor: {
-            binaryArithmetic<JLong> (std::bit_xor<>());
+            binaryArithmetic<JLong>(std::bit_xor<>());
         }
             break;
         case op_iinc: {

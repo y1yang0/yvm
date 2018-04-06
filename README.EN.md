@@ -19,7 +19,7 @@ This is a homemade Java virtual machine written by c++, the main components are 
 ```
 
 # About JDK
-Any java virtual machines can not run a Java program without Java libraries. As you may know, some opcode suck like `ldc`,`monitorenter/monitorexit`,`athrow` are internally require our virtual machine to operate JDK classes('java.lang.Class','java.lang.String','java.lang.Throwable',etc). Hence, I have to rewrite some [JDK classes](javalib_src) for building a runnable VM since original JDK classes are so complicated that it's inconvenient for early developing. 
+Any java virtual machines can not run a Java program without Java libraries. As you may know, some opcodes like `ldc`,`monitorenter/monitorexit`,`athrow` are internally requiring our virtual machine to operate JDK classes('java.lang.Class','java.lang.String','java.lang.Throwable',etc). Hence, I have to rewrite some [JDK classes](javalib_src) for building a runnable VM since original JDK classes are so complicated that it's inconvenient for early developing. 
 Rewrote JDK classes are as follows:
 + `java.lang.String`
 + `java.lang.StringBuilder`

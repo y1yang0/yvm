@@ -12,11 +12,13 @@ struct Frame {
     std::stack<JType*> stack;
 
     ~Frame() {
-        for (auto* p : locals) {
-            delete p;
+        while (!locals.empty()){
+            auto* temp = locals.back();
+            locals.pop_back();
+            delete temp;
         }
         while (!stack.empty()) {
-            JType* type = stack.top();
+            auto* type = stack.top();
             stack.pop();
             delete type;
         }
