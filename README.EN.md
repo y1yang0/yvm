@@ -19,7 +19,8 @@ This is a homemade Java virtual machine written by c++, the main components are 
 ```
 
 # About JDK
-Any java virtual machines can not run without java libraries. As you may know, some opcode suck like 'ldc','monitorenter/monitorexit','athrow' are internally need our virtual machine to operate JDK classes('java.lang.Class','java.lang.String','java.lang.Throwable',etc). Here I have to rewrite some [JDK classes](javalib_src) if I want to build a runnable VM since original JDK classes is so complicated for my developing. Rewritted JDK classes are as follows:
+Any java virtual machines can not run a Java program without Java libraries. As you may know, some opcode suck like `ldc`,`monitorenter/monitorexit`,`athrow` are internally require our virtual machine to operate JDK classes('java.lang.Class','java.lang.String','java.lang.Throwable',etc). Hence, I have to rewrite some [JDK classes](javalib_src) for building a runnable VM since original JDK classes are so complicated that it's inconvenient for early developing. 
+Rewrote JDK classes are as follows:
 + `java.lang.String`
 + `java.lang.StringBuilder`
 + `java.lang.Throwable`
@@ -51,15 +52,15 @@ Code licensed under the MIT License.
 ![](./public/arch.png)
 
 ## {Components}
-+ `javalib` source files of rewritted JDK classes 
-+ `public` documentations, images, etc.
++ `javalib` Source files of rewrote JDK classes 
++ `public` Documentations, images, etc.
 + `src/JavaClass.h` `.class` Internal representation of java class
 + `src/Frame.h` Calling stack structure
-+ `src/MethodArea.h` Method area，it is responsibile to load/link/initialize/remove JavaClass into YVM
-+ `src/JavaHeap.h` It owns and manage all instance data and array items data. We can find actual object/array data via corresponding offset
-+ `src/JavaType.h` Types of internal VM values
-+ `src/RuntimeEnv.h` Runtime data.
-+ `src/CodeExecution.h` Code executing engine, here we interrupt opcode and execute directly
++ `src/MethodArea.h` Method area. It is responsibile to load/link/initialize/remove JavaClass into/from YVM
++ `src/JavaHeap.h` It owns and manages all instances and array items. We can find actual object/array data via corresponding heap offset, respectively.
++ `src/JavaType.h` Types of internal VM value
++ `src/RuntimeEnv.h` Runtime environment.
++ `src/CodeExecution.h` Code executing engine, here we interrupt opcode and execute directly.
 
 ## {Public design, private implementation}
 1. In YVM, we use the slash-decorated class name representation. Any other class name representations would be rejected to load.
