@@ -36,18 +36,18 @@ bool MethodArea::loadJavaClass(const char* jcName) {
         // Load this class which specified by jcName (it' a path string)
         JavaClass* jc = new JavaClass(path.c_str());
         jc->parseClassFile();
-        classTable.insert(std::make_pair(std::string((char*)jc->getClassName()), jc));
+        classTable.insert(std::make_pair(std::string(jc->getClassName()), jc));
 
         // Load super class if it doesnt exist in class table
-        if (jc->getSuperClassName() && !findJavaClass((char*)jc->getSuperClassName())) {
-            this->loadJavaClass((char*)jc->getSuperClassName());
+        if (jc->getSuperClassName() && !findJavaClass(jc->getSuperClassName())) {
+            this->loadJavaClass(jc->getSuperClassName());
         }
 
         // Load super interfaces if exitsted
         std::vector<u2>&& interfacesIdx = jc->getInterfacesIndex();
         if (jc->getInterfacesIndex().empty()) {
             for (auto idx : interfacesIdx) {
-                this->loadJavaClass((char *)jc->getString(idx));
+                this->loadJavaClass(jc->getString(idx));
             }
         }
 
@@ -61,7 +61,7 @@ void MethodArea::linkJavaClass(const char* jcName) {
 
     JavaClass* javaClass = yrt.ma->findJavaClass(jcName);
     FOR_EACH(fieldOffset, javaClass->raw.fieldsCount) {
-        char* descriptor = (char*)javaClass->getString(javaClass->raw.fields[fieldOffset].descriptorIndex);
+        const char* descriptor = javaClass->getString(javaClass->raw.fields[fieldOffset].descriptorIndex);
         if (IS_FIELD_REF_CLASS(descriptor)) {
             // Special handling for field whose type is another class
             if (IS_FIELD_STATIC(javaClass->raw.fields[fieldOffset].accessFlags)) {
@@ -71,7 +71,7 @@ void MethodArea::linkJavaClass(const char* jcName) {
                     if (typeid(*javaClass->raw.fields[fieldOffset].attributes[fieldAttr]) == typeid(ATTR_ConstantValue)
                     ) {
                         if (strcmp("Ljava/lang/String;", descriptor) == 0) {
-                            const char* constantStr = (char*)javaClass->getString(
+                            const char* constantStr = javaClass->getString(
                                 ((CONSTANT_String*)javaClass->raw.constPoolInfo[
                                     ((ATTR_ConstantValue*)javaClass->raw.fields[fieldOffset].attributes[fieldAttr]
                                     )->constantValueIndex])->stringIndex);

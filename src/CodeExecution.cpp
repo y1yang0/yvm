@@ -251,7 +251,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             load2Stack<JRef>(3);
         }
             break;
-#if __cplusplus >= 201103L
+#if __cplusplus >= 201703L
             [[fallthrough]]
 #endif
         case op_saload:
@@ -601,399 +601,180 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
         }
             break;
         case op_iadd: {
-            JInt* value2 = currentStackPop<JInt>();
-            JInt* value1 = currentStackPop<JInt>();
-
-            JInt* result = new JInt(value1->val + value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JInt>(std::plus<>());
         }
             break;
         case op_ladd: {
-            JLong* value2 = currentStackPop<JLong>();
-            JLong* value1 = currentStackPop<JLong>();
-
-            JLong* result = new JLong(value1->val + value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JLong>(std::plus<>());
         }
             break;
         case op_fadd: {
-            JFloat* value2 = currentStackPop<JFloat>();
-            JFloat* value1 = currentStackPop<JFloat>();
-
-            JFloat* result = new JFloat(value1->val + value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JFloat>(std::plus<>());
         }
             break;
         case op_dadd: {
-            JDouble* value2 = currentStackPop<JDouble>();
-            JDouble* value1 = currentStackPop<JDouble>();
-
-            JDouble* result = new JDouble(value1->val + value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JDouble>(std::plus<>());
         }
             break;
         case op_isub: {
-            JInt* value2 = currentStackPop<JInt>();
-            JInt* value1 = currentStackPop<JInt>();
-
-            JInt* result = new JInt(value1->val - value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JInt>(std::minus<>());
         }
             break;
         case op_lsub: {
-            JLong* value2 = currentStackPop<JLong>();
-            JLong* value1 = currentStackPop<JLong>();
-
-            JLong* result = new JLong(value1->val - value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JLong>(std::minus<>());
         }
             break;
         case op_fsub: {
-            JFloat* value2 = currentStackPop<JFloat>();
-            JFloat* value1 = currentStackPop<JFloat>();
-
-            JFloat* result = new JFloat(value1->val - value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JFloat>(std::minus<>());
         }
             break;
         case op_dsub: {
-            JDouble* value2 = currentStackPop<JDouble>();
-            JDouble* value1 = currentStackPop<JDouble>();
-
-            JDouble* result = new JDouble(value1->val - value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JDouble>(std::minus<>());
         }
             break;
         case op_imul: {
-            JInt* value2 = currentStackPop<JInt>();
-            JInt* value1 = currentStackPop<JInt>();
-
-            JInt* result = new JInt(value1->val * value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JInt>(std::multiplies<>());
         }
             break;
         case op_lmul: {
-            JLong* value2 = currentStackPop<JLong>();
-            JLong* value1 = currentStackPop<JLong>();
-
-            JLong* result = new JLong(value1->val * value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JLong>(std::multiplies<>());
         }
             break;
         case op_fmul: {
-            JFloat* value2 = currentStackPop<JFloat>();
-            JFloat* value1 = currentStackPop<JFloat>();
-
-            JFloat* result = new JFloat(value1->val * value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JFloat>(std::multiplies<>());
         }
             break;
         case op_dmul: {
-            JDouble* value2 = currentStackPop<JDouble>();
-            JDouble* value1 = currentStackPop<JDouble>();
-
-            JDouble* result = new JDouble(value1->val * value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JDouble>(std::multiplies<>());
         }
             break;
         case op_idiv: {
-            JInt* value2 = currentStackPop<JInt>();
-            JInt* value1 = currentStackPop<JInt>();
-
-            JInt* result = new JInt(value1->val / value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JInt>(std::divides<>());
         }
             break;
         case op_ldiv: {
-            JLong* value2 = currentStackPop<JLong>();
-            JLong* value1 = currentStackPop<JLong>();
-
-            JLong* result = new JLong(value1->val / value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JLong>(std::divides<>());
         }
             break;
         case op_fdiv: {
-            JFloat* value2 = currentStackPop<JFloat>();
-            JFloat* value1 = currentStackPop<JFloat>();
-
-            JFloat* result = new JFloat(value1->val / value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JFloat>(std::divides<>());
         }
             break;
         case op_ddiv: {
-            JDouble* value2 = currentStackPop<JDouble>();
-            JDouble* value1 = currentStackPop<JDouble>();
+            binaryArithmetic<JDouble>(std::divides<>());
 
-            JDouble* result = new JDouble(value1->val / value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
         }
             break;
         case op_irem: {
-            JInt* value2 = currentStackPop<JInt>();
-            JInt* value1 = currentStackPop<JInt>();
-
-            JInt* result = new JInt;
-            result->val = value1->val - (value1->val / value2->val) * value2->val;
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JInt>(std::modulus<>());
         }
             break;
         case op_lrem: {
-            JLong* value2 = currentStackPop<JLong>();
-            JLong* value1 = currentStackPop<JLong>();
-
-            JLong* result = new JLong;
-            result->val = value1->val - (value1->val / value2->val) * value2->val;
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JLong>(std::modulus<>());
         }
             break;
         case op_frem: {
-            JFloat* value2 = currentStackPop<JFloat>();
-            JFloat* value1 = currentStackPop<JFloat>();
-
-            JFloat* result = new JFloat;
-            result->val = std::fmod(value1->val, value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JFloat>(std::fmod<float,float>);
         }
             break;
         case op_drem: {
-            JDouble* value2 = currentStackPop<JDouble>();
-            JDouble* value1 = currentStackPop<JDouble>();
-
-            JDouble* result = new JDouble;
-            result->val = std::fmod(value1->val, value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JFloat>(std::fmod<double, double>);
         }
             break;
         case op_ineg: {
-            JInt* ival = currentStackPop<JInt>();
-            ival->val = -ival->val;
-            currentFrame->stack.push(ival);
+            unaryArithmetic<JInt>(std::negate<>());
         }
             break;
         case op_lneg: {
-            JLong* lval = currentStackPop<JLong>();
-            lval->val = -lval->val;
-            currentFrame->stack.push(lval);
+            unaryArithmetic<JLong>(std::negate<>());
         }
             break;
         case op_fneg: {
-            JFloat* fval = currentStackPop<JFloat>();
-            fval->val = -fval->val;
-            currentFrame->stack.push(fval);
+            unaryArithmetic<JFloat>(std::negate<>());
         }
             break;
         case op_dneg: {
-            JDouble* dval = currentStackPop<JDouble>();
-            dval->val = -dval->val;
-            currentFrame->stack.push(dval);
+            unaryArithmetic<JDouble>(std::negate<>());
         }
             break;
         case op_ishl: {
-            JInt* value2 = currentStackPop<JInt>();
-            JInt* value1 = currentStackPop<JInt>();
-            JInt* result = new JInt;
-            result->val = value1->val * std::pow(2, value2->val & 0x1f);
-            currentFrame->stack.push(result);
-
-            delete value2;
-            delete value1;
+            binaryArithmetic<JInt>(
+                [](int32_t a,int32_t b)->int32_t{
+                return a * std::pow(2, b & 0x1f);
+            });
         }
             break;
         case op_lshl: {
-            JInt* value2 = currentStackPop<JInt>();
-            JLong* value1 = currentStackPop<JLong>();
-            JLong* result = new JLong;
-            result->val = value1->val * std::pow(2, value2->val & 0x3f);
-            currentFrame->stack.push(result);
-
-            delete value2;
-            delete value1;
+            binaryArithmetic<JLong>(
+                [](int64_t a, int64_t b)->int64_t {
+                return a * std::pow(2, b & 0x3f);
+            });
         }
             break;
         case op_ishr: {
-            JInt* value2 = currentStackPop<JInt>();
-            JInt* value1 = currentStackPop<JInt>();
-            JInt* result = new JInt;
-            result->val = std::floor(value1->val / std::pow(2, value2->val & 0x1f));
-            currentFrame->stack.push(result);
-
-            delete value2;
-            delete value1;
+            binaryArithmetic<JInt>(
+                [](int32_t a, int32_t b)->int32_t {
+                return std::floor(a / std::pow(2,b & 0x1f));
+            });
         }
             break;
         case op_lshr: {
-            JInt* value2 = currentStackPop<JInt>();
-            JLong* value1 = currentStackPop<JLong>();
-            JLong* result = new JLong;
-            result->val = std::floor(value1->val / std::pow(2, value2->val & 0x3f));
-            currentFrame->stack.push(result);
-
-            delete value2;
-            delete value1;
+            binaryArithmetic<JLong>(
+                [](int64_t a, int64_t b)->int64_t {
+                return std::floor(a / std::pow(2, b & 0x3f));
+            });
         }
             break;
         case op_iushr: {
-            JInt* value2 = currentStackPop<JInt>();
-            JInt* value1 = currentStackPop<JInt>();
-            JInt* result = new JInt;
-            if (value1->val > 0) {
-                result->val = value1->val >> (value2->val & 0x1f);
-            }
-            else if (value1->val < 0) {
-                result->val = (value1->val >> (value2->val & 0x1f)) + (2 << ~(value2->val & 0x1f));
-            }
-            else {
-                throw std::runtime_error("0 is not handled");
-            }
-            currentFrame->stack.push(result);
-
-            delete value2;
-            delete value1;
+            binaryArithmetic<JInt>(
+                [](int32_t a, int32_t b)->int32_t {
+                    if(a>0) {
+                        return a >> (b & 0x1f);
+                    }else if(a <0) {
+                        return (a >> (b & 0x1f)) + (2 << ~(b & 0x1f));
+                    }else {
+                        throw std::runtime_error("0 is not handled");
+                    }
+            });
         }
             break;
         case op_lushr: {
-            JInt* value2 = currentStackPop<JInt>();
-            JLong* value1 = currentStackPop<JLong>();
-            JLong* result = new JLong;
-            if (value1->val > 0) {
-                result->val = value1->val >> (value2->val & 0x3f);
-            }
-            else if (value1->val < 0) {
-                result->val = (value1->val >> (value2->val & 0x1f)) + (2L << ~(value2->val & 0x3f));
-            }
-            else {
-                throw std::runtime_error("0 is not handled");
-            }
-            currentFrame->stack.push(result);
-
-            delete value2;
-            delete value1;
+            binaryArithmetic<JLong>(
+                [](int64_t a, int64_t b)->int64_t {
+                if (a>0) {
+                    return a >> (b & 0x3f);
+                }
+                else if (a <0) {
+                    return (a >> (b & 0x1f)) + (2L << ~(b & 0x3f));
+                }
+                else {
+                    throw std::runtime_error("0 is not handled");
+                }
+            });
         }
             break;
         case op_iand: {
-            JInt* value2 = currentStackPop<JInt>();
-            JInt* value1 = currentStackPop<JInt>();
-
-            JInt* result = new JInt(value1->val & value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JInt>(std::bit_and<>());
         }
             break;
         case op_land: {
-            JLong* value2 = currentStackPop<JLong>();
-            JLong* value1 = currentStackPop<JLong>();
-
-            JLong* result = new JLong(value1->val & value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JLong>(std::bit_and<>());
         }
             break;
         case op_ior: {
-            JInt* value2 = currentStackPop<JInt>();
-            JInt* value1 = currentStackPop<JInt>();
-
-            JInt* result = new JInt(value1->val | value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JInt>(std::bit_or<>());
         }
             break;
         case op_lor: {
-            JLong* value2 = currentStackPop<JLong>();
-            JLong* value1 = currentStackPop<JLong>();
-
-            JLong* result = new JLong(value1->val | value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JLong>(std::bit_or<>());
         }
             break;
         case op_ixor: {
-            JInt* value2 = currentStackPop<JInt>();
-            JInt* value1 = currentStackPop<JInt>();
-
-            JInt* result = new JInt(value1->val & value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JInt>(std::bit_xor<>());
         }
             break;
         case op_lxor: {
-            JLong* value2 = currentStackPop<JLong>();
-            JLong* value1 = currentStackPop<JLong>();
-
-            JLong* result = new JLong(value1->val ^ value2->val);
-            currentFrame->stack.push(result);
-
-            delete value1;
-            delete value2;
+            binaryArithmetic<JLong> (std::bit_xor<>());
         }
             break;
         case op_iinc: {

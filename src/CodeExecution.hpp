@@ -92,6 +92,11 @@ private:
     template <typename ReturnType>
     ReturnType* currentStackPop();
 
+    template <typename ResultType, typename CallableObjectType>
+    void binaryArithmetic(CallableObjectType op);
+    template <typename ResultType, typename CallableObjectType>
+    void unaryArithmetic(CallableObjectType op);
+
     template <typename Type1, typename Type2>
     void typeCast() const;
 
@@ -248,6 +253,24 @@ ReturnType* CodeExecution::currentStackPop() {
     auto* value = dynamic_cast<ReturnType*>(currentFrame->stack.top());
     currentFrame->stack.pop();
     return value;
+}
+
+template <typename ResultType, typename CallableObjectType>
+inline void CodeExecution::binaryArithmetic(CallableObjectType op) {
+    auto* value2 = currentStackPop<ResultType>();
+    auto* value1 = currentStackPop<ResultType>();
+    auto* result = new ResultType;
+    result->val = op(value1->val, value2->val);
+    currentFrame->stack.push(result);
+    delete value2;
+    delete value1;
+}
+
+template <typename ResultType, typename CallableObjectType>
+inline void CodeExecution::unaryArithmetic(CallableObjectType op) {
+    auto* ival = currentStackPop<ResultType>();
+    ival->val = op(ival->val);
+    currentFrame->stack.push(ival);
 }
 
 template <typename Type1, typename Type2>
