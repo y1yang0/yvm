@@ -1,5 +1,11 @@
 #ifndef YVM_OPTION_H
 #define YVM_OPTION_H
+
+/*
+ * define to suspend console to see what going on this output
+ */
+#define YVM_DEBUG_SUSPEND_CONSOLE
+
 /*
  * define to output byte size of yvm's internal structures
  */

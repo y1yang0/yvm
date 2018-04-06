@@ -4,6 +4,7 @@
 #include "JavaType.h"
 #include <typeinfo>
 #include "Type.h"
+#include "RuntimeEnv.h"
 #include <string>
 
 /**
@@ -24,6 +25,9 @@ struct Converter {
 /**
  * \brief Utilities for code execution engine
  */
+void registerNativeMethod(const char* className, const char* name, const char* descriptor,
+                          JType*(*func)(RuntimeEnv* env));
+
 inline u1 consumeU1(const u1* code, u4& opidx) {
     const u1 byte = code[++opidx];
     return byte;

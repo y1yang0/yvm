@@ -65,3 +65,13 @@ bool hasInheritanceRelationship(const JavaClass* source, const JavaClass* super)
     }
     return false;
 }
+
+void registerNativeMethod(const char* className, const char* name, const char* descriptor,
+                               JType*(*func)(RuntimeEnv* env)) {
+    std::string methodName(className);
+    methodName.append(".");
+    methodName.append(name);
+    methodName.append(".");
+    methodName.append(descriptor);
+    yrt.nativeMethods.insert(std::make_pair(methodName, func));
+}

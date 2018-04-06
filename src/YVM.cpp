@@ -70,7 +70,7 @@ void YVM::callMain(const char* name) {
 
         auto* jc = yrt.ma->loadClassIfAbsent(name);
         yrt.ma->linkClassIfAbsent(name);
-        // For each exuection thread, we have a code exeuction engine
+        // For each execution thread, we have a code execution engine
         CodeExecution exec{};
         yrt.ma->initClassIfAbsent(exec, name);
         exec.invokeByName(jc, "main", "([Ljava/lang/String;)V");
@@ -87,20 +87,10 @@ void YVM::callMain(const char* name) {
     mainThread.join();
 }
 
-void YVM::registerNativeMethod(const char* className, const char* name, const char* descriptor,
-                               JType*(*func)(RuntimeEnv* env)) {
-    std::string methodName(className);
-    methodName.append(".");
-    methodName.append(name);
-    methodName.append(".");
-    methodName.append(descriptor);
-    yrt.nativeMethods.insert(std::make_pair(methodName, func));
-}
-
 void YVM::warmUp(const std::vector<std::string> & libPaths) const {
     int p = sizeof nativeFunctionTable / sizeof nativeFunctionTable[0];
     for (int i = 0; i < p; i++) {
-        this->registerNativeMethod(
+        registerNativeMethod(
             nativeFunctionTable[i][0],
             nativeFunctionTable[i][1],
             nativeFunctionTable[i][2],

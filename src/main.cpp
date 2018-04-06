@@ -20,6 +20,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     vm.callMain(cparser.getRunningProgram().c_str());
+#ifdef YVM_DEBUG_SUSPEND_CONSOLE
     system("pause");
+#endif
     return 0;
 }

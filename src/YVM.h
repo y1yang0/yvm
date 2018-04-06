@@ -15,9 +15,6 @@ public:
     static bool linkClass(const char* name);
     bool initClass(CodeExecution& exec, const char* name);
     void callMain(const char* name);
-    static void registerNativeMethod(const char* className, const char* name, const char* descriptor,
-                                     JType*(*func)(RuntimeEnv* env));
-
     void warmUp(const std::vector<std::string> & libPaths) const;
 
 };
