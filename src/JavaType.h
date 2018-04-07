@@ -2,8 +2,6 @@
 #define YVM_JAVAOBJECT_H
 
 #include <cstdint>
-#include <atomic>
-#include <thread>
 
 class JavaClass;
 
@@ -55,5 +53,15 @@ struct JArray BASE_OF_JTYPE {
     int length = 0; // Length of java array
     size_t offset = 0; // Offset on java heap
 };
+
+#define IS_COMPUTATIONAL_TYPE_1(value) (typeid(*value)!=typeid(JDouble) && typeid(*value)!=typeid(JLong))
+#define IS_COMPUTATIONAL_TYPE_2(value) (typeid(*value)==typeid(JDouble) || typeid(*value)==typeid(JLong))
+
+#define IS_JINT(x) (typeid(*x)==typeid(JInt))
+#define IS_JLong(x) (typeid(*x)==typeid(JLong))
+#define IS_JDouble(x) (typeid(*x)==typeid(JDouble))
+#define IS_JFloat(x) (typeid(*x)==typeid(JFloat))
+#define IS_JObject(x) (typeid(*x)==typeid(JObject))
+#define IS_JArray(x) (typeid(*x)==typeid(JArray))
 
 #endif // !YVM_OBJECT_H

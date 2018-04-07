@@ -2,6 +2,8 @@
 #include "Opcode.h"
 #include "Utils.h"
 
+#pragma warning (disable: 4715) 
+
 JType* determineBasicType(const char* type) {
     if (IS_FIELD_INT(type) || IS_FIELD_BYTE(type) || IS_FIELD_CHAR(type) || IS_FIELD_SHORT(type) || IS_FIELD_BOOL(type)
     ) {

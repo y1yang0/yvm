@@ -12,6 +12,8 @@
 #include <iostream>
 #include <functional>
 
+#pragma warning (disable: 4715) 
+
 JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
     for (decltype(ext.codeLength) op = 0; op < ext.codeLength; op++) {
         if (exception.hasUnhandledException()) {

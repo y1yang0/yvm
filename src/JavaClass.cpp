@@ -1,13 +1,12 @@
-#include <limits>
 #include <iostream>
 #include <vector>
 #include <cassert>
 #include "JavaClass.h"
-#include "AccessFlag.h"
 #include "MethodArea.h"
-#include "Option.h"
 #include "Debug.h"
 #include "YVM.h"
+
+#pragma warning (disable: 4715) 
 
 JavaClass::JavaClass(const char* classFilePath) : reader(classFilePath) {
     raw.constPoolInfo = nullptr;

@@ -7,6 +7,8 @@
 #include "Utils.h"
 #include "NativeMethod.h"
 
+#pragma warning (disable: 4715) 
+
 JavaHeap::~JavaHeap() {
     std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
 

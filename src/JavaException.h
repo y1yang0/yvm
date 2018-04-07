@@ -1,6 +1,7 @@
 #ifndef YVM_EXCEPTION_H
 #define YVM_EXCEPTION_H
 #include <vector>
+#include <string>
 #include "JavaType.h"
 
 class JavaClass;
