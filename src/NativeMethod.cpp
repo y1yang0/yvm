@@ -126,7 +126,7 @@ JType* java_lang_thread_start(RuntimeEnv* env) {
     auto * runnableTask = (JObject*)cloneValue(
                 dynamic_cast<JObject*>(env->jheap->getObjectFieldByName(
             env->ma->findJavaClass("java/lang/Thread"), "task",
-                    "Ljava/lang/Runnable;", instance, 0)));
+                    "Ljava/lang/Runnable;", instance)));
 
     std::thread nativeNewThread([=]() {
         yrt.aliveThreadCounterMutex.lock();

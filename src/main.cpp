@@ -1,5 +1,6 @@
 #include "YVM.h"
 #include "CommandParser.h"
+#include "Option.h"
 
 int main(int argc, char* argv[]) {
     Parser cparser;

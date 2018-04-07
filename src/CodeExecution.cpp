@@ -1202,7 +1202,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             JType* field = cloneValue(yrt.jheap->getObjectFieldByName(std::get<0>(symbolicRef),
                                                                       std::get<1>(symbolicRef),
                                                                       std::get<2>(symbolicRef),
-                                                                      objectref, 0));
+                                                                      objectref));
             currentFrame->stack.push(field);
 
             delete objectref;
@@ -1215,7 +1215,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             auto symbolicRef = parseFieldSymbolicReference(jc, index);
             yrt.jheap->putObjectFieldByName(std::get<0>(symbolicRef), std::get<1>(symbolicRef),
                                             std::get<2>(symbolicRef),
-                                            objectref, value, 0);
+                                            objectref, value);
 
             delete objectref;
         }

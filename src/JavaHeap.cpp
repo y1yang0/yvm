@@ -211,7 +211,7 @@ JArray* JavaHeap::createCharArray(const char* source, int length) {
     return arr;
 }
 
-JType* JavaHeap::getObjectFieldByName(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor,
+JType* JavaHeap::getObjectFieldByNameImpl(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor,
                                       JObject* object, size_t offset) {
     std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
     size_t howManyNonStaticFields = 0;
@@ -226,13 +226,13 @@ JType* JavaHeap::getObjectFieldByName(JavaClass* parsedJc, const char* fieldName
         }
     }
     if (parsedJc->raw.superClass != 0) {
-        return getObjectFieldByName(yrt.ma->findJavaClass(parsedJc->getSuperClassName()), fieldName, fieldDescriptor,
+        return getObjectFieldByNameImpl(yrt.ma->findJavaClass(parsedJc->getSuperClassName()), fieldName, fieldDescriptor,
                                     object, offset + howManyNonStaticFields);
     }
     return nullptr;
 }
 
-void JavaHeap::putObjectFieldByName(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor,
+void JavaHeap::putObjectFieldByNameImpl(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor,
                                     JObject* object, JType* value, size_t offset) {
     std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
     size_t howManyNonStaticFields = 0;
@@ -248,7 +248,7 @@ void JavaHeap::putObjectFieldByName(JavaClass* parsedJc, const char* fieldName, 
         }
     }
     if (parsedJc->raw.superClass != 0) {
-        putObjectFieldByName(yrt.ma->findJavaClass(parsedJc->getSuperClassName()), fieldName, fieldDescriptor, object,
+        putObjectFieldByNameImpl(yrt.ma->findJavaClass(parsedJc->getSuperClassName()), fieldName, fieldDescriptor, object,
                              value, offset + howManyNonStaticFields);
     }
 }
@@ -276,7 +276,6 @@ void JavaHeap::createObjectMonitor(const JType* ref) {
     else {
         SHOULD_NOT_REACH_HERE
     }
-
 }
 
 ObjectMonitor* JavaHeap::findObjectMonitor(const JType* ref) {
