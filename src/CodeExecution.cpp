@@ -1363,7 +1363,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                 currentFrame->stack.push(throwableObject);
             }
             else /* Exception can not handled within method handlers */ {
-                exception.markExpception();
+                exception.markException();
                 exception.setThrowExceptionInfo(throwableObject);
                 return throwableObject;
             }
@@ -1531,7 +1531,7 @@ bool CodeExecution::handleException(const JavaClass* jc, const CodeAttrCore& ext
 }
 
 std::tuple<JavaClass*, const char*, const char*> CodeExecution::parseFieldSymbolicReference(
-    const JavaClass* jc, u2 index) {
+    const JavaClass* jc, u2 index) const {
     const char* symbolicReferenceFieldName = jc->getString(
         dynamic_cast<CONSTANT_NameAndType*>(jc->raw.constPoolInfo[
             dynamic_cast<CONSTANT_Fieldref*>(jc->raw.constPoolInfo[index])->nameAndTypeIndex])->nameIndex);
@@ -1553,7 +1553,7 @@ std::tuple<JavaClass*, const char*, const char*> CodeExecution::parseFieldSymbol
 }
 
 std::tuple<JavaClass*, const char*, const char*> CodeExecution::parseInterfaceMethodSymbolicReference(
-    const JavaClass* jc, u2 index) {
+    const JavaClass* jc, u2 index) const {
     const char* symbolicReferenceInterfaceMethodName = jc->getString(
         dynamic_cast<CONSTANT_NameAndType*>(jc->raw.constPoolInfo[
             dynamic_cast<CONSTANT_InterfaceMethodref*>(jc->raw.constPoolInfo[index])->nameAndTypeIndex])->nameIndex);
@@ -1577,7 +1577,7 @@ std::tuple<JavaClass*, const char*, const char*> CodeExecution::parseInterfaceMe
 }
 
 std::tuple<JavaClass*, const char*, const char*> CodeExecution::parseMethodSymbolicReference(
-    const JavaClass* jc, u2 index) {
+    const JavaClass* jc, u2 index) const {
     const char* symbolicReferenceMethodName = jc->getString(
         dynamic_cast<CONSTANT_NameAndType*>(jc->raw.constPoolInfo[
             dynamic_cast<CONSTANT_Methodref*>(jc->raw.constPoolInfo[index])->nameAndTypeIndex])->nameIndex);
@@ -1597,13 +1597,13 @@ std::tuple<JavaClass*, const char*, const char*> CodeExecution::parseMethodSymbo
                            symbolicReferenceMethodDescriptor);
 }
 
-std::tuple<JavaClass*> CodeExecution::parseClassSymbolicReference(const JavaClass* jc, u2 index) {
+std::tuple<JavaClass*> CodeExecution::parseClassSymbolicReference(const JavaClass* jc, u2 index) const {
     const char* ref = jc->getString(dynamic_cast<CONSTANT_Class*>(jc->raw.constPoolInfo[index])->nameIndex);
     std::string str{ref};
     if (ref[0] == '[') {
         str = peelArrayComponentTypeFrom(ref);
     }
-    return std::make_tuple(yrt.ma->findJavaClass(str.c_str()));
+    return std::make_tuple(yrt.ma->loadClassIfAbsent(str.c_str()));
 }
 
 JType* CodeExecution::getStaticField(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor) {

@@ -261,7 +261,6 @@ bool JavaHeap::hasObjectMonitor(const JType* ref) {
         return monitorheap.find(dynamic_cast<const JArray*>(ref)->offset) != monitorheap.end();
     }
     SHOULD_NOT_REACH_HERE
-
 }
 
 void JavaHeap::createObjectMonitor(const JType* ref) {

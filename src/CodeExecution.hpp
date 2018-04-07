@@ -51,11 +51,11 @@ private:
     CodeAttrCore getCodeAttrCore(const MethodInfo* m);
     bool checkInstanceof(const JavaClass* jc, u2 index, JType* objectref);
 
-    std::tuple<JavaClass*, const char*, const char*> parseFieldSymbolicReference(const JavaClass* jc, u2 index);
+    std::tuple<JavaClass*, const char*, const char*> parseFieldSymbolicReference(const JavaClass* jc, u2 index) const;
     std::tuple<JavaClass*, const char*, const char*> parseInterfaceMethodSymbolicReference(
-        const JavaClass* jc, u2 index);
-    std::tuple<JavaClass*, const char*, const char*> parseMethodSymbolicReference(const JavaClass* jc, u2 index);
-    std::tuple<JavaClass*> parseClassSymbolicReference(const JavaClass* jc, u2 index);
+        const JavaClass* jc, u2 index) const;
+    std::tuple<JavaClass*, const char*, const char*> parseMethodSymbolicReference(const JavaClass* jc, u2 index) const;
+    std::tuple<JavaClass*> parseClassSymbolicReference(const JavaClass* jc, u2 index) const;
 
     JObject* execNew(const JavaClass* jc, u2 index);
     JType* execCode(const JavaClass* jc, CodeAttrCore&& ext);

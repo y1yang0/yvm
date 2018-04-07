@@ -13,9 +13,9 @@ public:
 
     static bool loadClass(const char* name);
     static bool linkClass(const char* name);
-    bool initClass(CodeExecution& exec, const char* name);
-    void callMain(const char* name);
-    void warmUp(const std::vector<std::string> & libPaths) const;
+    static bool initClass(CodeExecution& exec, const char* name);
+    static void callMain(const char* name);
+    static void warmUp(const std::vector<std::string> & libPaths);
 
 };
 

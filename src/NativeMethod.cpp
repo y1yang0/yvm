@@ -122,14 +122,13 @@ JType* java_lang_stringbuilder_tostring(RuntimeEnv* env) {
 }
 
 JType* java_lang_thread_start(RuntimeEnv* env) {
-    JObject* instance = dynamic_cast<JObject*>(frames.top()->locals[0]);
-    JObject* runnableTask =
-        (JObject*)cloneValue(dynamic_cast<JObject*>(env->jheap->getObjectFieldByName(
+    auto * instance = dynamic_cast<JObject*>(frames.top()->locals[0]);
+    auto * runnableTask = (JObject*)cloneValue(
+                dynamic_cast<JObject*>(env->jheap->getObjectFieldByName(
             env->ma->findJavaClass("java/lang/Thread"), "task",
-            "Ljava/lang/Runnable;", instance, 0)));
+                    "Ljava/lang/Runnable;", instance, 0)));
 
-    std::thread nativeNewThread([=]()
-    {
+    std::thread nativeNewThread([=]() {
         yrt.aliveThreadCounterMutex.lock();
         yrt.aliveThreadCount++;
         yrt.aliveThreadCounterMutex.unlock();
@@ -137,8 +136,8 @@ JType* java_lang_thread_start(RuntimeEnv* env) {
         const char* name = runnableTask->jc->getClassName();
         auto* jc = yrt.ma->loadClassIfAbsent(name);
         yrt.ma->linkClassIfAbsent(name);
-        // For each exuection thread, we have a code exeuction engine
-        Frame* frame = new Frame;
+        // For each execution thread, we have a code execution engine
+        auto * frame = new Frame;
         frame->stack.push(runnableTask);
         frames.push(frame);
         CodeExecution exec{frame};

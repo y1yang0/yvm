@@ -22,12 +22,8 @@ private:
 class JavaException : public StackTrace {
 public:
     bool hasUnhandledException() const { return unhandledException; }
-    void markExpception() { unhandledException = true; }
-
-    void sweepException() {
-        unhandledException = false;
-        exceptionStackTrace.clear();
-    }
+    void markException() { unhandledException = true; }
+    void sweepException() { unhandledException = false;exceptionStackTrace.clear(); }
 
 private:
     volatile bool unhandledException = false;

@@ -62,8 +62,7 @@ bool YVM::initClass(CodeExecution& exec, const char* name) {
 }
 
 void YVM::callMain(const char* name) {
-    std::thread mainThread([=]()
-    {
+    std::thread mainThread([=](){
         yrt.aliveThreadCounterMutex.lock();
         yrt.aliveThreadCount++;
         yrt.aliveThreadCounterMutex.unlock();
@@ -87,7 +86,7 @@ void YVM::callMain(const char* name) {
     mainThread.join();
 }
 
-void YVM::warmUp(const std::vector<std::string> & libPaths) const {
+void YVM::warmUp(const std::vector<std::string> & libPaths) {
     int p = sizeof nativeFunctionTable / sizeof nativeFunctionTable[0];
     for (int i = 0; i < p; i++) {
         registerNativeMethod(
