@@ -1,5 +1,7 @@
-# YVM
-This is a homemade Java virtual machine written by c++, the main components are conform to [Java Virtual Machine Specification 8](https://docs.oracle.com/javase/specs/jvms/se8/jvms8.pdf). Now it is runnable and sorts of language features will add into this VM in progress. I don't have time to write unittests to verify all aspects, so if you find any bugs, you can open an [Issue](https://github.com/racaljk/yvm/issues/new) or fix up in place and pull request directly. :) 
+![](./public/banner.jpg)
+[中文](https://github.com/racaljk/yvm/blob/master/README.md) | [English](https://github.com/racaljk/yvm/blob/master/README.EN.md)
+
+This is a homemade Java virtual machine written in c++, the main components are conform to [Java Virtual Machine Specification 8](https://docs.oracle.com/javase/specs/jvms/se8/jvms8.pdf). Now it is runnable and sorts of language features will add into this VM in progress. I don't have time to write unittests to verify all aspects, so if you find any bugs, you can open an [Issue](https://github.com/racaljk/yvm/issues/new) or fix up in place and pull request directly. :)
 
 # Available language features
 :-0 Advanced language features will support later, you can also PR to help me
@@ -20,7 +22,7 @@ This is a homemade Java virtual machine written by c++, the main components are 
 ```
 
 # About JDK
-Any java virtual machines can not run a Java program without Java libraries. As you may know, some opcodes like `ldc`,`monitorenter/monitorexit`,`athrow` are internally requiring our virtual machine to operate JDK classes('java.lang.Class','java.lang.String','java.lang.Throwable',etc). Hence, I have to rewrite some [JDK classes](javalib_src) for building a runnable VM since original JDK classes are so complicated that it's inconvenient for early developing. 
+Any java virtual machines can not run a Java program without Java libraries. As you may know, some opcodes like `ldc`,`monitorenter/monitorexit`,`athrow` are internally requiring our virtual machine to operate JDK classes('java.lang.Class','java.lang.String','java.lang.Throwable',etc). Hence, I have to rewrite some [JDK classes](javalib_src) for building a runnable VM since original JDK classes are so complicated that it's inconvenient for early developing.
 Rewrote JDK classes are as follows:
 + `java.lang.String`
 + `java.lang.StringBuilder`
@@ -56,7 +58,7 @@ Code licensed under the MIT License.
 ![](./public/arch.png)
 
 ## {Components}
-+ `javalib` Source files of rewrote JDK classes 
++ `javalib` Source files of rewrote JDK classes
 + `public` Documentations, images, etc.
 + `src/JavaClass.h` `.class` Internal representation of java class
 + `src/Frame.h` Calling stack structure
