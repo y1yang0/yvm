@@ -16,6 +16,8 @@ using namespace std;
  */
 class JavaHeap {
     friend class CodeExecution;
+    friend class GC;
+
 public:
     JavaHeap() = default;
     ~JavaHeap();
@@ -48,24 +50,20 @@ public:
     void putArrayItem(const JArray& array, size_t index, JType* value);
     JType* getArrayItem(const JArray& array, size_t index);
 
-
-    auto& getObject(JObject* object) {
-        std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
-        return (objheap.find(object->offset))->second;
-    }
-
-    auto& getArray(JArray* array) {
-        std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
-        return (arrheap.find(array->offset))->second;
-    }
-
-    void removeArray(const JArray* arr);
-
     bool hasObjectMonitor(const JType* ref);
 
     void createObjectMonitor(const JType* ref);
 
     ObjectMonitor* findObjectMonitor(const JType* ref);
+
+    auto& getObjectFieldsByRef(JObject* object) { lock_guard<recursive_mutex> lockMA(heapMutex); return (objheap.find(object->offset))->second; }
+    auto& getObjectFieldsByOffset(size_t offset) { lock_guard<recursive_mutex> lockMA(heapMutex); return (objheap.find(offset))->second; }
+    auto& getArrayItemsByRef(JArray* array) { lock_guard<recursive_mutex> lockMA(heapMutex); return (arrheap.find(array->offset))->second; }
+    auto& getArrayItemsByOffset(size_t offset) { lock_guard<recursive_mutex> lockMA(heapMutex); return (arrheap.find(offset))->second; }
+    void removeObjectByOffset(size_t offset) { lock_guard<recursive_mutex> lockMA(heapMutex); objheap.erase(objheap.find(offset)); }
+    void removeArrayByOffset(size_t offset) { lock_guard<recursive_mutex> lockMA(heapMutex); arrheap.erase(arrheap.find(offset)); }
+    void removeArrayByRef(const JArray* arr);
+    void removeObjectByRef(const JObject* obj);
 
 private:
     void createSuperFields(const JavaClass& javaClass, const JObject* object);

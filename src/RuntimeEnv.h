@@ -12,6 +12,7 @@ struct JType;
 struct Frame;
 class JavaHeap;
 class MethodArea;
+class GC;
 
 struct RuntimeEnv {
     RuntimeEnv();
@@ -20,6 +21,7 @@ struct RuntimeEnv {
     MethodArea* ma;
     JavaHeap* jheap;
     std::map<std::string, JType*(*)(RuntimeEnv* env)> nativeMethods;
+    GC* gc;
 
     std::mutex aliveThreadCounterMutex;
     int32_t aliveThreadCount;

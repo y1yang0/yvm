@@ -9,7 +9,7 @@ struct JType;
 
 struct Frame {
     std::deque<JType*> locals;
-    std::stack<JType*> stack;
+    std::deque<JType*> stack;
 
     ~Frame() {
         while (!locals.empty()){
@@ -18,13 +18,13 @@ struct Frame {
             delete temp;
         }
         while (!stack.empty()) {
-            auto* type = stack.top();
-            stack.pop();
+            auto* type = stack.back();
+            stack.pop_back();
             delete type;
         }
     }
 };
 
-typedef std::stack<Frame*> StackFrames;
+typedef std::deque<Frame*> StackFrames;
 
 #endif //YVM_JAVAFRAME_H

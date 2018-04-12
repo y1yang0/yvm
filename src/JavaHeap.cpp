@@ -48,7 +48,7 @@ JType* JavaHeap::getObjectFieldByOffset(const JObject& object, size_t fieldOffse
     return fields[fieldOffset];
 }
 
-void JavaHeap::removeArray(const JArray* arr) {
+void JavaHeap::removeArrayByRef(const JArray* arr) {
     std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
     if (arr == nullptr) {
         return;
@@ -56,15 +56,23 @@ void JavaHeap::removeArray(const JArray* arr) {
     arrheap.erase(arrheap.find(arr->offset));
 }
 
+void JavaHeap::removeObjectByRef(const JObject* obj) {
+    std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
+    if (obj == nullptr) {
+        return;
+    }
+    objheap.erase(objheap.find(obj->offset));
+}
+
 void JavaHeap::createSuperFields(const JavaClass& javaClass, const JObject* object) {
     std::lock_guard<std::recursive_mutex> lockMA(heapMutex);
 
     if (javaClass.raw.superClass != 0) {
-        const JavaClass* superClass = yrt.ma->findJavaClass((char*)javaClass.getSuperClassName());
+        const JavaClass* superClass = yrt.ma->findJavaClass(javaClass.getSuperClassName());
         FOR_EACH(i, superClass->raw.fieldsCount) {
             // Note that we have already created static field variables when the javaClass is 
             // linked into jvm (YVM::linkClass()) so we ignore all static fields here.
-            char* descriptor = (char*)superClass->getString(superClass->raw.fields[i].descriptorIndex);
+            const char* descriptor = superClass->getString(superClass->raw.fields[i].descriptorIndex);
 
             if (IS_FIELD_REF_CLASS(descriptor)) {
                 // Special handling for field whose type is another class
@@ -108,7 +116,7 @@ JObject* JavaHeap::createObject(const JavaClass& javaClass) {
     FOR_EACH(fieldOffset, javaClass.raw.fieldsCount) {
         // Note that we have already created static field variables when the javaClass is 
         // linked into jvm (YVM::linkClass()) so we ignore all static fields here.
-        char* descriptor = (char*)javaClass.getString(javaClass.raw.fields[fieldOffset].descriptorIndex);
+        const char* descriptor = javaClass.getString(javaClass.raw.fields[fieldOffset].descriptorIndex);
 
         if (IS_FIELD_REF_CLASS(descriptor)) {
             // Special handling for field whose type is another class

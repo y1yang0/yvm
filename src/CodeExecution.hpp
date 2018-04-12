@@ -70,11 +70,11 @@ private:
 
 private:
     void popFrame() {
-        Frame* f = frames.top();
-        frames.pop();
+        Frame* f = frames.back();
+        frames.pop_back();
         delete f;
         if (!frames.empty()) {
-            currentFrame = frames.top();
+            currentFrame = frames.back();
         }
     }
 
@@ -109,7 +109,7 @@ template <typename LoadType>
 void CodeExecution::load2Stack(u1 localIndex) {
     auto* pushingV = new LoadType;
     pushingV->val = dynamic_cast<LoadType*>(currentFrame->locals[localIndex])->val;
-    currentFrame->stack.push(pushingV);
+    currentFrame->stack.push_back(pushingV);
 }
 
 template <>
@@ -128,15 +128,15 @@ inline void CodeExecution::load2Stack<JRef>(u1 localIndex) {
     else {
         SHOULD_NOT_REACH_HERE
     }
-    currentFrame->stack.push(pushingV);
+    currentFrame->stack.push_back(pushingV);
 }
 
 template <typename LoadType>
 void CodeExecution::loadArrayItem2Stack() {
-    JInt* index = (JInt*)currentFrame->stack.top();
-    currentFrame->stack.pop();
-    auto* arrayref = (JArray*)currentFrame->stack.top();
-    currentFrame->stack.pop();
+    JInt* index = (JInt*)currentFrame->stack.back();
+    currentFrame->stack.pop_back();
+    auto* arrayref = (JArray*)currentFrame->stack.back();
+    currentFrame->stack.pop_back();
     if (arrayref == nullptr) {
         throw std::runtime_error("null pointer");
     }
@@ -145,7 +145,7 @@ void CodeExecution::loadArrayItem2Stack() {
     }
     auto* ival = new LoadType;
     ival->val = dynamic_cast<LoadType*>(yrt.jheap->getArrayItem(*arrayref, index->val))->val;
-    currentFrame->stack.push(ival);
+    currentFrame->stack.push_back(ival);
 
     delete index;
     delete arrayref;
@@ -153,11 +153,11 @@ void CodeExecution::loadArrayItem2Stack() {
 
 template <>
 inline void CodeExecution::loadArrayItem2Stack<JRef>() {
-    auto* index = dynamic_cast<JInt*>(currentFrame->stack.top());
+    auto* index = dynamic_cast<JInt*>(currentFrame->stack.back());
 
-    currentFrame->stack.pop();
-    auto* arrayref = dynamic_cast<JArray*>(currentFrame->stack.top());
-    currentFrame->stack.pop();
+    currentFrame->stack.pop_back();
+    auto* arrayref = dynamic_cast<JArray*>(currentFrame->stack.back());
+    currentFrame->stack.pop_back();
     if (arrayref == nullptr) {
         throw std::runtime_error("null pointer");
     }
@@ -177,7 +177,7 @@ inline void CodeExecution::loadArrayItem2Stack<JRef>() {
         dynamic_cast<JObject*>(objectref)->jc = dynamic_cast<JObject*>(ptrArrItem)->jc;
         dynamic_cast<JObject*>(objectref)->offset = dynamic_cast<JObject*>(ptrArrItem)->offset;
     }
-    currentFrame->stack.push(objectref);
+    currentFrame->stack.push_back(objectref);
 
     delete index;
     delete arrayref;
@@ -185,8 +185,8 @@ inline void CodeExecution::loadArrayItem2Stack<JRef>() {
 
 template <typename StoreType>
 void CodeExecution::store2Local(u1 index) {
-    auto* value = dynamic_cast<StoreType*>(currentFrame->stack.top());
-    currentFrame->stack.pop();
+    auto* value = dynamic_cast<StoreType*>(currentFrame->stack.back());
+    currentFrame->stack.pop_back();
     currentFrame->locals[index] = value;
     if (IS_JLong(value) || IS_JDouble(value)) {
         currentFrame->locals[index + 1] = nullptr;
@@ -195,20 +195,20 @@ void CodeExecution::store2Local(u1 index) {
 
 template <>
 inline void CodeExecution::store2Local<JRef>(u1 index) {
-    JType* value = currentFrame->stack.top();
-    currentFrame->stack.pop();
+    JType* value = currentFrame->stack.back();
+    currentFrame->stack.pop_back();
     currentFrame->locals[index] = value;
 }
 
 template <typename StoreType>
 void CodeExecution::storeArrayItem() {
     //store array item retriving from stack to array heap
-    StoreType* value = dynamic_cast<StoreType*>(currentFrame->stack.top());
-    currentFrame->stack.pop();
-    JInt* index = (JInt*)currentFrame->stack.top();
-    currentFrame->stack.pop();
-    JArray* arrayref = (JArray*)currentFrame->stack.top();
-    currentFrame->stack.pop();
+    StoreType* value = dynamic_cast<StoreType*>(currentFrame->stack.back());
+    currentFrame->stack.pop_back();
+    JInt* index = (JInt*)currentFrame->stack.back();
+    currentFrame->stack.pop_back();
+    JArray* arrayref = (JArray*)currentFrame->stack.back();
+    currentFrame->stack.pop_back();
     if (arrayref == nullptr) {
         throw std::runtime_error("null pointer");
     }
@@ -223,12 +223,12 @@ void CodeExecution::storeArrayItem() {
 
 template <>
 inline void CodeExecution::storeArrayItem<JRef>() {
-    JType* value = currentFrame->stack.top();
-    currentFrame->stack.pop();
-    JInt* index = (JInt*)currentFrame->stack.top();
-    currentFrame->stack.pop();
-    JArray* arrayref = (JArray*)currentFrame->stack.top();
-    currentFrame->stack.pop();
+    JType* value = currentFrame->stack.back();
+    currentFrame->stack.pop_back();
+    JInt* index = (JInt*)currentFrame->stack.back();
+    currentFrame->stack.pop_back();
+    JArray* arrayref = (JArray*)currentFrame->stack.back();
+    currentFrame->stack.pop_back();
     if (arrayref == nullptr) {
         throw std::runtime_error("null pointer");
     }
@@ -243,15 +243,15 @@ inline void CodeExecution::storeArrayItem<JRef>() {
 
 template <typename ReturnType>
 ReturnType* CodeExecution::flowReturn() const {
-    auto* value = dynamic_cast<ReturnType*>(currentFrame->stack.top());
-    currentFrame->stack.pop();
+    auto* value = dynamic_cast<ReturnType*>(currentFrame->stack.back());
+    currentFrame->stack.pop_back();
     return value;
 }
 
 template <typename ReturnType>
 ReturnType* CodeExecution::currentStackPop() {
-    auto* value = dynamic_cast<ReturnType*>(currentFrame->stack.top());
-    currentFrame->stack.pop();
+    auto* value = dynamic_cast<ReturnType*>(currentFrame->stack.back());
+    currentFrame->stack.pop_back();
     return value;
 }
 
@@ -261,7 +261,7 @@ void CodeExecution::binaryArithmetic(CallableObjectType op) {
     auto* value1 = currentStackPop<ResultType>();
     auto* result = new ResultType;
     result->val = op(value1->val, value2->val);
-    currentFrame->stack.push(result);
+    currentFrame->stack.push_back(result);
     delete value2;
     delete value1;
 }
@@ -270,16 +270,16 @@ template <typename ResultType, typename CallableObjectType>
 void CodeExecution::unaryArithmetic(CallableObjectType op) {
     auto* ival = currentStackPop<ResultType>();
     ival->val = op(ival->val);
-    currentFrame->stack.push(ival);
+    currentFrame->stack.push_back(ival);
 }
 
 template <typename Type1, typename Type2>
 void CodeExecution::typeCast() const {
-    auto* value = dynamic_cast<Type1*>(currentFrame->stack.top());
-    currentFrame->stack.pop();
+    auto* value = dynamic_cast<Type1*>(currentFrame->stack.back());
+    currentFrame->stack.pop_back();
     auto* result = new Type2;
     result->val = value->val;
-    currentFrame->stack.push(result);
+    currentFrame->stack.push_back(result);
     delete value;
 }
 

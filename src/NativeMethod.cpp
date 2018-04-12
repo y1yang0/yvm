@@ -11,10 +11,10 @@
 extern thread_local StackFrames frames;
 
 JType* ydk_lang_IO_print_str(RuntimeEnv* env) {
-    JObject* str = (JObject*)frames.top()->locals[0];
-    auto& fields = env->jheap->getObject(str);
+    JObject* str = (JObject*)frames.back()->locals[0];
+    auto& fields = env->jheap->getObjectFieldsByRef(str);
     JArray* chararr = (JArray*)fields[0];
-    auto& lengthAndData = env->jheap->getArray(chararr);
+    auto& lengthAndData = env->jheap->getArrayItemsByRef(chararr);
     char* s = new char[lengthAndData.first + 1];
     for (int i = 0; i < lengthAndData.first; i++) {
         s[i] = (char)((JInt*)lengthAndData.second[i])->val;
@@ -27,13 +27,13 @@ JType* ydk_lang_IO_print_str(RuntimeEnv* env) {
 }
 
 JType* ydk_lang_IO_print_I(RuntimeEnv* env) {
-    JInt* num = (JInt*)frames.top()->locals[0];
+    JInt* num = (JInt*)frames.back()->locals[0];
     std::cout << num->val;
     return nullptr;
 }
 
 JType* ydk_lang_IO_print_C(RuntimeEnv* env) {
-    JInt* num = (JInt*)frames.top()->locals[0];
+    JInt* num = (JInt*)frames.back()->locals[0];
     std::cout << (char)num->val;
     return nullptr;
 }
@@ -45,8 +45,8 @@ JType* ydk_lang_Math_random(RuntimeEnv* env) {
 }
 
 JType* java_lang_stringbuilder_append_I(RuntimeEnv* env) {
-    JObject* instance = dynamic_cast<JObject*>(frames.top()->locals[0]);
-    JInt* numParameter = dynamic_cast<JInt*>(frames.top()->locals[1]);
+    JObject* instance = dynamic_cast<JObject*>(frames.back()->locals[0]);
+    JInt* numParameter = dynamic_cast<JInt*>(frames.back()->locals[1]);
     std::string str{};
 
     JArray* arr = dynamic_cast<JArray*>(env->jheap->getObjectFieldByOffset(*instance, 0));
@@ -60,13 +60,13 @@ JType* java_lang_stringbuilder_append_I(RuntimeEnv* env) {
     JArray* newArr = env->jheap->createCharArray(str.c_str(), str.length());
     env->jheap->putObjectFieldByOffset(*instance, 0, newArr);
 
-    env->jheap->removeArray(arr);
+    env->jheap->removeArrayByRef(arr);
     return instance;
 }
 
 JType* java_lang_stringbuilder_append_C(RuntimeEnv* env) {
-    JObject* instance = dynamic_cast<JObject*>(frames.top()->locals[0]);
-    JInt* numParameter = dynamic_cast<JInt*>(frames.top()->locals[1]);
+    JObject* instance = dynamic_cast<JObject*>(frames.back()->locals[0]);
+    JInt* numParameter = dynamic_cast<JInt*>(frames.back()->locals[1]);
     std::string str{};
 
     JArray* arr = dynamic_cast<JArray*>(env->jheap->getObjectFieldByOffset(*instance, 0));
@@ -80,13 +80,13 @@ JType* java_lang_stringbuilder_append_C(RuntimeEnv* env) {
     JArray* newArr = env->jheap->createCharArray(str.c_str(), str.length());
     env->jheap->putObjectFieldByOffset(*instance, 0, newArr);
 
-    env->jheap->removeArray(arr);
+    env->jheap->removeArrayByRef(arr);
     return instance;
 }
 
 JType* java_lang_stringbuilder_append_str(RuntimeEnv* env) {
-    JObject* instance = dynamic_cast<JObject*>(frames.top()->locals[0]);
-    JObject* strParameter = dynamic_cast<JObject*>(frames.top()->locals[1]);
+    JObject* instance = dynamic_cast<JObject*>(frames.back()->locals[0]);
+    JObject* strParameter = dynamic_cast<JObject*>(frames.back()->locals[1]);
     std::string str{};
 
     JArray* arr = dynamic_cast<JArray*>(env->jheap->getObjectFieldByOffset(*instance, 0));
@@ -103,12 +103,12 @@ JType* java_lang_stringbuilder_append_str(RuntimeEnv* env) {
     JArray* newArr = env->jheap->createCharArray(str.c_str(), str.length());
     env->jheap->putObjectFieldByOffset(*instance, 0, newArr);
 
-    env->jheap->removeArray(arr);
+    env->jheap->removeArrayByRef(arr);
     return instance;
 }
 
 JType* java_lang_stringbuilder_tostring(RuntimeEnv* env) {
-    JObject* instance = dynamic_cast<JObject*>(frames.top()->locals[0]);
+    JObject* instance = dynamic_cast<JObject*>(frames.back()->locals[0]);
     JArray* value = dynamic_cast<JArray*>(env->jheap->getObjectFieldByOffset(*instance, 0));
     char* carr = new char[value->length];
     for (int i = 0; i < value->length; i++) {
@@ -122,7 +122,7 @@ JType* java_lang_stringbuilder_tostring(RuntimeEnv* env) {
 }
 
 JType* java_lang_thread_start(RuntimeEnv* env) {
-    auto * instance = dynamic_cast<JObject*>(frames.top()->locals[0]);
+    auto * instance = dynamic_cast<JObject*>(frames.back()->locals[0]);
     auto * runnableTask = (JObject*)cloneValue(
                 dynamic_cast<JObject*>(env->jheap->getObjectFieldByName(
             env->ma->findJavaClass("java/lang/Thread"), "task",
@@ -138,8 +138,8 @@ JType* java_lang_thread_start(RuntimeEnv* env) {
         yrt.ma->linkClassIfAbsent(name);
         // For each execution thread, we have a code execution engine
         auto * frame = new Frame;
-        frame->stack.push(runnableTask);
-        frames.push(frame);
+        frame->stack.push_back(runnableTask);
+        frames.push_back(frame);
         CodeExecution exec{frame};
 
         yrt.ma->initClassIfAbsent(exec, name);

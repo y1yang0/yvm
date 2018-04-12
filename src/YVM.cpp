@@ -12,6 +12,7 @@
 #include "JavaClass.h"
 #include "NativeMethod.h"
 #include "RuntimeEnv.h"
+#include "GC.h"
 
 #define FORCE(x) (reinterpret_cast<char*>(x))
 /**
@@ -84,6 +85,7 @@ void YVM::callMain(const char* name) {
         }
     });
     mainThread.join();
+    yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
 }
 
 void YVM::warmUp(const std::vector<std::string> & libPaths) {

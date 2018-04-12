@@ -6,5 +6,6 @@ add_compile_options(-O3)
 
 set(SOURCE_FILES main.cpp MethodArea.cpp Frame.h ClassFile.h AccessFlag.h CommandParser.h ConstantTag.h RuntimeEnv.cpp
         CodeExecution.cpp Debug.cpp Descriptor.cpp JavaClass.cpp JavaHeap.cpp CodeExecution.hpp NativeMethod.cpp
-        YVM.cpp Utils.h Utils.cpp JavaException.h JavaException.cpp ObjectMonitor.h ObjectMonitor.cpp)
+        YVM.cpp Utils.h Utils.cpp JavaException.h JavaException.cpp ObjectMonitor.h ObjectMonitor.cpp
+        GC.h GC.cpp)
 add_executable(yvm ${SOURCE_FILES})

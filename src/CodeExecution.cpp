@@ -31,7 +31,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                     auto* temp = currentStackPop<JType>();
                     delete temp;
                 }
-                currentFrame->stack.push(throwableObject);
+                currentFrame->stack.push_back(throwableObject);
                 exception.sweepException();
             }
             else {
@@ -51,73 +51,73 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             break;
         case op_aconst_null: {
             JObject* obj = nullptr;
-            currentFrame->stack.push(obj);
+            currentFrame->stack.push_back(obj);
         }
             break;
         case op_iconst_m1: {
-            currentFrame->stack.push(new JInt(-1));
+            currentFrame->stack.push_back(new JInt(-1));
         }
             break;
         case op_iconst_0: {
-            currentFrame->stack.push(new JInt(0));
+            currentFrame->stack.push_back(new JInt(0));
         }
             break;
         case op_iconst_1: {
-            currentFrame->stack.push(new JInt(1));
+            currentFrame->stack.push_back(new JInt(1));
         }
             break;
         case op_iconst_2: {
-            currentFrame->stack.push(new JInt(2));
+            currentFrame->stack.push_back(new JInt(2));
         }
             break;
         case op_iconst_3: {
-            currentFrame->stack.push(new JInt(3));
+            currentFrame->stack.push_back(new JInt(3));
         }
             break;
         case op_iconst_4: {
-            currentFrame->stack.push(new JInt(4));
+            currentFrame->stack.push_back(new JInt(4));
         }
             break;
         case op_iconst_5: {
-            currentFrame->stack.push(new JInt(5));
+            currentFrame->stack.push_back(new JInt(5));
         }
             break;
         case op_lconst_0: {
-            currentFrame->stack.push(new JLong(0));
+            currentFrame->stack.push_back(new JLong(0));
         }
             break;
         case op_lconst_1: {
-            currentFrame->stack.push(new JLong(1));
+            currentFrame->stack.push_back(new JLong(1));
         }
             break;
         case op_fconst_0: {
-            currentFrame->stack.push(new JFloat(0.0f));
+            currentFrame->stack.push_back(new JFloat(0.0f));
         }
             break;
         case op_fconst_1: {
-            currentFrame->stack.push(new JFloat(1.0f));
+            currentFrame->stack.push_back(new JFloat(1.0f));
         }
             break;
         case op_fconst_2: {
-            currentFrame->stack.push(new JFloat(2.0f));
+            currentFrame->stack.push_back(new JFloat(2.0f));
         }
             break;
         case op_dconst_0: {
-            currentFrame->stack.push(new JDouble(0.0));
+            currentFrame->stack.push_back(new JDouble(0.0));
         }
             break;
         case op_dconst_1: {
-            currentFrame->stack.push(new JDouble(1.0));
+            currentFrame->stack.push_back(new JDouble(1.0));
         }
             break;
         case op_bipush: {
             const u1 byte = consumeU1(ext.code, op);
-            currentFrame->stack.push(new JInt(byte));
+            currentFrame->stack.push_back(new JInt(byte));
         }
             break;
         case op_sipush: {
             const u2 byte = consumeU2(ext.code, op);
-            currentFrame->stack.push(new JInt(byte));
+            currentFrame->stack.push_back(new JInt(byte));
         }
             break;
         case op_ldc: {
@@ -136,13 +136,13 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                 auto val = dynamic_cast<CONSTANT_Double*>(jc->raw.constPoolInfo[index])->val;
                 JDouble* dval = new JDouble;
                 dval->val = val;
-                currentFrame->stack.push(dval);
+                currentFrame->stack.push_back(dval);
             }
             else if (typeid(*jc->raw.constPoolInfo[index]) == typeid(CONSTANT_Long)) {
                 auto val = dynamic_cast<CONSTANT_Long*>(jc->raw.constPoolInfo[index])->val;
                 JLong* lval = new JLong;
                 lval->val = val;
-                currentFrame->stack.push(lval);
+                currentFrame->stack.push_back(lval);
             }
             else {
                 throw std::runtime_error("invalid symbolic reference index on constant pool");
@@ -456,8 +456,8 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             JType* value = currentStackPop<JType>();
 
             assert(typeid(*value)!= typeid(JLong) && typeid(*value)!= typeid(JDouble));
-            currentFrame->stack.push(value);
-            currentFrame->stack.push(cloneValue(value));
+            currentFrame->stack.push_back(value);
+            currentFrame->stack.push_back(cloneValue(value));
         }
             break;
         case op_dup_x1: {
@@ -467,9 +467,9 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             assert(IS_COMPUTATIONAL_TYPE_1(value1));
             assert(IS_COMPUTATIONAL_TYPE_1(value2));
 
-            currentFrame->stack.push(cloneValue(value1));
-            currentFrame->stack.push(value2);
-            currentFrame->stack.push(value1);
+            currentFrame->stack.push_back(cloneValue(value1));
+            currentFrame->stack.push_back(value2);
+            currentFrame->stack.push_back(value1);
         }
             break;
         case op_dup_x2: {
@@ -479,18 +479,18 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
 
             if (IS_COMPUTATIONAL_TYPE_1(value1) && IS_COMPUTATIONAL_TYPE_1(value2) && IS_COMPUTATIONAL_TYPE_1(value3)) {
                 // use structure 1
-                currentFrame->stack.push(cloneValue(value1));
-                currentFrame->stack.push(value3);
-                currentFrame->stack.push(value2);
-                currentFrame->stack.push(value1);
+                currentFrame->stack.push_back(cloneValue(value1));
+                currentFrame->stack.push_back(value3);
+                currentFrame->stack.push_back(value2);
+                currentFrame->stack.push_back(value1);
             }
             else if (IS_COMPUTATIONAL_TYPE_1(value1) && IS_COMPUTATIONAL_TYPE_2(value2)) {
                 //use structure 2
-                currentFrame->stack.push(value3);
+                currentFrame->stack.push_back(value3);
 
-                currentFrame->stack.push(cloneValue(value1));
-                currentFrame->stack.push(value2);
-                currentFrame->stack.push(value1);
+                currentFrame->stack.push_back(cloneValue(value1));
+                currentFrame->stack.push_back(value2);
+                currentFrame->stack.push_back(value1);
             }
             else {
                 SHOULD_NOT_REACH_HERE
@@ -503,17 +503,17 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
 
             if (IS_COMPUTATIONAL_TYPE_1(value1) && IS_COMPUTATIONAL_TYPE_1(value2)) {
                 // use structure 1
-                currentFrame->stack.push(cloneValue(value2));
-                currentFrame->stack.push(cloneValue(value1));
-                currentFrame->stack.push(value2);
-                currentFrame->stack.push(value1);
+                currentFrame->stack.push_back(cloneValue(value2));
+                currentFrame->stack.push_back(cloneValue(value1));
+                currentFrame->stack.push_back(value2);
+                currentFrame->stack.push_back(value1);
             }
             else if (IS_COMPUTATIONAL_TYPE_2(value1)) {
                 //use structure 2
-                currentFrame->stack.push(value2);
+                currentFrame->stack.push_back(value2);
 
-                currentFrame->stack.push(cloneValue(value1));
-                currentFrame->stack.push(value1);
+                currentFrame->stack.push_back(cloneValue(value1));
+                currentFrame->stack.push_back(value1);
             }
             else {
                 SHOULD_NOT_REACH_HERE
@@ -527,19 +527,19 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
 
             if (IS_COMPUTATIONAL_TYPE_1(value1) && IS_COMPUTATIONAL_TYPE_1(value2) && IS_COMPUTATIONAL_TYPE_1(value3)) {
                 // use structure 1
-                currentFrame->stack.push(cloneValue(value2));
-                currentFrame->stack.push(cloneValue(value1));
-                currentFrame->stack.push(value3);
-                currentFrame->stack.push(value2);
-                currentFrame->stack.push(value1);
+                currentFrame->stack.push_back(cloneValue(value2));
+                currentFrame->stack.push_back(cloneValue(value1));
+                currentFrame->stack.push_back(value3);
+                currentFrame->stack.push_back(value2);
+                currentFrame->stack.push_back(value1);
             }
             else if (IS_COMPUTATIONAL_TYPE_2(value1) && IS_COMPUTATIONAL_TYPE_1(value2)) {
                 //use structure 2
-                currentFrame->stack.push(value3);
+                currentFrame->stack.push_back(value3);
 
-                currentFrame->stack.push(cloneValue(value1));
-                currentFrame->stack.push(value2);
-                currentFrame->stack.push(value1);
+                currentFrame->stack.push_back(cloneValue(value1));
+                currentFrame->stack.push_back(value2);
+                currentFrame->stack.push_back(value1);
             }
             else {
                 SHOULD_NOT_REACH_HERE
@@ -554,22 +554,22 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             if (IS_COMPUTATIONAL_TYPE_1(value1) && IS_COMPUTATIONAL_TYPE_1(value2)
                 && IS_COMPUTATIONAL_TYPE_1(value3) && IS_COMPUTATIONAL_TYPE_1(value4)) {
                 // use structure 1
-                currentFrame->stack.push(cloneValue(value2));
-                currentFrame->stack.push(cloneValue(value1));
-                currentFrame->stack.push(value4);
-                currentFrame->stack.push(value3);
-                currentFrame->stack.push(value2);
-                currentFrame->stack.push(value1);
+                currentFrame->stack.push_back(cloneValue(value2));
+                currentFrame->stack.push_back(cloneValue(value1));
+                currentFrame->stack.push_back(value4);
+                currentFrame->stack.push_back(value3);
+                currentFrame->stack.push_back(value2);
+                currentFrame->stack.push_back(value1);
             }
             else if (IS_COMPUTATIONAL_TYPE_2(value1) && IS_COMPUTATIONAL_TYPE_1(value2) && IS_COMPUTATIONAL_TYPE_1(
                 value3)) {
                 //use structure 2
-                currentFrame->stack.push(value4);
+                currentFrame->stack.push_back(value4);
 
-                currentFrame->stack.push(cloneValue(value1));
-                currentFrame->stack.push(value4);
-                currentFrame->stack.push(value2);
-                currentFrame->stack.push(value1);
+                currentFrame->stack.push_back(cloneValue(value1));
+                currentFrame->stack.push_back(value4);
+                currentFrame->stack.push_back(value2);
+                currentFrame->stack.push_back(value1);
             }
             else {
                 SHOULD_NOT_REACH_HERE
@@ -864,7 +864,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             auto* value = currentStackPop<JInt>();
             auto* result = new JInt;
             result->val = (int8_t)(value->val);
-            currentFrame->stack.push(result);
+            currentFrame->stack.push_back(result);
             delete value;
         }
             break;
@@ -872,7 +872,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             auto* value = currentStackPop<JInt>();
             auto* result = new JInt;
             result->val = (int16_t)(value->val);
-            currentFrame->stack.push(result);
+            currentFrame->stack.push_back(result);
             delete value;
         }
             break;
@@ -881,15 +881,15 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             auto* value1 = currentStackPop<JLong>();
             if (value1->val > value2->val) {
                 auto* result = new JInt(1);
-                currentFrame->stack.push(result);
+                currentFrame->stack.push_back(result);
             }
             else if (value1->val == value2->val) {
                 auto* result = new JInt(0);
-                currentFrame->stack.push(result);
+                currentFrame->stack.push_back(result);
             }
             else {
                 auto* result = new JInt(-1);
-                currentFrame->stack.push(result);
+                currentFrame->stack.push_back(result);
             }
             delete value1;
             delete value2;
@@ -904,15 +904,15 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             auto* value1 = currentStackPop<JFloat>();
             if (value1->val > value2->val) {
                 auto* result = new JInt(1);
-                currentFrame->stack.push(result);
+                currentFrame->stack.push_back(result);
             }
             else if (std::abs(value1->val - value2->val) < 0.000001) {
                 auto* result = new JInt(0);
-                currentFrame->stack.push(result);
+                currentFrame->stack.push_back(result);
             }
             else {
                 auto* result = new JInt(-1);
-                currentFrame->stack.push(result);
+                currentFrame->stack.push_back(result);
             }
             delete value1;
             delete value2;
@@ -927,15 +927,15 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             auto* value1 = currentStackPop<JDouble>();
             if (value1->val > value2->val) {
                 auto* result = new JInt(1);
-                currentFrame->stack.push(result);
+                currentFrame->stack.push_back(result);
             }
             else if (std::abs(value1->val - value2->val) < 0.000000000001) {
                 auto* result = new JInt(0);
-                currentFrame->stack.push(result);
+                currentFrame->stack.push_back(result);
             }
             else {
                 auto* result = new JInt(-1);
-                currentFrame->stack.push(result);
+                currentFrame->stack.push_back(result);
             }
             delete value1;
             delete value2;
@@ -1185,7 +1185,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             auto symbolicRef = parseFieldSymbolicReference(jc, index);
             JType* field = cloneValue(getStaticField(std::get<0>(symbolicRef), std::get<1>(symbolicRef),
                                                      std::get<2>(symbolicRef)));
-            currentFrame->stack.push(field);
+            currentFrame->stack.push_back(field);
         }
             break;
         case op_putstatic: {
@@ -1203,7 +1203,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                                                                       std::get<1>(symbolicRef),
                                                                       std::get<2>(symbolicRef),
                                                                       objectref));
-            currentFrame->stack.push(field);
+            currentFrame->stack.push_back(field);
 
             delete objectref;
         }
@@ -1305,7 +1305,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
         case op_new: {
             const u2 index = consumeU2(ext.code, op);
             JObject* objectref = execNew(jc, index);
-            currentFrame->stack.push(objectref);
+            currentFrame->stack.push_back(objectref);
         }
             break;
         case op_newarray: {
@@ -1317,7 +1317,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             }
             JArray* arrayref = yrt.jheap->createPODArray(atype, count->val);
 
-            currentFrame->stack.push(arrayref);
+            currentFrame->stack.push_back(arrayref);
             delete count;
         }
             break;
@@ -1331,7 +1331,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             }
             JArray* arrayref = yrt.jheap->createObjectArray(*std::get<0>(symbolicRef), count->val);
 
-            currentFrame->stack.push(arrayref);
+            currentFrame->stack.push_back(arrayref);
             delete count;
         }
             break;
@@ -1343,7 +1343,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             }
             JInt* length = new JInt;
             length->val = arrayref->length;
-            currentFrame->stack.push(length);
+            currentFrame->stack.push_back(length);
 
             delete arrayref;
         }
@@ -1362,7 +1362,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                     auto* temp = currentStackPop<JType>();
                     delete temp;
                 }
-                currentFrame->stack.push(throwableObject);
+                currentFrame->stack.push_back(throwableObject);
             }
             else /* Exception can not handled within method handlers */ {
                 exception.markException();
@@ -1379,13 +1379,13 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             const u2 index = consumeU2(ext.code, op);
             auto* objectref = currentStackPop<JObject>();
             if (objectref == nullptr) {
-                currentFrame->stack.push(new JInt(0));
+                currentFrame->stack.push_back(new JInt(0));
             }
             if (checkInstanceof(jc, index, objectref)) {
-                currentFrame->stack.push(new JInt(1));
+                currentFrame->stack.push_back(new JInt(1));
             }
             else {
-                currentFrame->stack.push(new JInt(0));
+                currentFrame->stack.push_back(new JInt(0));
             }
         }
             break;
@@ -1479,13 +1479,13 @@ void CodeExecution::loadConstantPoolItem2Stack(const JavaClass* jc, u2 index) {
         auto val = dynamic_cast<CONSTANT_Integer*>(jc->raw.constPoolInfo[index])->val;
         JInt* ival = new JInt;
         ival->val = val;
-        currentFrame->stack.push(ival);
+        currentFrame->stack.push_back(ival);
     }
     else if (typeid(*jc->raw.constPoolInfo[index]) == typeid(CONSTANT_Float)) {
         auto val = dynamic_cast<CONSTANT_Float*>(jc->raw.constPoolInfo[index])->val;
         JFloat* fval = new JFloat;
         fval->val = val;
-        currentFrame->stack.push(fval);
+        currentFrame->stack.push_back(fval);
     }
     else if (typeid(*jc->raw.constPoolInfo[index]) == typeid(CONSTANT_String)) {
         auto val = jc->getString(dynamic_cast<CONSTANT_String*>(jc->raw.constPoolInfo[index])->stringIndex);
@@ -1494,7 +1494,7 @@ void CodeExecution::loadConstantPoolItem2Stack(const JavaClass* jc, u2 index) {
         // put string  into str's field; according the source file of java.lang.Object, we know that 
         // its first field was used to store chars
         yrt.jheap->putObjectFieldByOffset(*str, 0, value);
-        currentFrame->stack.push(str);
+        currentFrame->stack.push_back(str);
     }
     else if (typeid(*jc->raw.constPoolInfo[index]) == typeid(CONSTANT_Class)) {
         throw std::runtime_error("unsupport region");
@@ -1882,8 +1882,8 @@ void CodeExecution::invokeByName(JavaClass* jc, const char* methodName, const ch
     // Actual method calling routine
     Frame* frame = new Frame;
     frame->locals.resize(ext.maxLocal);
-    frames.push(frame);
-    currentFrame = frames.top();
+    frames.push_back(frame);
+    currentFrame = frames.back();
 
     JType* returnValue{};
     if (IS_METHOD_NATIVE(m->accessFlags)) {
@@ -1894,7 +1894,7 @@ void CodeExecution::invokeByName(JavaClass* jc, const char* methodName, const ch
     }
     popFrame();
     if (returnType != T_EXTRA_VOID) {
-        currentFrame->stack.push(returnValue);
+        currentFrame->stack.push_back(returnValue);
     }
     if (exception.hasUnhandledException()) {
         exception.extendExceptionStackTrace(methodName);
@@ -1927,7 +1927,7 @@ void CodeExecution::invokeInterface(const JavaClass* jc, const char* methodName,
 
     CodeAttrCore ext = getCodeAttrCore(invokingMethod.first);
     frame->locals.resize(ext.maxLocal);
-    frames.push(frame);
+    frames.push_back(frame);
     this->currentFrame = frame;
 
     JType* returnValue{};
@@ -1941,7 +1941,7 @@ void CodeExecution::invokeInterface(const JavaClass* jc, const char* methodName,
 
     popFrame();
     if (returnType != T_EXTRA_VOID || exception.hasUnhandledException()) {
-        currentFrame->stack.push(returnValue);
+        currentFrame->stack.push_back(returnValue);
         if (exception.hasUnhandledException()) {
             exception.extendExceptionStackTrace(methodName);
         }
@@ -1956,7 +1956,7 @@ void CodeExecution::invokeVirtual(const char* methodName, const char* methodDesc
     Frame* frame = new Frame;
     pushMethodArguments(frame, parameter);
     auto* objectref = pushMethodThisArgument(frame);
-    frames.push(frame);
+    frames.push_back(frame);
     this->currentFrame = frame;
 
     auto invokingMethod = findMethod(objectref->jc, methodName, methodDescriptor);
@@ -1987,7 +1987,7 @@ void CodeExecution::invokeVirtual(const char* methodName, const char* methodDesc
 
     popFrame();
     if (returnType != T_EXTRA_VOID || exception.hasUnhandledException()) {
-        currentFrame->stack.push(returnValue);
+        currentFrame->stack.push_back(returnValue);
         if (exception.hasUnhandledException()) {
             exception.extendExceptionStackTrace(methodName);
         }
@@ -2005,7 +2005,7 @@ void CodeExecution::invokeSpecial(const JavaClass* jc, const char* methodName, c
     Frame* frame = new Frame;
     pushMethodArguments(frame, parameter);
     auto* objectref = pushMethodThisArgument(frame);
-    frames.push(frame);
+    frames.push_back(frame);
     this->currentFrame = frame;
 
     const auto invokingMethod = findMethod(jc, methodName, methodDescriptor);
@@ -2052,7 +2052,7 @@ void CodeExecution::invokeSpecial(const JavaClass* jc, const char* methodName, c
 
     popFrame();
     if (returnType != T_EXTRA_VOID || exception.hasUnhandledException()) {
-        currentFrame->stack.push(returnValue);
+        currentFrame->stack.push_back(returnValue);
         if (exception.hasUnhandledException()) {
             exception.extendExceptionStackTrace(methodName);
         }
@@ -2085,7 +2085,7 @@ void CodeExecution::invokeStatic(const JavaClass* jc, const char* methodName, co
     auto parameter = std::get<1>(parameterAndReturnType);
     pushMethodArguments(frame, parameter);
 
-    frames.push(frame);
+    frames.push_back(frame);
     this->currentFrame = frame;
 
     JType* returnValue{};
@@ -2099,7 +2099,7 @@ void CodeExecution::invokeStatic(const JavaClass* jc, const char* methodName, co
     popFrame();
 
     if (returnType != T_EXTRA_VOID || exception.hasUnhandledException()) {
-        currentFrame->stack.push(returnValue);
+        currentFrame->stack.push_back(returnValue);
         if (exception.hasUnhandledException()) {
             exception.extendExceptionStackTrace(methodName);
         }

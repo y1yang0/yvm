@@ -54,6 +54,9 @@
     <ClCompile Include="ObjectMonitor.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="GC.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AccessFlag.h">
@@ -123,6 +126,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="CommandParser.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="GC.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
