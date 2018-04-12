@@ -1,7 +1,7 @@
 ![](./public/banner.jpg)
 [中文](https://github.com/racaljk/yvm/blob/master/README.md) | [English](https://github.com/racaljk/yvm/blob/master/README.EN.md)
 
-YVM是用C++写的一个Java虚拟机，现在支持Java大部分功能，不过还有很多bug等待修复。
+YVM是用C++写的一个Java虚拟机，现在支持Java大部分功能，以及一个基于"标记清除算法"的垃圾回收器. 不过还有很多bug等待修复。
 感兴趣的朋友pull request/fork/star吧！
 
 # 已支持语言特性
@@ -12,6 +12,7 @@ YVM是用C++写的一个Java虚拟机，现在支持Java大部分功能，不过
 + [异常处理(可输出stacktrace)](./javalib_src/ydk/test/ThrowExceptionTest.java)
 + [创建异步线程](./javalib_src/ydk/test/CreateAsyncThreadsTest.java)
 + [Synchronized(支持对象锁)](./javalib_src/ydk/test/SynchronizedBlockTest.java)
++ [垃圾回收(标记清除算法)](./javalib_src/ydk/test/GCTest.java)
 
 # 使用方法
 0. 支持G++7.0,MSVC 2017,CMakeLists直接编译即可

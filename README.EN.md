@@ -1,7 +1,7 @@
 ![](./public/banner.jpg)
 [中文](https://github.com/racaljk/yvm/blob/master/README.md) | [English](https://github.com/racaljk/yvm/blob/master/README.EN.md)
 
-This is a homemade Java virtual machine written in c++, the main components are conform to [Java Virtual Machine Specification 8](https://docs.oracle.com/javase/specs/jvms/se8/jvms8.pdf). Now it is runnable and sorts of language features will add into this VM in progress. I don't have time to write unittests to verify all aspects, so if you find any bugs, you can open an [Issue](https://github.com/racaljk/yvm/issues/new) or fix up in place and pull request directly. :)
+This is a homemade Java virtual machine written in c++, it supports most Java language features and includes a mark-sweep-based garbage collector. The main components of this VM are conform to [Java Virtual Machine Specification 8](https://docs.oracle.com/javase/specs/jvms/se8/jvms8.pdf). Now it is runnable and sorts of language features will add into this VM in progress. I don't have enough time to write unittests to verify all aspects of yvm, so if you find any bugs, you can open an [Issue](https://github.com/racaljk/yvm/issues/new) or fix up in place and pull request directly. :)
 
 # Available language features
 :-0 Advanced language features will support later, you can also PR to help me
@@ -11,6 +11,7 @@ This is a homemade Java virtual machine written in c++, the main components are 
 + [Exception handling](./javalib_src/ydk/test/ThrowExceptionTest.java)
 + [Async native threads](./javalib_src/ydk/test/CreateAsyncThreadsTest.java)
 + [Synchronized block with object lock](./javalib_src/ydk/test/SynchronizedBlockTest.java)
++ [Garbage Collection(With mark-and-sweep policy)](./javalib_src/ydk/test/GCTest.java)
 
 # Usage
 0. You can use `G++7.0`/`MSVC 2017` to compile it with -std=c++11 or newer. And using cmake is also available, we don't need to set any building options.
