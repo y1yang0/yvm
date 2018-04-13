@@ -26,15 +26,15 @@ public:
 
 
 public:
-    decltype(auto) getString(u2 index) const {
+    const char* getString(u2 index) const {
         return reinterpret_cast<const char*>(dynamic_cast<CONSTANT_Utf8*>(raw.constPoolInfo[index])->bytes);
     }
 
-    decltype(auto) getClassName() const {
+    const char* getClassName() const {
         return getString(dynamic_cast<CONSTANT_Class*>(raw.constPoolInfo[raw.thisClass])->nameIndex);
     }
 
-    decltype(auto) getSuperClassName() const {
+    const char* getSuperClassName() const {
         return raw.superClass == 0
                    ? nullptr
                    : getString(dynamic_cast<CONSTANT_Class*>(raw.constPoolInfo[raw.superClass])->nameIndex);

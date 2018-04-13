@@ -1,6 +1,11 @@
 #ifndef YVM_OPTION_H
 #define YVM_OPTION_H
 
+/*
+ * Target platform
+ */
+#define TARGET_LINUX
+
 /**
  * denote the threshold value of garbage collector. GC was started when the memory
  * allocation was beyond this value. The default threshold value is 50M
@@ -15,7 +20,7 @@
 /*
  * define to suspend console to see what going on this output
  */
-#define YVM_DEBUG_SUSPEND_CONSOLE
+#undef YVM_DEBUG_SUSPEND_CONSOLE
 
 /*
  * define to output byte size of yvm's internal structures

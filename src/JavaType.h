@@ -43,7 +43,7 @@ struct JLong BASE_OF_JTYPE {
 struct JObject BASE_OF_JTYPE {
     explicit JObject() = default;
 
-    size_t offset = 0; // Offset on java heap
+    std::size_t offset = 0; // Offset on java heap
     const JavaClass* jc{}; // Reference to meta java class
 };
 
@@ -51,7 +51,7 @@ struct JArray BASE_OF_JTYPE {
     explicit JArray() = default;
 
     int length = 0; // Length of java array
-    size_t offset = 0; // Offset on java heap
+    std::size_t offset = 0; // Offset on java heap
 };
 
 #define IS_COMPUTATIONAL_TYPE_1(value) (typeid(*value)!=typeid(JDouble) && typeid(*value)!=typeid(JLong))

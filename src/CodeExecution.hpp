@@ -8,6 +8,7 @@
 #include "Frame.h"
 #include <typeinfo>
 #include "JavaException.h"
+#include "JavaType.h"
 
 struct MethodInfo;
 struct RuntimeEnv;

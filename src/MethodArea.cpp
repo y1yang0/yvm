@@ -1,6 +1,6 @@
 #include "MethodArea.h"
 #include "JavaClass.h"
-#include "JavaHeap.h"
+#include "Option.h"
 #include "AccessFlag.h"
 #include "Descriptor.h"
 
@@ -169,14 +169,26 @@ std::string MethodArea::parseNameToPath(const char* name) {
     string newJcName(name);
     for (auto& c : newJcName) {
         if (c == '/')
+#if defined(TARGET_WIN32)
             c = '\\';
+#elif defined(TARGET_LINUX)
+           c='/';
+#endif
+            ;
     }
     newJcName.append(".class");
 
     for (auto path : this->searchPaths) {
+#if defined(TARGET_WIN32)
         if (path.length() > 0 && path[path.length() - 1] != '\\') {
             path += '\\';
         }
+#elif defined(TARGET_LINUX)
+        if (path.length() > 0 && path[path.length() - 1] != '/') {
+            path += '/';
+        }
+#endif
+
         path += newJcName;
         fstream fin;
         fin.open(path, ios::in);
