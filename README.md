@@ -5,6 +5,9 @@ YVM是用C++写的一个Java虚拟机，现在支持Java大部分功能，以及
 感兴趣的朋友pull request/fork/star吧！
 
 # 已支持语言特性
+
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/ae194d72351641089c72e4bef1fda870)](https://app.codacy.com/app/racaljk/yvm?utm_source=github.com&utm_medium=referral&utm_content=racaljk/yvm&utm_campaign=badger)
+
 :-0 高级特性逐步支持中，可以开Issue提议或者直接PR
 + Java基本算术运算，流程控制语句，面向对象。
 + [RTTI](./javalib_src/ydk/test/InstanceofTest.java)
