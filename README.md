@@ -15,12 +15,12 @@ YVM是用C++写的一个Java虚拟机，现在支持Java大部分功能，以及
 + [垃圾回收(标记清除算法)](./javalib_src/ydk/test/GCTest.java)
 
 # 使用方法
-0. 支持G++7.0,MSVC 2017,CMakeLists直接编译即可
+0. 支持G++7.0,MSVC 2017,CMakeLists直接编译即可(建议使用MSVC)
 1. 运行
 ```bash
 # --runtime为在YVM上运行的Java程序所必须的运行时,多个值用";"分隔
-# 后面指定运行程序的全修饰名，注意不能使用".".如'java/lang/Object'而不是'java.lang.Object'
-./yvm --runtime=C:\Users\Cthulhu\Desktop\yvm\javalib ydk/test/QuickSort
+# 后面指定运行程序的全修饰名，如ydk.test.QuickSort
+./yvm --runtime=C:\Users\Cthulhu\Desktop\yvm\javalib ydk.test.QuickSort
 ```
 
 # 关于JDK

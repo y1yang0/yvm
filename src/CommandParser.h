@@ -121,7 +121,7 @@ struct Parser
 		}
 	}
 
-    inline const std::string & getRunningProgram() const { return runningProgram; }
+    inline std::string & getRunningProgram() { return runningProgram; }
 
     inline std::vector<std::string> &getFlagByName(const std::string & str) { return Flags.at(SimpleNames.find(str)->second).getFlagValues(); }
 

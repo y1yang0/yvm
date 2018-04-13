@@ -20,6 +20,11 @@ int main(int argc, char* argv[]) {
         std::cerr << " Fatal error: no running program specified.\n";
         return 1;
     }
+    for(auto &c : runningProgram) {
+        if(c=='.') {
+            c = '/';
+        }
+    }
     vm.callMain(cparser.getRunningProgram().c_str());
 #ifdef YVM_DEBUG_SUSPEND_CONSOLE
     system("pause");

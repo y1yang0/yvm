@@ -14,12 +14,12 @@ This is a homemade Java virtual machine written in c++, it supports most Java la
 + [Garbage Collection(With mark-and-sweep policy)](./javalib_src/ydk/test/GCTest.java)
 
 # Usage
-0. You can use `G++7.0`/`MSVC 2017` to compile it with -std=c++11 or newer. And using cmake is also available, we don't need to set any building options.
+0. You can use `G++7.0`/`MSVC 2017` to compile it with -std=c++11 or newer. And using cmake is also available, we don't need to set any building options.(Recommend to use MSVC)
 1. Running flags
 ```bash
 # --runtime to specify runtime libraries of Java program, use ";" to split multi paths
-# ydk/test/QuickSort means the full slash-decorated program name which you want to run on yvm
-./yvm --runtime=C:\Users\Cthulhu\Desktop\yvm\javalib ydk/test/QuickSort
+# dotted-decorated program name which you want to run on yvm
+./yvm --runtime=C:\Users\Cthulhu\Desktop\yvm\javalib ydk.test.QuickSort
 ```
 
 # About JDK
