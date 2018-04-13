@@ -2,7 +2,7 @@
 #define YVM_YRUNTIME_H
 
 #include <stack>
-#include <map>
+#include <unordered_map>
 #include <condition_variable>
 #include "Type.h"
 #include "Frame.h"
@@ -20,7 +20,7 @@ struct RuntimeEnv {
 
     MethodArea* ma;
     JavaHeap* jheap;
-    std::map<std::string, JType*(*)(RuntimeEnv* env)> nativeMethods;
+    std::unordered_map<std::string, JType*(*)(RuntimeEnv* env)> nativeMethods;
     GC* gc;
 
     std::mutex aliveThreadCounterMutex;

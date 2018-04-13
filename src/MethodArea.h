@@ -1,14 +1,15 @@
 #ifndef YVM_METHODAREA_H
 #define YVM_METHODAREA_H
 
-#include <map>
+#include <unordered_map>
+#include <unordered_set>
 #include <string>
 #include <vector>
 #include <algorithm>
-#include <string.h>
-#include <set>
-#include "ClassFile.h"
+#include <cstring>
 #include <mutex>
+#include "ClassFile.h"
+
 class CodeExecution;
 class JavaClass;
 
@@ -66,9 +67,9 @@ public:
 private:
     std::recursive_mutex maMutex;
 
-    std::set<const char *> linkedClasses;
-    std::set<const char *> initedClasses;
-    std::map<std::string, JavaClass *> classTable;
+    std::unordered_set<const char *> linkedClasses;
+    std::unordered_set<const char *> initedClasses;
+    std::unordered_map<std::string, JavaClass *> classTable;
     std::vector<std::string> searchPaths;
 
     std::string parseNameToPath(const char* name);
