@@ -1,4 +1,7 @@
 #include "GC.h"
+#include "JavaType.h"
+#include "MethodArea.h"
+#include "JavaHeap.h"
 
 void GC::gc(GCPolicy policy) {
     switch (policy) {
@@ -50,6 +53,14 @@ void GC::sweep() const {
             ++pos;
         }
     }
+    for (auto pos = yrt.jheap->monitorheap.begin(); pos != yrt.jheap->monitorheap.end();) {
+        if (objectBitmap.find(pos->first) == objectBitmap.cend() || arrayBitmap.find(pos->first) == arrayBitmap.cend()) {
+            yrt.jheap->monitorheap.erase(pos++);
+        }
+        else {
+            ++pos;
+        }
+    }
 }
 
 void GC::markAndSweep() {  
@@ -66,6 +77,3 @@ void GC::markAndSweep() {
     objectBitmap.clear();
     arrayBitmap.clear();
 }
-
-
-

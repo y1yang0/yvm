@@ -1,6 +1,17 @@
 #ifndef YVM_OPTION_H
 #define YVM_OPTION_H
 
+/**
+ * denote the threshold value of garbage collector. GC was started when the memory
+ * allocation was beyond this value. The default threshold value is 50M
+ */
+#define YVM_GC_THRESHOLD_VALUE (1024*1024*50)
+
+/*
+ * define to show new spawning thread name
+ */
+#define YVM_DEBUG_SHOW_GC_THREAD
+
 /*
  * define to suspend console to see what going on this output
  */

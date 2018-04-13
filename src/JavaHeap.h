@@ -7,6 +7,7 @@
 #include <mutex>
 #include "ObjectMonitor.h"
 #include "Utils.h"
+#include "GC.h"
 
 
 using namespace std;
@@ -84,10 +85,20 @@ private:
         JObject* object, JType* value, size_t offset = 0);
 
 private:
-    std::recursive_mutex heapMutex;
-    map<size_t, vector<JType*>> objheap;
-    map<size_t, pair<size_t, JType**>> arrheap;
-    map<size_t, ObjectMonitor*> monitorheap;
+    recursive_mutex heapMutex;
+
+    map<size_t,
+        vector<JType*>,
+        less<>,
+        HeapAllocator<pair<const size_t,vector<JType*>>>> objheap;
+    map<size_t, 
+        pair<size_t, JType**>, 
+        less<>,
+        HeapAllocator<pair<const size_t, pair<size_t, JType**>>>> arrheap;
+    map<size_t, 
+        ObjectMonitor*, 
+        less<>, 
+        HeapAllocator<pair<const size_t, ObjectMonitor*>>> monitorheap;
 };
 
 

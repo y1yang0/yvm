@@ -85,7 +85,6 @@ void YVM::callMain(const char* name) {
         }
     });
     mainThread.join();
-    yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
 }
 
 void YVM::warmUp(const std::vector<std::string> & libPaths) {
