@@ -14,9 +14,25 @@ YVM是用C++写的一个Java虚拟机，现在支持Java大部分功能，以及
 + [Synchronized(支持对象锁)](./javalib_src/ydk/test/SynchronizedBlockTest.java)
 + [垃圾回收(标记清除算法)](./javalib_src/ydk/test/GCTest.java)
 
-# 使用方法
-0. 支持G++7.0,MSVC 2017,CMakeLists直接编译即可(建议使用MSVC)
-1. 运行
+# 构建和运行
+预置MSVC 2017工程文件,同时支持CMakeLists
+1. `配置`
+编辑`src/Option.h`,如果是Windows则
+```cpp
+#define TARGET_WIN32
+```
+如果是Linux则
+```cpp
+#define TARGET_LINUX
+```
+2. `编译` 如果使用MSVC,直接打开`src/yvm.sln`即可
+如果使用CMakeLists
+```bash
+$ cd yvm
+$ cmake .
+$ make -j4
+```
+2. `运行`
 ```bash
 # --runtime为在YVM上运行的Java程序所必须的运行时,多个值用";"分隔
 # 后面指定运行程序的全修饰名，如ydk.test.QuickSort

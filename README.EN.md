@@ -13,9 +13,24 @@ This is a homemade Java virtual machine written in c++, it supports most Java la
 + [Synchronized block with object lock](./javalib_src/ydk/test/SynchronizedBlockTest.java)
 + [Garbage Collection(With mark-and-sweep policy)](./javalib_src/ydk/test/GCTest.java)
 
-# Usage
-0. You can use `G++7.0`/`MSVC 2017` to compile it with -std=c++11 or newer. And using cmake is also available, we don't need to set any building options.(Recommend to use MSVC)
-1. Running flags
+# Build and run
+We provide `visual studio solution` file and a general-purpose `CMakeLists` file.
+1. `Configure`
+Open `src/Option.h`, define a macro if you are using Windows:
+```cpp
+#define TARGET_WIN32
+```
+Or define another one if you are using Linux:
+```cpp
+#define TARGET_LINUX
+```
+2. `Compile` If you have a Visual Studio IDE , you can open `src/yvm.sln` to load this project directly. Otherwise, you may need manually make it:
+```bash
+$ cd yvm
+$ cmake .
+$ make -j4
+```
+3. `Run`
 ```bash
 # --runtime to specify runtime libraries of Java program, use ";" to split multi paths
 # dotted-decorated program name which you want to run on yvm
