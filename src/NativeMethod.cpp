@@ -129,6 +129,9 @@ JType* java_lang_thread_start(RuntimeEnv* env) {
                     "Ljava/lang/Runnable;", instance)));
 
     std::thread nativeNewThread([=]() {
+#ifdef YVM_DEBUG_SHOW_THREAD_NAME
+        std::cout << "[New Java Thread] ID:" << std::this_thread::get_id() << "\n";
+#endif
         yrt.aliveThreadCounterMutex.lock();
         yrt.aliveThreadCount++;
         yrt.aliveThreadCounterMutex.unlock();

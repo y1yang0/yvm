@@ -62,7 +62,6 @@ public:
     auto& getArrayItemsByRef(JArray* array) { lock_guard<recursive_mutex> lockMA(heapMutex); return (arrheap.find(array->offset))->second; }
     auto& getArrayItemsByOffset(size_t offset) { lock_guard<recursive_mutex> lockMA(heapMutex); return (arrheap.find(offset))->second; }
     void removeObjectByOffset(size_t offset) { lock_guard<recursive_mutex> lockMA(heapMutex); objheap.erase(objheap.find(offset)); }
-    void removeArrayByOffset(size_t offset) { lock_guard<recursive_mutex> lockMA(heapMutex); arrheap.erase(arrheap.find(offset)); }
     void removeArrayByRef(const JArray* arr);
     void removeObjectByRef(const JObject* obj);
 

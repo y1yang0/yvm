@@ -38,8 +38,8 @@ struct HeapAllocator {
             thresholdVal += n * sizeof(T);
             if (thresholdVal >= YVM_GC_THRESHOLD_VALUE) {
                 thresholdVal = 0;
-#ifdef YVM_DEBUG_SHOW_GC_THREAD
-                std::cout << "[Garbage Collection] Thread-"<<std::this_thread::get_id()<<"\n";
+#ifdef YVM_DEBUG_SHOW_THREAD_NAME
+                std::cout << "[Garbage Collection TThread] ID:"<<std::this_thread::get_id()<<"\n";
 #endif
                 std::thread gcThread([] {
                     yrt.aliveThreadCounterMutex.lock();

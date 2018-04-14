@@ -27,3 +27,4 @@ src/yvm.vcxproj.user
 /src/cmake-build-debug
 /src/Release
 /src/AccessFlag.h.gch
+/cmake-build-debug

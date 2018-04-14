@@ -64,6 +64,9 @@ bool YVM::initClass(CodeExecution& exec, const char* name) {
 
 void YVM::callMain(const char* name) {
     std::thread mainThread([=](){
+#ifdef YVM_DEBUG_SHOW_THREAD_NAME
+        std::cout << "[Main Executing Thread] ID:" << std::this_thread::get_id() << "\n";
+#endif
         yrt.aliveThreadCounterMutex.lock();
         yrt.aliveThreadCount++;
         yrt.aliveThreadCounterMutex.unlock();

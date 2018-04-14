@@ -63,6 +63,10 @@ Rewrote JDK classes are as follows:
 + multithreading with synchronized(){}
 ![](./public/synchronized_java.png)
 ![](./public/synchronized_console.png)
++ Garbage Collection
+![](./public/gc_java.png)
+![](./public/gc_console.png)
+![](./public/gc_sampling.png)
 
 # License
 Code licensed under the MIT License.

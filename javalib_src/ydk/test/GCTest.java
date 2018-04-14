@@ -2,12 +2,12 @@ package ydk.test;
 
 public class GCTest {
     public static void produceGarbage(){
-        for(int i=0;i<10000;i++){
+        for(int i=0;i<100000;i++){
             new Object();
         }
     }
     public static void produceArrayGarbage(){
-        for(int i=0;i<10000;i++) {
+        for(int i=0;i<100000;i++) {
             Object[] unused = new Object[100];
         }
     }

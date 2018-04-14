@@ -53,7 +53,12 @@ void JavaHeap::removeArrayByRef(const JArray* arr) {
     if (arr == nullptr) {
         return;
     }
-    arrheap.erase(arrheap.find(arr->offset));
+    auto pair = arrheap.find(arr->offset);
+    for(size_t i=0;i<pair->second.first;i++) {
+        delete pair->second.second[i];
+    }
+    delete[] pair->second.second;
+    arrheap.erase(pair);
 }
 
 void JavaHeap::removeObjectByRef(const JObject* obj) {

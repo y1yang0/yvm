@@ -47,6 +47,10 @@ void GC::sweep() const {
     for (auto pos = yrt.jheap->arrheap.begin(); pos != yrt.jheap->arrheap.end();) {
         // If we can not find active object in array bitmap then clear it
         if (arrayBitmap.find(pos->first) == arrayBitmap.cend()) {
+            for (size_t i = 0; i < pos->second.first; i++) {
+                delete pos->second.second[i];
+            }
+            delete[] pos->second.second;
             yrt.jheap->arrheap.erase(pos++);
         }
         else {

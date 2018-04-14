@@ -2,6 +2,7 @@
 #define YVM_JAVAOBJECT_H
 
 #include <cstdint>
+#include <cstddef>
 
 class JavaClass;
 

@@ -65,6 +65,10 @@ $ make -j4
 + Synchronized保护下的多线程
 ![](./public/synchronized_java.png)
 ![](./public/synchronized_console.png)
++ 垃圾回收
+![](./public/gc_java.png)
+![](./public/gc_console.png)
+![](./public/gc_sampling.png)
 
 # License
 Code licensed under the MIT License.

@@ -15,7 +15,7 @@
 /*
  * define to show new spawning thread name
  */
-#define YVM_DEBUG_SHOW_GC_THREAD
+#undef YVM_DEBUG_SHOW_THREAD_NAME
 
 /*
  * define to suspend console to see what going on this output
