@@ -3,10 +3,9 @@
 
 #include <unordered_set>
 #include <memory>  
-#include <thread>
 #include "Option.h"
 #include "RuntimeEnv.h"
-#include <iostream>
+#include "Concurrent.hpp"
 
 struct JType;
 
@@ -22,9 +21,10 @@ public:
 private:
     void markAndSweep();
     void mark(JType* ref);
-    void sweep() const;
+    void sweep();
     std::unordered_set<size_t> objectBitmap;
     std::unordered_set<size_t> arrayBitmap;
+    ThreadPool gcThreadPool;
 };
 
 template <class T>
@@ -38,21 +38,7 @@ struct HeapAllocator {
             thresholdVal += n * sizeof(T);
             if (thresholdVal >= YVM_GC_THRESHOLD_VALUE) {
                 thresholdVal = 0;
-#ifdef YVM_DEBUG_SHOW_THREAD_NAME
-                std::cout << "[Garbage Collection TThread] ID:"<<std::this_thread::get_id()<<"\n";
-#endif
-                std::thread gcThread([] {
-                    yrt.aliveThreadCounterMutex.lock();
-                    yrt.aliveThreadCount++;
-                    yrt.aliveThreadCounterMutex.unlock();
-
-                    yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
-
-                    yrt.aliveThreadCounterMutex.lock();
-                    yrt.aliveThreadCount--;
-                    yrt.aliveThreadCounterMutex.unlock();
-                });
-                gcThread.detach();
+                yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
             }
             return p;
         }

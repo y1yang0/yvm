@@ -57,11 +57,11 @@ public:
 
     ObjectMonitor* findObjectMonitor(const JType* ref);
 
-    auto& getObjectFieldsByRef(JObject* object) { lock_guard<recursive_mutex> lockMA(heapMutex); return (objheap.find(object->offset))->second; }
-    auto& getObjectFieldsByOffset(size_t offset) { lock_guard<recursive_mutex> lockMA(heapMutex); return (objheap.find(offset))->second; }
-    auto& getArrayItemsByRef(JArray* array) { lock_guard<recursive_mutex> lockMA(heapMutex); return (arrheap.find(array->offset))->second; }
-    auto& getArrayItemsByOffset(size_t offset) { lock_guard<recursive_mutex> lockMA(heapMutex); return (arrheap.find(offset))->second; }
-    void removeObjectByOffset(size_t offset) { lock_guard<recursive_mutex> lockMA(heapMutex); objheap.erase(objheap.find(offset)); }
+    auto& getObjectFieldsByRef(JObject* object) { lock_guard<recursive_mutex> lockMA(objMtx); return (objheap.find(object->offset))->second; }
+    auto& getObjectFieldsByOffset(size_t offset) { lock_guard<recursive_mutex> lockMA(objMtx); return (objheap.find(offset))->second; }
+    auto& getArrayItemsByRef(JArray* array) { lock_guard<recursive_mutex> lockMA(arrMtx); return (arrheap.find(array->offset))->second; }
+    auto& getArrayItemsByOffset(size_t offset) { lock_guard<recursive_mutex> lockMA(arrMtx); return (arrheap.find(offset))->second; }
+    void removeObjectByOffset(size_t offset) { lock_guard<recursive_mutex> lockMA(objMtx); objheap.erase(objheap.find(offset)); }
     void removeArrayByRef(const JArray* arr);
     void removeObjectByRef(const JObject* obj);
 
@@ -84,20 +84,22 @@ private:
         JObject* object, JType* value, size_t offset = 0);
 
 private:
-    recursive_mutex heapMutex;
-
     map<size_t,
         vector<JType*>,
         less<>,
         HeapAllocator<pair<const size_t,vector<JType*>>>> objheap;
+    recursive_mutex objMtx;
+
     map<size_t, 
         pair<size_t, JType**>, 
         less<>,
         HeapAllocator<pair<const size_t, pair<size_t, JType**>>>> arrheap;
+    recursive_mutex arrMtx;
     map<size_t, 
         ObjectMonitor*, 
         less<>, 
         HeapAllocator<pair<const size_t, ObjectMonitor*>>> monitorheap;
+    recursive_mutex monitorMtx;
 };
 
 
