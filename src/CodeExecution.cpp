@@ -1885,6 +1885,10 @@ void CodeExecution::invokeByName(JavaClass* jc, const char* methodName, const ch
     frames.push_back(frame);
     currentFrame = frames.back();
 
+    if (frame->locals.size()<ext.maxLocal) {
+        frame->locals.resize(ext.maxLocal);
+    }
+
     JType* returnValue{};
     if (IS_METHOD_NATIVE(m->accessFlags)) {
         returnValue = cloneValue(invokeNative(jc->getClassName(), methodName, methodDescriptor));
@@ -1930,6 +1934,10 @@ void CodeExecution::invokeInterface(const JavaClass* jc, const char* methodName,
     frames.push_back(frame);
     this->currentFrame = frame;
 
+    if (frame->locals.size()<ext.maxLocal) {
+        frame->locals.resize(ext.maxLocal);
+    }
+
     JType* returnValue{};
     if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
         returnValue = cloneValue(invokeNative(const_cast<JavaClass*>(invokingMethod.second)->getClassName(), methodName,
@@ -1961,6 +1969,11 @@ void CodeExecution::invokeVirtual(const char* methodName, const char* methodDesc
 
     auto invokingMethod = findMethod(objectref->jc, methodName, methodDescriptor);
     auto ext = getCodeAttrCore(invokingMethod.first);
+
+    if(frame->locals.size()<ext.maxLocal) {
+        frame->locals.resize(ext.maxLocal);
+    }
+    
 #ifdef YVM_DEBUG_SHOW_EXEC_FLOW
     for (int i = 0; i<frames.size(); i++) {
         std::cout << "-";
@@ -2026,7 +2039,9 @@ void CodeExecution::invokeSpecial(const JavaClass* jc, const char* methodName, c
         }
         else {
             auto ext = getCodeAttrCore(invokingMethod.first);
-            frame->locals.resize(ext.maxLocal);
+            if (frame->locals.size()<ext.maxLocal) {
+                frame->locals.resize(ext.maxLocal);
+            }
             returnValue = cloneValue(execCode(invokingMethod.second, std::move(ext)));
         }
     }
@@ -2078,7 +2093,10 @@ void CodeExecution::invokeStatic(const JavaClass* jc, const char* methodName, co
 
     Frame* frame = new Frame;
     auto ext = getCodeAttrCore(invokingMethod.first);
-    frame->locals.resize(ext.maxLocal);
+
+    if (frame->locals.size()<ext.maxLocal) {
+        frame->locals.resize(ext.maxLocal);
+    }
 
     auto parameterAndReturnType = peelMethodParameterAndType(methodDescriptor);
     const int returnType = std::get<0>(parameterAndReturnType);
