@@ -68,7 +68,10 @@ $ make -j4
 + 垃圾回收
 ![](./public/gc_java.png)
 ![](./public/gc_console.png)
+(性能提升前:)
 ![](./public/gc_sampling.png)
+(性能提升后:)
+![](./public/gc_sampling_2.png)
 
 # License
 Code licensed under the MIT License.

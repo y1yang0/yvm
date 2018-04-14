@@ -67,7 +67,10 @@ Rewrote JDK classes are as follows:
 ![](./public/gc_java.png)
 ![](./public/gc_console.png)
 ![](./public/gc_sampling.png)
-
+(Before:)
+![](./public/gc_sampling.png)
+(After improving performance:)
+![](./public/gc_sampling_2.png)
 # License
 Code licensed under the MIT License.
 
