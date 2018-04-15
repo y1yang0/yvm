@@ -18,6 +18,7 @@ class JavaClass {
     friend class JavaHeap;
     friend class MethodArea;
     friend class CodeExecution;
+    friend class ConcurrentGC;
 
 public:
     explicit JavaClass(const char* classFilePath);

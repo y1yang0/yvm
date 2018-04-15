@@ -12,8 +12,10 @@
 
 class CodeExecution;
 class JavaClass;
+class ConcurrentGC;
 
 class MethodArea {
+    friend class ConcurrentGC;
 public:
     MethodArea(const std::vector<std::string> & libPaths);
     ~MethodArea();

@@ -50,8 +50,4 @@ inline u4 consumeU4(const u1* code, u4& opidx) {
     const u4 res = (byte1 << 24) | (byte2 << 16) | (byte3 << 8) | (byte4);
     return res;
 }
-
-
-
-
 #endif //YVM_PARSEUTIL_H

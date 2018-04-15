@@ -3,8 +3,18 @@
 #include "MethodArea.h"
 #include "JavaHeap.h"
 #include "Concurrent.hpp"
+#include "YVM.h"
+#include "JavaClass.h"
+#include <atomic>
 
-void GC::gc(GCPolicy policy) {
+void ConcurrentGC::stopTheWorld() { YVM::executor.suspendThreads(); }
+
+void ConcurrentGC::resumeTheWorld() { YVM::executor.resumeThreads(); }
+
+void ConcurrentGC::gc(GCPolicy policy) {
+    if(!overMemoryThreshold) {
+        return;
+    }
     switch (policy) {
     case GCPolicy::GC_MARK_AND_SWEEP:
         markAndSweep();
@@ -13,17 +23,31 @@ void GC::gc(GCPolicy policy) {
         markAndSweep();
         break;
     } 
+    objectBitmap.clear();
+    arrayBitmap.clear();
+    overMemoryThreshold = false;
 }
 
-void GC::mark(JType* ref) {
+void ConcurrentGC::mark(JType* ref) {
+    if(ref==nullptr) {
+        // Prevent from throwing std::bad_typeid
+        return;
+    }
     if (typeid(*ref) == typeid(JObject)) {
-        objectBitmap.insert(dynamic_cast<JObject*>(ref)->offset);
+        {
+            // Mark() is very quickly and busy, so we use lightweight spin lock instead of stl mutex
+            std::lock_guard<SpinLock> lock(objSpin);
+            objectBitmap.insert(dynamic_cast<JObject*>(ref)->offset);
+        }
         auto & fields = yrt.jheap->getObjectFieldsByOffset(dynamic_cast<JObject*>(ref)->offset);
         for(size_t i=0;i<fields.size();i++) {
             mark(fields[i]);
         }
     }else if(typeid(*ref) == typeid(JArray)) {
-        arrayBitmap.insert(dynamic_cast<JArray*>(ref)->offset);
+        {
+            std::lock_guard<SpinLock> lock(arrSpin);
+            arrayBitmap.insert(dynamic_cast<JArray*>(ref)->offset);
+        }
         auto & items = yrt.jheap->getArrayItemsByOffset(dynamic_cast<JArray*>(ref)->offset);
 
         for(size_t i=0;i<items.first;i++) {
@@ -34,9 +58,8 @@ void GC::mark(JType* ref) {
     }
 }
 
-void GC::sweep(){
+void ConcurrentGC::sweep(){
     future<void> objectFuture = gcThreadPool.submit([this]()->void{
-        lock_guard<recursive_mutex> lock(yrt.jheap->objMtx);
         for (auto pos = yrt.jheap->objheap.begin(); pos != yrt.jheap->objheap.end();) {
             // If we can not find active object in object bitmap then clear it
             // Notice that here we don't need to lock objectBitmap since it must 
@@ -67,6 +90,7 @@ void GC::sweep(){
     });
 
     future<void> monitorFuture = gcThreadPool.submit([this]()->void {
+        // DITTO
         for (auto pos = yrt.jheap->monitorheap.begin(); pos != yrt.jheap->monitorheap.end();) {
             if (objectBitmap.find(pos->first) == objectBitmap.cend() || arrayBitmap.find(pos->first) == arrayBitmap.cend()) {
                 yrt.jheap->monitorheap.erase(pos++);
@@ -80,8 +104,10 @@ void GC::sweep(){
     objectFuture.get();
     arrayFuture.get();
     monitorFuture.get();
+    resumeTheWorld();
 }
-void GC::markAndSweep() {  
+void ConcurrentGC::markAndSweep() {  
+    stopTheWorld();
     future<void> stackMarkFuture, localMarkFuture;
     for(auto frame = frames.cbegin();frame!=frames.cend();++frame) {
         stackMarkFuture = gcThreadPool.submit([this,frame]()->void {
@@ -91,17 +117,29 @@ void GC::markAndSweep() {
         });
         
         localMarkFuture = gcThreadPool.submit([this, frame]()->void {
-            for (auto localSlot = (*frame)->stack.cbegin(); localSlot != (*frame)->stack.cend(); ++localSlot) {
+            for (auto localSlot = (*frame)->locals.cbegin(); localSlot != (*frame)->locals.cend(); ++localSlot) {
                 this->mark(*localSlot);
             }
         });
 
     }
+    future<void> staticFieldsFuture = gcThreadPool.submit([this]()->void{
+        for(auto c: yrt.ma->classTable) {
+            std::for_each(c.second->sfield.cbegin(), c.second->sfield.cend(),
+                [this](const pair<size_t, JType*>& offset){
+                    if(typeid(*offset.second)==typeid(JObject)) {
+                        objectBitmap.insert(offset.first);
+                    }else if(typeid(*offset.second)==typeid(JArray)) {
+                        arrayBitmap.insert(offset.first);
+                    }
+            });
+        }
+    });
+
+    staticFieldsFuture.get();
     if(!frames.empty()) {
         stackMarkFuture.get();
         localMarkFuture.get();
     }
     sweep();
-    objectBitmap.clear();
-    arrayBitmap.clear();
 }

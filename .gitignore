@@ -33,3 +33,4 @@ src/yvm.vcxproj.user
 /src/ThrowExceptionTest
 /src/SynchronizedBlockTest
 /src/CreateAsyncThreadsTest
+/src/QuickSort

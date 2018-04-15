@@ -3,7 +3,7 @@
 #include <iostream>
 using namespace std;
 
-ThreadPool::ThreadPool() noexcept :defaultThreadCnt(std::thread::hardware_concurrency()), done(false){
+ThreadPool::ThreadPool() noexcept :defaultThreadCnt(std::thread::hardware_concurrency()), done(false), stop(false){
     for(unsigned i=0;i<defaultThreadCnt;i++) {
         threads.emplace_back(&ThreadPool::runPendingWork,this);
     }
@@ -18,6 +18,10 @@ ThreadPool::~ThreadPool() noexcept {
 
 void ThreadPool::runPendingWork() {
     while(!done) {
+        // Check if a stop signal occurred
+        signalStop();
+
+        // Otherwise , work normally
         taskQueueMtx.lock();
         if (!taskQueue.empty()) {
             auto task = std::move(taskQueue.front());
@@ -28,6 +32,15 @@ void ThreadPool::runPendingWork() {
         else {
             taskQueueMtx.unlock();
             std::this_thread::yield();
+        }
+    }
+}
+
+void ThreadPool::signalStop() {
+    if (stop) {
+        unique_lock<mutex> lock(stopMtx);
+        while (stop) {
+            stopCond.wait(lock);
         }
     }
 }

@@ -54,10 +54,10 @@
     <ClCompile Include="ObjectMonitor.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="GC.cpp">
+    <ClCompile Include="Concurrent.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Concurrent.cpp">
+    <ClCompile Include="GC.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -131,10 +131,10 @@
     <ClInclude Include="CommandParser.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="GC.h">
+    <ClInclude Include="Concurrent.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Concurrent.hpp">
+    <ClInclude Include="GC.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

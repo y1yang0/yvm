@@ -73,13 +73,16 @@ void YVM::callMain(const char* name) {
         exec.invokeByName(jc, "main", "([Ljava/lang/String;)V");
     });
 
-
+    // Block untile all sub threads accomplished its task
+    for (const auto& start : executor.getTaskFutures()) {
+        start.get();
+    }
     // Block until main thread accomplished;
     mainFuture.get();
-    // Block untile all sub threads accomplished its task
-    for(auto &f:executor.getTaskFutures()) {
-        f.get();
-    }
+
+    // Close garbage collection. This is optional since operation system would release all resources when process exited
+    yrt.gc->terminateGC();
+
     // Terminate virtual machine normally
     return;
 }

@@ -17,7 +17,7 @@ using namespace std;
  */
 class JavaHeap {
     friend class CodeExecution;
-    friend class GC;
+    friend class ConcurrentGC;
 
 public:
     JavaHeap() = default;

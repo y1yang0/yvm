@@ -5,6 +5,7 @@
 #include <deque>
 #include <mutex>
 #include <atomic>
+#include "Concurrent.hpp"
 
 using namespace std;
 
@@ -26,20 +27,6 @@ struct Frame {
             delete type;
         }
     }
-};
-
-class SpinLock {
-public:
-    SpinLock() = default;
-    SpinLock(const SpinLock&) = delete;
-    SpinLock& operator=(const SpinLock&) = delete;
-    SpinLock(SpinLock&&) = delete;
-    SpinLock&& operator=(SpinLock&&) = delete;
-
-    inline void lock()noexcept { while (flag.test_and_set(std::memory_order_acquire)); }
-    inline void unlock()noexcept { flag.clear(std::memory_order_release); }
-private:
-    std::atomic_flag flag = ATOMIC_FLAG_INIT;
 };
 
 class StackFrames {

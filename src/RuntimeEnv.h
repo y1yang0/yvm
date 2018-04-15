@@ -12,7 +12,7 @@ struct JType;
 struct Frame;
 class JavaHeap;
 class MethodArea;
-class GC;
+class ConcurrentGC;
 
 struct RuntimeEnv {
     RuntimeEnv();
@@ -21,7 +21,7 @@ struct RuntimeEnv {
     MethodArea* ma;
     JavaHeap* jheap;
     std::unordered_map<std::string, JType*(*)(RuntimeEnv* env)> nativeMethods;
-    GC* gc;
+    ConcurrentGC* gc;
 };
 
 extern RuntimeEnv yrt;

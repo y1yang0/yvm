@@ -1897,14 +1897,20 @@ void CodeExecution::invokeByName(JavaClass* jc, const char* methodName, const ch
         returnValue = cloneValue(execCode(jc, std::move(ext)));
     }
     popFrame();
+
+    // Since invokeByName() was merely used to call <clinit> and main method of running program,
+    // therefore, if an exception reached here, we don't need to push its value into frame  again (In fact
+    // there is no more frame), we just print stack trace inforamtion to notice user and return directly
     if (returnType != T_EXTRA_VOID) {
         currentFrame->stack.push_back(returnValue);
     }
     if (exception.hasUnhandledException()) {
         exception.extendExceptionStackTrace(methodName);
         exception.printStackTrace();
-        std::exit(EXIT_FAILURE);
     }
+
+    GC_SAFE_POINT
+    yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
 }
 
 void CodeExecution::invokeInterface(const JavaClass* jc, const char* methodName, const char* methodDescriptor) {
@@ -1954,6 +1960,9 @@ void CodeExecution::invokeInterface(const JavaClass* jc, const char* methodName,
             exception.extendExceptionStackTrace(methodName);
         }
     }
+
+    GC_SAFE_POINT
+    yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
 }
 
 void CodeExecution::invokeVirtual(const char* methodName, const char* methodDescriptor) {
@@ -2005,6 +2014,9 @@ void CodeExecution::invokeVirtual(const char* methodName, const char* methodDesc
             exception.extendExceptionStackTrace(methodName);
         }
     }
+
+    GC_SAFE_POINT
+    yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
 }
 
 void CodeExecution::invokeSpecial(const JavaClass* jc, const char* methodName, const char* methodDescriptor) {
@@ -2072,6 +2084,9 @@ void CodeExecution::invokeSpecial(const JavaClass* jc, const char* methodName, c
             exception.extendExceptionStackTrace(methodName);
         }
     }
+
+    GC_SAFE_POINT
+    yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
 }
 
 void CodeExecution::invokeStatic(const JavaClass* jc, const char* methodName, const char* methodDescriptor) {
@@ -2122,6 +2137,9 @@ void CodeExecution::invokeStatic(const JavaClass* jc, const char* methodName, co
             exception.extendExceptionStackTrace(methodName);
         }
     }
+
+    GC_SAFE_POINT
+    yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
 }
 
 JType* CodeExecution::invokeNative(const char* className, const char* methodName, const char* methodDescriptor) {
@@ -2133,5 +2151,8 @@ JType* CodeExecution::invokeNative(const char* className, const char* methodName
     if (yrt.nativeMethods.find(nativeMethod) != yrt.nativeMethods.end()) {
         return ((*yrt.nativeMethods.find(nativeMethod)).second)(&yrt);
     }
+
+    GC_SAFE_POINT
+    yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
     return nullptr;
 }

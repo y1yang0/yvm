@@ -10,7 +10,7 @@ thread_local StackFrames frames;
 RuntimeEnv::RuntimeEnv() {
     ma = nullptr;
     jheap = new JavaHeap;
-    gc = new GC;
+    gc = new ConcurrentGC;
 }
 
 RuntimeEnv::~RuntimeEnv() {
