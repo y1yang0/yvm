@@ -37,7 +37,7 @@ public:
     void suspendThreads() noexcept { stop = true; }
     void resumeThreads() noexcept { stop = false; stopCond.notify_all(); }
 
-    void finialize() { done = true; }
+    void finalize() { done = true; }
 
 private:
     void runPendingWork();

@@ -21,7 +21,7 @@ public:
 
     void gc(GCPolicy policy = GCPolicy::GC_MARK_AND_SWEEP);
 
-    void terminateGC() { gcThreadPool.finialize(); }
+    void terminateGC() { gcThreadPool.finalize(); }
 
 private:
     static void resumeTheWorld();
