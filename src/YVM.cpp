@@ -1,18 +1,16 @@
 #include "YVM.h"
-#include <exception>
-#include <fstream>
 #include "MethodArea.h"
 #include "JavaClass.h"
 #include "Utils.h"
-#include "AccessFlag.h"
 #include "JavaHeap.h"
 #include "Descriptor.h"
 #include "Option.h"
 #include "Debug.h"
-#include "JavaClass.h"
 #include "NativeMethod.h"
 #include "RuntimeEnv.h"
 #include "GC.h"
+
+ThreadPool YVM::executor;
 
 #define FORCE(x) (reinterpret_cast<char*>(x))
 /**
@@ -63,31 +61,27 @@ bool YVM::initClass(CodeExecution& exec, const char* name) {
 }
 
 void YVM::callMain(const char* name) {
-    std::thread mainThread([=](){
+    std::future<void> mainFuture = executor.submit([=]()->void {
 #ifdef YVM_DEBUG_SHOW_THREAD_NAME
         std::cout << "[Main Executing Thread] ID:" << std::this_thread::get_id() << "\n";
 #endif
-        yrt.aliveThreadCounterMutex.lock();
-        yrt.aliveThreadCount++;
-        yrt.aliveThreadCounterMutex.unlock();
-
         auto* jc = yrt.ma->loadClassIfAbsent(name);
         yrt.ma->linkClassIfAbsent(name);
         // For each execution thread, we have a code execution engine
         CodeExecution exec{};
         yrt.ma->initClassIfAbsent(exec, name);
         exec.invokeByName(jc, "main", "([Ljava/lang/String;)V");
-
-        yrt.aliveThreadCounterMutex.lock();
-        yrt.aliveThreadCount--;
-        yrt.aliveThreadCounterMutex.unlock();
-
-        std::unique_lock<std::mutex> lock(yrt.aliveThreadCounterMutex);
-        while (yrt.aliveThreadCount != 0) {
-            yrt.noSubThreadCndVar.wait(lock);
-        }
     });
-    mainThread.join();
+
+
+    // Block until main thread accomplished;
+    mainFuture.get();
+    // Block untile all sub threads accomplished its task
+    for(auto &f:executor.getTaskFutures()) {
+        f.get();
+    }
+    // Terminate virtual machine normally
+    return;
 }
 
 void YVM::warmUp(const std::vector<std::string> & libPaths) {

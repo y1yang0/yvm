@@ -23,9 +23,6 @@ void ThreadPool::runPendingWork() {
             auto task = std::move(taskQueue.front());
             taskQueue.pop();
             taskQueueMtx.unlock();
-#ifdef YVM_DEBUG_SHOW_THREAD_NAME
-            std::cout << "[Garbage Collection Thread] ID:" << std::this_thread::get_id() << "\n";
-#endif
             task();
         }
         else {

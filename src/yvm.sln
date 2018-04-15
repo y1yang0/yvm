@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "yvm", "yvm.vcxproj", "{1863
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		CreateAsyncThreadsTest|x64 = CreateAsyncThreadsTest|x64
+		CreateAsyncThreadsTest|x86 = CreateAsyncThreadsTest|x86
 		GCTest|x64 = GCTest|x64
 		GCTest|x86 = GCTest|x86
 		ObjectArrayTest|x64 = ObjectArrayTest|x64
@@ -15,10 +17,16 @@ Global
 		QuickSort|x86 = QuickSort|x86
 		SynchronizedBlockTest|x64 = SynchronizedBlockTest|x64
 		SynchronizedBlockTest|x86 = SynchronizedBlockTest|x86
+		ThrowExceptionTest|x64 = ThrowExceptionTest|x64
+		ThrowExceptionTest|x86 = ThrowExceptionTest|x86
 		WithoutSynchronizedBlockTest|x64 = WithoutSynchronizedBlockTest|x64
 		WithoutSynchronizedBlockTest|x86 = WithoutSynchronizedBlockTest|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{18632D30-2113-4D0B-8208-2C7C9A89380B}.CreateAsyncThreadsTest|x64.ActiveCfg = CreateAsyncThreadsTest|x64
+		{18632D30-2113-4D0B-8208-2C7C9A89380B}.CreateAsyncThreadsTest|x64.Build.0 = CreateAsyncThreadsTest|x64
+		{18632D30-2113-4D0B-8208-2C7C9A89380B}.CreateAsyncThreadsTest|x86.ActiveCfg = CreateAsyncThreadsTest|Win32
+		{18632D30-2113-4D0B-8208-2C7C9A89380B}.CreateAsyncThreadsTest|x86.Build.0 = CreateAsyncThreadsTest|Win32
 		{18632D30-2113-4D0B-8208-2C7C9A89380B}.GCTest|x64.ActiveCfg = Debug|x64
 		{18632D30-2113-4D0B-8208-2C7C9A89380B}.GCTest|x64.Build.0 = Debug|x64
 		{18632D30-2113-4D0B-8208-2C7C9A89380B}.GCTest|x86.ActiveCfg = Debug|Win32
@@ -35,6 +43,10 @@ Global
 		{18632D30-2113-4D0B-8208-2C7C9A89380B}.SynchronizedBlockTest|x64.Build.0 = SynchronizedBlockTest|x64
 		{18632D30-2113-4D0B-8208-2C7C9A89380B}.SynchronizedBlockTest|x86.ActiveCfg = SynchronizedBlockTest|Win32
 		{18632D30-2113-4D0B-8208-2C7C9A89380B}.SynchronizedBlockTest|x86.Build.0 = SynchronizedBlockTest|Win32
+		{18632D30-2113-4D0B-8208-2C7C9A89380B}.ThrowExceptionTest|x64.ActiveCfg = ThrowExceptionTest|x64
+		{18632D30-2113-4D0B-8208-2C7C9A89380B}.ThrowExceptionTest|x64.Build.0 = ThrowExceptionTest|x64
+		{18632D30-2113-4D0B-8208-2C7C9A89380B}.ThrowExceptionTest|x86.ActiveCfg = ThrowExceptionTest|Win32
+		{18632D30-2113-4D0B-8208-2C7C9A89380B}.ThrowExceptionTest|x86.Build.0 = ThrowExceptionTest|Win32
 		{18632D30-2113-4D0B-8208-2C7C9A89380B}.WithoutSynchronizedBlockTest|x64.ActiveCfg = WithoutSynchronizedBlockTest|x64
 		{18632D30-2113-4D0B-8208-2C7C9A89380B}.WithoutSynchronizedBlockTest|x64.Build.0 = WithoutSynchronizedBlockTest|x64
 		{18632D30-2113-4D0B-8208-2C7C9A89380B}.WithoutSynchronizedBlockTest|x86.ActiveCfg = WithoutSynchronizedBlockTest|Win32

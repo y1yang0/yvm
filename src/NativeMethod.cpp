@@ -3,7 +3,8 @@
 #include "Frame.h"
 #include "JavaHeap.h"
 #include "JavaClass.h"
-
+#include "YVM.h"
+#include <future>
 #include <iostream>
 #include <random>
 #include <string>
@@ -128,14 +129,10 @@ JType* java_lang_thread_start(RuntimeEnv* env) {
             env->ma->findJavaClass("java/lang/Thread"), "task",
                     "Ljava/lang/Runnable;", instance)));
 
-    std::thread nativeNewThread([=]() {
+    future<void> subThreadF = YVM::executor.submit([=]() {
 #ifdef YVM_DEBUG_SHOW_THREAD_NAME
         std::cout << "[New Java Thread] ID:" << std::this_thread::get_id() << "\n";
 #endif
-        yrt.aliveThreadCounterMutex.lock();
-        yrt.aliveThreadCount++;
-        yrt.aliveThreadCounterMutex.unlock();
-
         const char* name = runnableTask->jc->getClassName();
         auto* jc = yrt.ma->loadClassIfAbsent(name);
         yrt.ma->linkClassIfAbsent(name);
@@ -143,20 +140,15 @@ JType* java_lang_thread_start(RuntimeEnv* env) {
         auto * frame = new Frame;
         frame->stack.push_back(runnableTask);
         frames.push_back(frame);
-        CodeExecution exec{frame};
+        CodeExecution exec{ frame };
 
         yrt.ma->initClassIfAbsent(exec, name);
         // Push object reference and since Runnable.run() has no parameter, so we dont 
         // need to push arguments since Runnable.run() has no parameter
 
         exec.invokeInterface(jc, "run", "()V");
-
-        yrt.aliveThreadCounterMutex.lock();
-        yrt.aliveThreadCount--;
-        yrt.aliveThreadCounterMutex.unlock();
-        yrt.noSubThreadCndVar.notify_one();
     });
-    nativeNewThread.detach();
+    YVM::executor.storeTaskFuture(subThreadF.share());
 
     return nullptr;
 }

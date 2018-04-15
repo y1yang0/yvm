@@ -38,7 +38,7 @@ JavaHeap::~JavaHeap() {
 void JavaHeap::putObjectFieldByOffset(const JObject& object, size_t fieldOffset, JType* value) {
     std::lock_guard<std::recursive_mutex> lock(objMtx);
     auto fields = objheap.find(object.offset);
-    fields->second[fieldOffset] = new JType;
+    //fields->second[fieldOffset] = new JType; NOTICE THAT THIS MODIFICATION DOESN'T TEST SPECIFICALLY YET
     fields->second[fieldOffset] = value;
 }
 
@@ -258,7 +258,7 @@ JType* JavaHeap::getObjectFieldByNameImpl(JavaClass* parsedJc, const char* field
 void JavaHeap::putObjectFieldByNameImpl(JavaClass* parsedJc, const char* fieldName, const char* fieldDescriptor,
                                     JObject* object, JType* value, size_t offset) {
     std::lock_guard<std::recursive_mutex> lock(objMtx);
-    size_t howManyNonStaticFields = 0;
+    size_t howManyNonStaticFields = 0; 
     FOR_EACH(i, parsedJc->raw.fieldsCount) {
         if (!IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {
             howManyNonStaticFields++;

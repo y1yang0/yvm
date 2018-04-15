@@ -28,3 +28,8 @@ src/yvm.vcxproj.user
 /src/Release
 /src/AccessFlag.h.gch
 /cmake-build-debug
+/src/CreateAsyncThreadsTest/yvm.tlog
+/src/WithoutSynchronizedBlockTest
+/src/ThrowExceptionTest
+/src/SynchronizedBlockTest
+/src/CreateAsyncThreadsTest

@@ -7,7 +7,7 @@
 RuntimeEnv yrt;
 thread_local StackFrames frames;
 
-RuntimeEnv::RuntimeEnv(): aliveThreadCount(0) {
+RuntimeEnv::RuntimeEnv() {
     ma = nullptr;
     jheap = new JavaHeap;
     gc = new GC;

@@ -22,10 +22,6 @@ struct RuntimeEnv {
     JavaHeap* jheap;
     std::unordered_map<std::string, JType*(*)(RuntimeEnv* env)> nativeMethods;
     GC* gc;
-
-    std::mutex aliveThreadCounterMutex;
-    int32_t aliveThreadCount;
-    std::condition_variable noSubThreadCndVar;
 };
 
 extern RuntimeEnv yrt;

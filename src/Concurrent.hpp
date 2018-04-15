@@ -17,12 +17,15 @@ public:
 
     template<typename Func>
     future<void> submit(Func task);
+    void storeTaskFuture(shared_future<void> taskFuture) { taskFutures.push_back(taskFuture); }
+    vector<shared_future<void>> getTaskFutures() const { return taskFutures; }
 
 private:
     void runPendingWork();
 
     unsigned defaultThreadCnt;
 
+    vector<shared_future<void>> taskFutures;
     vector<thread> threads;
     queue<packaged_task<void()>> taskQueue;
     mutex taskQueueMtx;

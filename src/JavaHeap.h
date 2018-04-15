@@ -95,6 +95,7 @@ private:
         less<>,
         HeapAllocator<pair<const size_t, pair<size_t, JType**>>>> arrheap;
     recursive_mutex arrMtx;
+
     map<size_t, 
         ObjectMonitor*, 
         less<>, 

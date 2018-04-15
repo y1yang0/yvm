@@ -3,12 +3,11 @@
 
 #include "RuntimeEnv.h"
 #include "CodeExecution.hpp"
-
+#include "Concurrent.hpp"
 
 extern RuntimeEnv yrt;
 
-class YVM {
-public:
+struct YVM {
     explicit YVM();
 
     static bool loadClass(const char* name);
@@ -17,7 +16,7 @@ public:
     static void callMain(const char* name);
     static void warmUp(const std::vector<std::string> & libPaths);
 
+    static ThreadPool executor;
 };
-
 
 #endif //YVM_YVM_H

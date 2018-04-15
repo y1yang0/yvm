@@ -14,7 +14,7 @@
  */
 class JavaClass {
     friend struct Inspector;
-    friend class YVM;
+    friend struct YVM;
     friend class JavaHeap;
     friend class MethodArea;
     friend class CodeExecution;
