@@ -65,30 +65,10 @@ Rewrote JDK classes are as follows:
 ![](./public/synchronized_console.png)
 + Garbage Collection
 ![](./public/gc_java.png)
-![](./public/gc_console.png)
 ![](./public/gc_sampling_2.png)
+
+# Development docs
+For more VM development documentation, see its [Wiki](https://github.com/racaljk/yvm/wiki), which contains various contents with regard to VM structures, usages, and design principal, etc.  
+
 # License
 Code licensed under the MIT License.
-
-
-{↓ For developers who want to explore more...}
----
-## {Big picture}
-![](./public/arch.png)
-
-## {Components}
-+ `javalib` Source files of rewrote JDK classes
-+ `public` Documentations, images, etc.
-+ `src/JavaClass.h` `.class` Internal representation of java class
-+ `src/Frame.h` Calling stack structure
-+ `src/MethodArea.h` Method area. It is responsibile to load/link/initialize/remove JavaClass into/from YVM
-+ `src/JavaHeap.h` It owns and manages all instances and array items. We can find actual object/array data via corresponding heap offset, respectively.
-+ `src/JavaType.h` Types of internal VM value
-+ `src/RuntimeEnv.h` Runtime environment.
-+ `src/CodeExecution.h` Code executing engine, here we interrupt opcode and execute directly.
-
-## {Public design, private implementation}
-1. In YVM, we use the slash-decorated class name representation. Any other class name representations would be rejected to load.
-2. According to Java virtual machine specification 8, jvm will internnally operate some JDK classes, so I have to rewrite those classes since I want to build a runnable vm.
-3. **I don't supposed to support any original JDK classes/method calls now and ever.** You should use `ydk.lang.IO::print` to replace `System.out.println`.
-4. `float A` and `float B` are congruent as long as there are 6 identical decimal numbers.`double A` and `double B` are congruent as long as there are 12 identical decimal numbers.
