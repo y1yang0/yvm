@@ -25,6 +25,8 @@ matrix:
 before_install:
     - eval "${MATRIX_EVAL}"
 
+install: make get-deps
+
 # command to run tests
 script: 
   - cmake .
