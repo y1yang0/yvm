@@ -7,8 +7,8 @@
 #undef TARGET_LINUX
 #define TARGET_WIN32
 /**
- * denote the threshold value of garbage collector. GC was started when the memory
- * allocation was beyond this value. The default threshold value is 30M
+ * denote the default threshold value of garbage collector. GC was started when
+ * the memory allocation was beyond this value.
  */
 #define YVM_GC_THRESHOLD_VALUE (1024*1024)
 

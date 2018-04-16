@@ -15,18 +15,18 @@ enum class GCPolicy {
 };
 class ConcurrentGC{
 public:
-    ConcurrentGC() :overMemoryThreshold(false) {}
+    ConcurrentGC() :overMemoryThreshold(false),safepointWaitCnt(0) {}
 
-    void shallGC() { overMemoryThreshold = true; }
-
+    bool shallGC() const { return overMemoryThreshold; }
+    void notifyGC() { overMemoryThreshold = true; }
+    void stopTheWorld();
     void gc(GCPolicy policy = GCPolicy::GC_MARK_AND_SWEEP);
 
     void terminateGC() { gcThreadPool.finalize(); }
 
 private:
-    static void resumeTheWorld();
     inline void pushObjectBitmap(size_t offset) { objectBitmap.insert(offset); }
-    void stopTheWorld();
+    
 
     void markAndSweep();
     void mark(JType* ref);
@@ -36,9 +36,19 @@ private:
 
     std::unordered_set<size_t> arrayBitmap;
     SpinLock arrSpin;
-
-    ThreadPool gcThreadPool;
     atomic_bool overMemoryThreshold;
+    mutex overMemoryThresholdMtx;
+
+
+    int safepointWaitCnt;
+    mutex safepointWaitMtx;
+    condition_variable safepointWaitCond;
+
+private:
+    struct GCThreadPool : ThreadPool {
+        GCThreadPool() :ThreadPool(std::thread::hardware_concurrency()) {}
+    };
+    GCThreadPool gcThreadPool;
 };
 
 class GC;
@@ -55,7 +65,7 @@ struct HeapAllocator {
         if (auto p = static_cast<T*>(std::malloc(n * sizeof(T)))) {
             thresholdVal += n * sizeof(T);
             if(thresholdVal >= YVM_GC_THRESHOLD_VALUE) {
-                yrt.gc->shallGC();
+                yrt.gc->notifyGC();
                 thresholdVal = 0;
             }
             return p;

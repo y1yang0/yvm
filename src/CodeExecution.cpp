@@ -1910,7 +1910,10 @@ void CodeExecution::invokeByName(JavaClass* jc, const char* methodName, const ch
     }
 
     GC_SAFE_POINT
-    yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
+    if(yrt.gc->shallGC()) {
+        yrt.gc->stopTheWorld();
+        yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
+    }  
 }
 
 void CodeExecution::invokeInterface(const JavaClass* jc, const char* methodName, const char* methodDescriptor) {
@@ -1962,7 +1965,10 @@ void CodeExecution::invokeInterface(const JavaClass* jc, const char* methodName,
     }
 
     GC_SAFE_POINT
-    yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
+    if (yrt.gc->shallGC()) {
+        yrt.gc->stopTheWorld();
+        yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
+    }
 }
 
 void CodeExecution::invokeVirtual(const char* methodName, const char* methodDescriptor) {
@@ -2016,7 +2022,10 @@ void CodeExecution::invokeVirtual(const char* methodName, const char* methodDesc
     }
 
     GC_SAFE_POINT
-    yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
+    if (yrt.gc->shallGC()) {
+        yrt.gc->stopTheWorld();
+        yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
+    }
 }
 
 void CodeExecution::invokeSpecial(const JavaClass* jc, const char* methodName, const char* methodDescriptor) {
@@ -2085,8 +2094,12 @@ void CodeExecution::invokeSpecial(const JavaClass* jc, const char* methodName, c
         }
     }
 
+
     GC_SAFE_POINT
-    yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
+    if (yrt.gc->shallGC()) {
+        yrt.gc->stopTheWorld();
+        yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
+    }
 }
 
 void CodeExecution::invokeStatic(const JavaClass* jc, const char* methodName, const char* methodDescriptor) {
@@ -2138,8 +2151,12 @@ void CodeExecution::invokeStatic(const JavaClass* jc, const char* methodName, co
         }
     }
 
+
     GC_SAFE_POINT
-    yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
+    if (yrt.gc->shallGC()) {
+        yrt.gc->stopTheWorld();
+        yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
+    }
 }
 
 JType* CodeExecution::invokeNative(const char* className, const char* methodName, const char* methodDescriptor) {
@@ -2153,6 +2170,9 @@ JType* CodeExecution::invokeNative(const char* className, const char* methodName
     }
 
     GC_SAFE_POINT
-    yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
+    if (yrt.gc->shallGC()) {
+        yrt.gc->stopTheWorld();
+        yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
+    }
     return nullptr;
 }

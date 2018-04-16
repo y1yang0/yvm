@@ -7,14 +7,22 @@
 #include "JavaClass.h"
 #include <atomic>
 
-void ConcurrentGC::stopTheWorld() { YVM::executor.suspendThreads(); }
-
-void ConcurrentGC::resumeTheWorld() { YVM::executor.resumeThreads(); }
+void ConcurrentGC::stopTheWorld() {
+    unique_lock<mutex> lock(safepointWaitMtx);
+    safepointWaitCnt++;
+    while(safepointWaitCnt!=YVM::executor.getThreadNum()) {
+        safepointWaitCond.wait(lock);
+    }
+    safepointWaitCond.notify_all();
+    safepointWaitCnt = 0;
+}
 
 void ConcurrentGC::gc(GCPolicy policy) {
-    if(!overMemoryThreshold) {
+    lock_guard<mutex> lock(overMemoryThresholdMtx);
+    if (!overMemoryThreshold) {
         return;
     }
+    
     switch (policy) {
     case GCPolicy::GC_MARK_AND_SWEEP:
         markAndSweep();
@@ -30,7 +38,7 @@ void ConcurrentGC::gc(GCPolicy policy) {
 
 void ConcurrentGC::mark(JType* ref) {
     if(ref==nullptr) {
-        // Prevent from throwing std::bad_typeid
+        // Prevent from throwing std::bad_typeid since local variable table slot could be empty
         return;
     }
     if (typeid(*ref) == typeid(JObject)) {
@@ -104,7 +112,6 @@ void ConcurrentGC::sweep(){
     objectFuture.get();
     arrayFuture.get();
     monitorFuture.get();
-    resumeTheWorld();
 }
 void ConcurrentGC::markAndSweep() {  
     stopTheWorld();

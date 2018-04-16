@@ -26,35 +26,32 @@ private:
 
 class ThreadPool{
 public:
-
-    ThreadPool() noexcept;
+    ThreadPool() = delete;
+    ThreadPool(int startThreadNum) noexcept;
     ~ThreadPool() noexcept;
+
+    void createThread() { threads.emplace_back(&ThreadPool::runPendingWork, this); }
+
+    size_t getThreadNum() const { return threads.size(); }
 
     template<typename Func>
     future<void> submit(Func task);
+    
     void storeTaskFuture(shared_future<void> taskFuture) { taskFutures.push_back(taskFuture); }
+    
     vector<shared_future<void>> getTaskFutures() const { return taskFutures; }
 
-    void suspendThreads() noexcept { stop = true; }
-    void resumeThreads() noexcept { stop = false; stopCond.notify_all(); }
 
     void finalize() { done = true; }
 
 private:
     void runPendingWork();
-    void signalStop();
+    atomic_bool done{};
 
-    unsigned defaultThreadCnt;
     vector<shared_future<void>> taskFutures;
     vector<thread> threads;
     queue<packaged_task<void()>> taskQueue;
-    mutex taskQueueMtx;
-    atomic_bool done{};
-    atomic_bool stop{};
-
-    mutex stopMtx;
-    
-    condition_variable stopCond;
+    mutex taskQueueMtx; 
 };
 
 template<typename Func>

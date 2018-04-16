@@ -129,6 +129,7 @@ JType* java_lang_thread_start(RuntimeEnv* env) {
             env->ma->findJavaClass("java/lang/Thread"), "task",
                     "Ljava/lang/Runnable;", instance)));
 
+    YVM::executor.createThread();
     future<void> subThreadF = YVM::executor.submit([=]() {
 #ifdef YVM_DEBUG_SHOW_THREAD_NAME
         std::cout << "[New Java Thread] ID:" << std::this_thread::get_id() << "\n";

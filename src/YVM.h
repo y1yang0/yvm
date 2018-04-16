@@ -16,7 +16,10 @@ struct YVM {
     static void callMain(const char* name);
     static void warmUp(const std::vector<std::string> & libPaths);
 
-    static ThreadPool executor;
+    struct ExecutorThreadPool : ThreadPool {
+        ExecutorThreadPool() :ThreadPool(0) {}
+    };
+    static ExecutorThreadPool executor;
 };
 
 #endif //YVM_YVM_H

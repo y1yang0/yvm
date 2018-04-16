@@ -10,7 +10,7 @@
 #include "RuntimeEnv.h"
 #include "GC.h"
 
-ThreadPool YVM::executor;
+YVM::ExecutorThreadPool YVM::executor;
 
 #define FORCE(x) (reinterpret_cast<char*>(x))
 /**
@@ -61,6 +61,8 @@ bool YVM::initClass(CodeExecution& exec, const char* name) {
 }
 
 void YVM::callMain(const char* name) {
+    executor.createThread();
+
     std::future<void> mainFuture = executor.submit([=]()->void {
 #ifdef YVM_DEBUG_SHOW_THREAD_NAME
         std::cout << "[Main Executing Thread] ID:" << std::this_thread::get_id() << "\n";
