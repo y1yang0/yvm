@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
     }
     vm.callMain(cparser.getRunningProgram().c_str());
 #ifdef YVM_DEBUG_SUSPEND_CONSOLE
-    system("pause");
+    //system("pause");
 #endif
     return 0;
 }

@@ -26,6 +26,7 @@ private:
 
 class ThreadPool{
 public:
+
     ThreadPool() noexcept;
     ~ThreadPool() noexcept;
 
