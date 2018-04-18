@@ -61,7 +61,7 @@ bool YVM::initClass(CodeExecution& exec, const char* name) {
 }
 
 void YVM::callMain(const char* name) {
-    executor.createThread();
+    executor.initialize(1);
 
     std::future<void> mainFuture = executor.submit([=]()->void {
 #ifdef YVM_DEBUG_SHOW_THREAD_NAME

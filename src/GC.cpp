@@ -10,11 +10,36 @@
 void ConcurrentGC::stopTheWorld() {
     unique_lock<mutex> lock(safepointWaitMtx);
     safepointWaitCnt++;
-    while(safepointWaitCnt!=YVM::executor.getThreadNum()) {
+    while (safepointWaitCnt != YVM::executor.getThreadNum()) {
         safepointWaitCond.wait(lock);
     }
     safepointWaitCond.notify_all();
-    safepointWaitCnt = 0;
+}
+
+void ConcurrentGC::GCThreadPool::finalize() {
+    work = true;
+    done = true;
+    sleepCnd.notify_all();
+}
+
+void ConcurrentGC::GCThreadPool::runPendingWork() {
+    while (!done) {
+        unique_lock<mutex> lock(sleepMtx);
+        while(work!=true) {
+            sleepCnd.wait(lock);
+        }
+
+        taskQueueMtx.lock();
+        if (!taskQueue.empty()) {
+            auto task = std::move(taskQueue.front());
+            taskQueue.pop();
+            taskQueueMtx.unlock();
+            task();
+        }
+        else {
+            taskQueueMtx.unlock();
+        }
+    }
 }
 
 void ConcurrentGC::gc(GCPolicy policy) {
@@ -25,15 +50,18 @@ void ConcurrentGC::gc(GCPolicy policy) {
     
     switch (policy) {
     case GCPolicy::GC_MARK_AND_SWEEP:
+        gcThreadPool.signalWork();
         markAndSweep();
         break;
     default:
+        gcThreadPool.signalWork();
         markAndSweep();
         break;
     } 
     objectBitmap.clear();
     arrayBitmap.clear();
     overMemoryThreshold = false;
+    gcThreadPool.signalWait();
 }
 
 void ConcurrentGC::mark(JType* ref) {
@@ -47,7 +75,7 @@ void ConcurrentGC::mark(JType* ref) {
             std::lock_guard<SpinLock> lock(objSpin);
             objectBitmap.insert(dynamic_cast<JObject*>(ref)->offset);
         }
-        auto & fields = yrt.jheap->getObjectFieldsByOffset(dynamic_cast<JObject*>(ref)->offset);
+        auto fields = yrt.jheap->getObjectFieldsByOffset(dynamic_cast<JObject*>(ref)->offset);
         for(size_t i=0;i<fields.size();i++) {
             mark(fields[i]);
         }
@@ -56,7 +84,7 @@ void ConcurrentGC::mark(JType* ref) {
             std::lock_guard<SpinLock> lock(arrSpin);
             arrayBitmap.insert(dynamic_cast<JArray*>(ref)->offset);
         }
-        auto & items = yrt.jheap->getArrayItemsByOffset(dynamic_cast<JArray*>(ref)->offset);
+        auto items = yrt.jheap->getArrayItemsByOffset(dynamic_cast<JArray*>(ref)->offset);
 
         for(size_t i=0;i<items.first;i++) {
             mark(items.second[i]);
@@ -113,31 +141,38 @@ void ConcurrentGC::sweep(){
     arrayFuture.get();
     monitorFuture.get();
 }
+
 void ConcurrentGC::markAndSweep() {  
-    stopTheWorld();
-    future<void> stackMarkFuture, localMarkFuture;
+    vector<future<void>> stackMarkFuture, localMarkFuture;
     for(auto frame = frames.cbegin();frame!=frames.cend();++frame) {
-        stackMarkFuture = gcThreadPool.submit([this,frame]()->void {
+        stackMarkFuture.push_back(gcThreadPool.submit([this,frame]()->void {
             for (auto stackSlot = (*frame)->stack.cbegin(); stackSlot != (*frame)->stack.cend(); ++stackSlot) {
                 this->mark(*stackSlot);
             }
-        });
+        }));
         
-        localMarkFuture = gcThreadPool.submit([this, frame]()->void {
+        localMarkFuture.push_back(gcThreadPool.submit([this, frame]()->void {
             for (auto localSlot = (*frame)->locals.cbegin(); localSlot != (*frame)->locals.cend(); ++localSlot) {
                 this->mark(*localSlot);
             }
-        });
+        }));
 
     }
+
     future<void> staticFieldsFuture = gcThreadPool.submit([this]()->void{
         for(auto c: yrt.ma->classTable) {
             std::for_each(c.second->sfield.cbegin(), c.second->sfield.cend(),
                 [this](const pair<size_t, JType*>& offset){
                     if(typeid(*offset.second)==typeid(JObject)) {
-                        objectBitmap.insert(offset.first);
+                        {
+                            std::lock_guard<SpinLock> lock(objSpin);
+                            objectBitmap.insert(offset.first);
+                        }
                     }else if(typeid(*offset.second)==typeid(JArray)) {
-                        arrayBitmap.insert(offset.first);
+                        {
+                            std::lock_guard<SpinLock> lock(arrSpin);
+                            arrayBitmap.insert(offset.first);
+                        }
                     }
             });
         }
@@ -145,8 +180,12 @@ void ConcurrentGC::markAndSweep() {
 
     staticFieldsFuture.get();
     if(!frames.empty()) {
-        stackMarkFuture.get();
-        localMarkFuture.get();
+        for (auto &sk:stackMarkFuture) {
+            sk.get();
+        }
+        for(auto&lv:localMarkFuture) {
+            lv.get();
+        }
     }
     sweep();
 }

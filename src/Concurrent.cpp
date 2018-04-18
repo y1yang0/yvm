@@ -3,7 +3,7 @@
 #include <iostream>
 using namespace std;
 
-ThreadPool::ThreadPool(int startThreadNum) noexcept : done(false){
+void ThreadPool::initialize(int startThreadNum) noexcept{
     for(unsigned i=0;i<startThreadNum;i++) {
         threads.emplace_back(&ThreadPool::runPendingWork,this);
     }

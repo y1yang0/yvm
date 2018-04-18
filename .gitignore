@@ -34,3 +34,8 @@ src/yvm.vcxproj.user
 /src/SynchronizedBlockTest
 /src/CreateAsyncThreadsTest
 /src/QuickSort
+/src/LambdaTest/yvm.tlog
+/src/LambdaTest
+/src/x64/CreateAsyncThreadsTest
+/src/x64
+/src/GCTest

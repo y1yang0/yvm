@@ -15,10 +15,12 @@ enum class GCPolicy {
 };
 class ConcurrentGC{
 public:
-    ConcurrentGC() :overMemoryThreshold(false),safepointWaitCnt(0) {}
+    ConcurrentGC() :overMemoryThreshold(false),safepointWaitCnt(0) {
+        gcThreadPool.initialize(std::thread::hardware_concurrency());
+    }
 
     bool shallGC() const { return overMemoryThreshold; }
-    void notifyGC() { overMemoryThreshold = true; }
+    void notifyGC() { safepointWaitCnt = 0; overMemoryThreshold = true; }
     void stopTheWorld();
     void gc(GCPolicy policy = GCPolicy::GC_MARK_AND_SWEEP);
 
@@ -46,8 +48,20 @@ private:
 
 private:
     struct GCThreadPool : ThreadPool {
-        GCThreadPool() :ThreadPool(std::thread::hardware_concurrency()) {}
+        GCThreadPool() :ThreadPool(),work(false) {}
+
+        void signalWork() { work = true; sleepCnd.notify_all();}
+        void signalWait() { work = false;  }
+
+        void finalize() override;
+        void runPendingWork() override;
+
+        atomic_bool work;
+        mutex sleepMtx;
+        condition_variable sleepCnd;
     };
+
+
     GCThreadPool gcThreadPool;
 };
 

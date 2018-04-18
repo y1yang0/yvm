@@ -16,8 +16,16 @@ struct YVM {
     static void callMain(const char* name);
     static void warmUp(const std::vector<std::string> & libPaths);
 
-    struct ExecutorThreadPool : ThreadPool {
-        ExecutorThreadPool() :ThreadPool(0) {}
+    class ExecutorThreadPool : public ThreadPool {
+    public:
+        ExecutorThreadPool() :ThreadPool() {}
+        void createThread() { threads.emplace_back(&ThreadPool::runPendingWork, this); }
+        size_t getThreadNum() const { return threads.size(); }
+        void storeTaskFuture(shared_future<void> taskFuture) { taskFutures.push_back(taskFuture); }
+        vector<shared_future<void>> getTaskFutures() const { return taskFutures; }
+
+    private:
+        vector<shared_future<void>> taskFutures;
     };
     static ExecutorThreadPool executor;
 };
