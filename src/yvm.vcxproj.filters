@@ -68,9 +68,6 @@
     <ClInclude Include="ClassFile.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="ConstantTag.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Debug.h">
       <Filter>头文件</Filter>
     </ClInclude>

@@ -8,6 +8,13 @@
 #include "MethodArea.h"
 #include "YVM.h"
 
+#define JAVA_9_MAJOR                            53
+#define JAVA_8_MAJOR                            52
+#define JAVA_7_MAJOR                            51
+#define JAVA_6_MAJOR                            50
+
+#define JAVA_CLASS_FILE_MAGIC_NUMBER            0XCAFEBABE
+
 /**
  * \brief JavaClass is an in-memory representation of java class file. We should call
  * parseClassFile() to parse into proper structure before any operation on JavaClass.
