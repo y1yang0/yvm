@@ -24,10 +24,7 @@ static const char*((nativeFunctionTable[])[4]) = {
     {"java/lang/Math", "random", "()D", FORCE(ydk_lang_Math_random)},
     {"java/lang/StringBuilder", "append", "(I)Ljava/lang/StringBuilder;", FORCE(java_lang_stringbuilder_append_I)},
     {"java/lang/StringBuilder", "append", "(C)Ljava/lang/StringBuilder;", FORCE(java_lang_stringbuilder_append_C)},
-    {
-        "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
-        FORCE(java_lang_stringbuilder_append_str)
-    },
+    {"java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;",FORCE(java_lang_stringbuilder_append_str)},
     {"java/lang/StringBuilder", "toString", "()Ljava/lang/String;", FORCE(java_lang_stringbuilder_tostring)},
     {"java/lang/Thread", "start", "()V", FORCE(java_lang_thread_start)}
 };

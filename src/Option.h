@@ -1,11 +1,6 @@
 #ifndef YVM_OPTION_H
 #define YVM_OPTION_H
 
-/*
- * Target platform
- */
-#undef TARGET_LINUX
-#define TARGET_WIN32
 /**
  * denote the default threshold value of garbage collector. GC was started when
  * the memory allocation was beyond this value.

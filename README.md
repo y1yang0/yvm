@@ -9,35 +9,28 @@ YVM是用C++写的一个Java虚拟机，现在支持Java大部分功能，以及
 # 已支持语言特性
 高级特性逐步支持中，可以开Issue提议或者直接PR
 + Java基本算术运算，流程控制语句，面向对象。
-+ [RTTI](./javalib_src/ydk/test/InstanceofTest.java)
-+ [字符串拼接(+,+=符号重载)](./javalib_src/ydk/test/StringConcatenation.java)
-+ [异常处理(可输出stacktrace)](./javalib_src/ydk/test/ThrowExceptionTest.java)
-+ [创建异步线程](./javalib_src/ydk/test/CreateAsyncThreadsTest.java)
-+ [Synchronized(支持对象锁)](./javalib_src/ydk/test/SynchronizedBlockTest.java)
-+ [垃圾回收(标记清除算法)](./javalib_src/ydk/test/GCTest.java)
++ [RTTI](./javaclass/ydk/test/InstanceofTest.java)
++ [字符串拼接(+,+=符号重载)](./javaclass/ydk/test/StringConcatenation.java)
++ [异常处理(可输出stacktrace)](./javaclass/ydk/test/ThrowExceptionTest.java)
++ [创建异步线程](./javaclass/ydk/test/CreateAsyncThreadsTest.java)
++ [Synchronized(支持对象锁)](./javaclass/ydk/test/SynchronizedBlockTest.java)
++ [垃圾回收(标记清除算法)](./javaclass/ydk/test/GCTest.java)
 
 # 构建和运行
-需要`cmake`进行构建，编译器支持`g++`,`msvc`，未来可能支持`clang`
-1. `配置`
-编辑`src/Option.h`,如果是Windows则
-```cpp
-#define TARGET_WIN32
+编译依赖于Boost库,请在`CMakeLists.txt`中手动配置Boost库位置:
 ```
-如果是Linux则
-```cpp
-#define TARGET_LINUX
+set(BOOST_ROOT "/your_boost_root_dir")
 ```
-2. `编译` 三步搞定
+然后构建运行即可
+
+1. `编译` 
 ```bash
 $ cd yvm
 $ cmake .
 $ make -j4
-```
-3. `测试`
-```bash
 $ make test
-``` 
-4. `运行`
+```
+2. `运行`
 ```bash
 $ ./yvm -h
 Yvm - Yet another java Virtual Machine :)

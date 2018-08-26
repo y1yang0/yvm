@@ -9,35 +9,28 @@ This is a homemade Java virtual machine written in c++, it supports most Java la
 # Available language features
 Advanced language features will support later, you can also PR to contribute your awesome code.
 + Java arithmetic, flow control, object-oriented programming(virtual method, inherit,etc.)
-+ [Runtime type identification](./javalib_src/ydk/test/InstanceofTest.java)
-+ [String concatenation](./javalib_src/ydk/test/StringConcatenation.java)
-+ [Exception handling](./javalib_src/ydk/test/ThrowExceptionTest.java)
-+ [Async native threads](./javalib_src/ydk/test/CreateAsyncThreadsTest.java)
-+ [Synchronized block with object lock](./javalib_src/ydk/test/SynchronizedBlockTest.java)
-+ [Garbage Collection(With mark-and-sweep policy)](./javalib_src/ydk/test/GCTest.java)
++ [Runtime type identification](./javaclass/ydk/test/InstanceofTest.java)
++ [String concatenation](./javaclass/ydk/test/StringConcatenation.java)
++ [Exception handling](./javaclass/ydk/test/ThrowExceptionTest.java)
++ [Async native threads](./javaclass/ydk/test/CreateAsyncThreadsTest.java)
++ [Synchronized block with object lock](./javaclass/ydk/test/SynchronizedBlockTest.java)
++ [Garbage Collection(With mark-and-sweep policy)](./javaclass/ydk/test/GCTest.java)
 
 # Build and run
-You need cmake to build it, and a newly compiler such as `gcc7.0+/msvc2015+` is also required.
-1. `Configure`
-Open `src/Option.h`, define a macro if you are using Windows:
-```cpp
-#define TARGET_WIN32
+**This project depends on Boost libraries.** You need to manually configure Boost root path in `CMakeLists.txt`:
 ```
-Or define another one if you are using Linux:
-```cpp
-#define TARGET_LINUX
+set(BOOST_ROOT "/your_boost_root_dir")
 ```
-2. `Compile` 
+Thats all about to say. The following steps are so common:
+
+1. `Compile`
 ```bash
 $ cd yvm
 $ cmake .
 $ make -j4
-```
-3. `Test`
-```bash
 $ make test
 ```
-4. `Run`
+2. `Run`
 ```bash
 $ ./yvm -h
 Yvm - Yet another java Virtual Machine :)

@@ -1,8 +1,11 @@
+#include "MethodArea.h"
 #include "AccessFlag.h"
 #include "Descriptor.h"
 #include "JavaClass.h"
-#include "MethodArea.h"
-#include "Option.h"
+
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
 
 MethodArea::MethodArea(const std::vector<std::string>& libPaths) {
 	for (const auto& path : libPaths) {
@@ -89,7 +92,7 @@ void MethodArea::linkJavaClass(const char* jcName) {
 			}
 		} else if (IS_FIELD_REF_ARRAY(descriptor)) {
 			// Special handling for field whose type is array. We create a null JArray as a placeholder
-			// since we dont know more information about size of array, so we defer to allocate memory
+			// since we don't know more information about size of array, so we defer to allocate memory
 			// while meeting opcodes [newarray]/[multinewarray]
 
 			if (IS_FIELD_STATIC(javaClass->raw.fields[fieldOffset].accessFlags)) {
@@ -183,39 +186,22 @@ bool MethodArea::removeJavaClass(const char* jcName) {
 }
 
 std::string MethodArea::parseNameToPath(const char* name) {
-	using namespace std;
-	// java/util/ArrayList
-	string newJcName(name);
-	for (auto& c : newJcName) {
-		if (c == '/')
-#if defined(TARGET_WIN32)
-			c = '\\';
-#elif defined(TARGET_LINUX)
-			c = '/';
-#endif
-		;
-	}
-	newJcName.append(".class");
+	// convert java.util.ArrayList to java/util/ArrayList.class
 
-	for (auto path : this->searchPaths) {
-#if defined(TARGET_WIN32)
-		if (path.length() > 0 && path[path.length() - 1] != '\\') {
-			path += '\\';
+	boost::filesystem::path part2FileName;
+	std::vector<std::string> pathNode;
+	boost::split(pathNode, name, boost::is_any_of("/"), boost::token_compress_on);
+	for (auto& node : pathNode) {
+		part2FileName /= node;
+    }
+	part2FileName.concat(".class"); //directly appending .class sufix
+	
+	for (const string& p : this->searchPaths) {
+		boost::filesystem::path part1FileName(p);
+		part1FileName.append(part2FileName.string());
+		if (boost::filesystem::exists(part1FileName)) {
+			return part1FileName.string(); // Return string representation only if it's a valid file path
 		}
-#elif defined(TARGET_LINUX)
-		if (path.length() > 0 && path[path.length() - 1] != '/') {
-			path += '/';
-		}
-#endif
-
-		path += newJcName;
-		fstream fin;
-		fin.open(path, ios::in);
-		if (fin) {
-			fin.close();
-			return path; // Return only if it's a valid file path
-		}
-		fin.close();
 	}
 	return std::string("");
 }
