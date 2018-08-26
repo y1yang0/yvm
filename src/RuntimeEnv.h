@@ -1,12 +1,11 @@
 #ifndef YVM_YRUNTIME_H
 #define YVM_YRUNTIME_H
 
+#include "Frame.h"
+#include "Type.h"
+#include <condition_variable>
 #include <stack>
 #include <unordered_map>
-#include <condition_variable>
-#include "Type.h"
-#include "Frame.h"
-
 
 struct JType;
 struct Frame;
@@ -15,13 +14,13 @@ class MethodArea;
 class ConcurrentGC;
 
 struct RuntimeEnv {
-    RuntimeEnv();
-    ~RuntimeEnv();
+	RuntimeEnv();
+	~RuntimeEnv();
 
-    MethodArea* ma;
-    JavaHeap* jheap;
-    std::unordered_map<std::string, JType*(*)(RuntimeEnv* env)> nativeMethods;
-    ConcurrentGC* gc;
+	MethodArea* ma;
+	JavaHeap* jheap;
+	std::unordered_map<std::string, JType* (*) (RuntimeEnv* env)> nativeMethods;
+	ConcurrentGC* gc;
 };
 
 extern RuntimeEnv yrt;

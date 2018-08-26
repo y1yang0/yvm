@@ -19,3 +19,4 @@ before_install:
 script: 
   - cmake .
   - make -j8
+  - make test
