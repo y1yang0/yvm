@@ -1,12 +1,13 @@
-![](./public/banner.jpg)
+![](./public/dragon.png) Yet another java Virtual Machine
+
 [中文](https://github.com/racaljk/yvm/blob/master/README.md) | [English](https://github.com/racaljk/yvm/blob/master/README.EN.md)
 | [![Build Status](https://travis-ci.org/racaljk/yvm.svg?branch=master)](https://travis-ci.org/racaljk/yvm) | ![](https://img.shields.io/badge/comiler-MSVC2017-brightgreen.svg) | ![](https://img.shields.io/badge/comiler-gcc7.0-brightgreen.svg)
 
 
-This is a homemade Java virtual machine written in c++, it supports most Java language features and includes a mark-sweep-based concurrent garbage collector. The main components of this VM are conform to [Java Virtual Machine Specification 8](https://docs.oracle.com/javase/specs/jvms/se8/jvms8.pdf). Now it is runnable and sorts of language features will add into this VM in progress. I don't have enough time to write unittests to verify all aspects of yvm, so if you find any bugs, you can open an [Issue](https://github.com/racaljk/yvm/issues/new) or fix up in place and pull request directly. :)
+This is a homemade Java virtual machine written in c++, it supports most Java language features and includes a mark-sweep-based concurrent garbage collector. The main components of this VM are conform to [Java Virtual Machine Specification 8](https://docs.oracle.com/javase/specs/jvms/se8/jvms8.pdf). Now it is runnable and sorts of language features will add into this VM in progress. I don't have enough time to write unittests to verify all aspects of yvm, so if you find any bugs, you can open an [Issue](https://github.com/racaljk/yvm/issues/new) or fix up in place and pull request directly.
 
 # Available language features
-:-0 Advanced language features will support later, you can also PR to help me
+Advanced language features will support later, you can also PR to contribute your awesome code.
 + Java arithmetic, flow control, object-oriented programming(virtual method, inherit,etc.)
 + [Runtime type identification](./javalib_src/ydk/test/InstanceofTest.java)
 + [String concatenation](./javalib_src/ydk/test/StringConcatenation.java)
@@ -16,7 +17,7 @@ This is a homemade Java virtual machine written in c++, it supports most Java la
 + [Garbage Collection(With mark-and-sweep policy)](./javalib_src/ydk/test/GCTest.java)
 
 # Build and run
-We provide `visual studio solution` file and a general-purpose `CMakeLists` file.
+You need cmake to build it, and a newly compiler such as `gcc7.0+/msvc2015+` is also required.
 1. `Configure`
 Open `src/Option.h`, define a macro if you are using Windows:
 ```cpp
@@ -26,21 +27,35 @@ Or define another one if you are using Linux:
 ```cpp
 #define TARGET_LINUX
 ```
-2. `Compile` If you have a Visual Studio IDE , you can open `src/yvm.sln` to load this project directly. Otherwise, you may need manually make it:
+2. `Compile` 
 ```bash
 $ cd yvm
 $ cmake .
 $ make -j4
 ```
-3. `Run`
+3. `Test`
 ```bash
-# --runtime to specify runtime libraries of Java program, use ";" to split multi paths
-# dotted-decorated program name which you want to run on yvm
-./yvm --runtime=C:\Users\Cthulhu\Desktop\yvm\javalib ydk.test.QuickSort
+$ make test
+```
+4. `Run`
+```bash
+$ ./yvm -h
+Yvm - Yet another java Virtual Machine :)
+Usage:
+./yvm [option|option=value] program_name
+
+option:
+-h or --help                    List help documentations and usages.
+-rt or --runtime(required)                      Attach java runtime libraries of this YVM.
+-sp or --searchpath                      Add *.class to search path.
+
+You must specify the "runtime" flag to tell yvm where it could find jdk classes, and also program name is required.
+
+$ ./yvm --runtime=C:\Users\Cthulhu\Desktop\yvm\bytecode ydk.test.QuickSort
 ```
 
 # About JDK
-Any java virtual machines can not run a Java program without Java libraries. As you may know, some opcodes like `ldc`,`monitorenter/monitorexit`,`athrow` are internally requiring our virtual machine to operate JDK classes('java.lang.Class','java.lang.String','java.lang.Throwable',etc). Hence, I have to rewrite some [JDK classes](javalib_src) for building a runnable VM since original JDK classes are so complicated that it's inconvenient for early developing.
+Any java virtual machines can not run a Java program without Java libraries. As you may know, some opcodes like `ldc`,`monitorenter/monitorexit`,`athrow` are internally requiring our virtual machine to operate JDK classes(`java.lang.Class`,`java.lang.String`,`java.lang.Throwable`,etc). Hence, I have to rewrite some [JDK classes](./javaclass) for building a runnable VM , because original JDK classes are so complicated that it's inconvenient for early developing.
 Rewrote JDK classes are as follows:
 + `java.lang.String`
 + `java.lang.StringBuilder`

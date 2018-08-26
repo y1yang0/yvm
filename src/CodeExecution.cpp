@@ -1891,7 +1891,7 @@ void CodeExecution::invokeByName(JavaClass* jc, const char* methodName, const ch
 
     JType* returnValue{};
     if (IS_METHOD_NATIVE(m->accessFlags)) {
-        returnValue = cloneValue(invokeNative(jc->getClassName(), methodName, methodDescriptor));
+        returnValue = cloneValue(execNative(jc->getClassName(), methodName, methodDescriptor));
     }
     else {
         returnValue = cloneValue(execCode(jc, std::move(ext)));
@@ -1949,7 +1949,7 @@ void CodeExecution::invokeInterface(const JavaClass* jc, const char* methodName,
 
     JType* returnValue{};
     if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
-        returnValue = cloneValue(invokeNative(const_cast<JavaClass*>(invokingMethod.second)->getClassName(), methodName,
+        returnValue = cloneValue(execNative(const_cast<JavaClass*>(invokingMethod.second)->getClassName(), methodName,
                                               methodDescriptor));
     }
     else {
@@ -1999,7 +1999,7 @@ void CodeExecution::invokeVirtual(const char* methodName, const char* methodDesc
     JType* returnValue{};
     if (invokingMethod.first) {
         if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
-            returnValue = cloneValue(invokeNative(const_cast<JavaClass*>(invokingMethod.second)->getClassName(),
+            returnValue = cloneValue(execNative(const_cast<JavaClass*>(invokingMethod.second)->getClassName(),
                                                   invokingMethod.second->getString(invokingMethod.first->nameIndex),
                                                   invokingMethod.second->getString(
                                                       invokingMethod.first->descriptorIndex)));
@@ -2053,7 +2053,7 @@ void CodeExecution::invokeSpecial(const JavaClass* jc, const char* methodName, c
     JType* returnValue{};
     if (invokingMethod.first) {
         if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
-            returnValue = cloneValue(invokeNative(const_cast<JavaClass*>(invokingMethod.second)->getClassName(),
+            returnValue = cloneValue(execNative(const_cast<JavaClass*>(invokingMethod.second)->getClassName(),
                                                   invokingMethod.second->getString(invokingMethod.first->nameIndex),
                                                   invokingMethod.second->getString(
                                                       invokingMethod.first->descriptorIndex)));
@@ -2073,7 +2073,7 @@ void CodeExecution::invokeSpecial(const JavaClass* jc, const char* methodName, c
             IS_METHOD_PUBLIC(javaLangObjectMethod->accessFlags) &&
             !IS_METHOD_STATIC(javaLangObjectMethod->accessFlags)) {
             if (IS_METHOD_NATIVE(javaLangObjectMethod->accessFlags)) {
-                returnValue = cloneValue(invokeNative(javaLangObjectClass->getClassName(),
+                returnValue = cloneValue(execNative(javaLangObjectClass->getClassName(),
                                                       javaLangObjectClass->getString(javaLangObjectMethod->nameIndex),
                                                       javaLangObjectClass->getString(
                                                           javaLangObjectMethod->descriptorIndex)));
@@ -2136,7 +2136,7 @@ void CodeExecution::invokeStatic(const JavaClass* jc, const char* methodName, co
 
     JType* returnValue{};
     if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
-        returnValue = cloneValue(invokeNative(const_cast<JavaClass*>(invokingMethod.second)->getClassName(), methodName,
+        returnValue = cloneValue(execNative(const_cast<JavaClass*>(invokingMethod.second)->getClassName(), methodName,
                                               methodDescriptor));
     }
     else {
@@ -2159,7 +2159,7 @@ void CodeExecution::invokeStatic(const JavaClass* jc, const char* methodName, co
     }
 }
 
-JType* CodeExecution::invokeNative(const char* className, const char* methodName, const char* methodDescriptor) {
+JType* CodeExecution::execNative(const char* className, const char* methodName, const char* methodDescriptor) {
     std::string nativeMethod(className);
     nativeMethod.append(".");
     nativeMethod.append(methodName);

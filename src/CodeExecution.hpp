@@ -41,7 +41,6 @@ public:
     void invokeSpecial(const JavaClass* jc, const char* methodName, const char* methodDescriptor);
     void invokeStatic(const JavaClass* jc, const char* methodName, const char* methodDescriptor);
     void invokeVirtual(const char* methodName, const char* methodDescriptor);
-    JType* invokeNative(const char* className, const char* methodName, const char* methodDescriptor);
 
 private:
     std::pair<MethodInfo *, const JavaClass*> findMethod(const JavaClass* jc, const char* methodName,
@@ -60,13 +59,13 @@ private:
 
     JObject* execNew(const JavaClass* jc, u2 index);
     JType* execCode(const JavaClass* jc, CodeAttrCore&& ext);
+    JType* execNative(const char* className, const char* methodName, const char* methodDescriptor);
 
     void loadConstantPoolItem2Stack(const JavaClass* jc, u2 index);
 
     bool handleException(const JavaClass* jc, const CodeAttrCore& ext, const JObject* objectref, u4& op);
 
     void pushMethodArguments(Frame* frame, std::vector<int>& parameter);
-
     JObject* pushMethodThisArgument(Frame* frame);
 
 private:

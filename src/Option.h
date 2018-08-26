@@ -18,11 +18,6 @@
 #undef YVM_DEBUG_SHOW_THREAD_NAME
 
 /*
- * define to suspend console to see what going on this output
- */
-#define YVM_DEBUG_SUSPEND_CONSOLE
-
-/*
  * define to output byte size of yvm's internal structures
  */
 #undef YVM_DEBUG_SHOW_SIZEOF_ALL_TYPE

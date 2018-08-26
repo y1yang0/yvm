@@ -39,3 +39,6 @@ src/yvm.vcxproj.user
 /src/x64/CreateAsyncThreadsTest
 /src/x64
 /src/GCTest
+/test/java
+/test/ydk
+/src/.vs

@@ -1,4 +1,5 @@
-![](./public/banner.jpg)
+![](./public/dragon.png) Yet another java Virtual Machine
+
 [中文](https://github.com/racaljk/yvm/blob/master/README.md) | [English](https://github.com/racaljk/yvm/blob/master/README.EN.md)
 | [![Build Status](https://travis-ci.org/racaljk/yvm.svg?branch=master)](https://travis-ci.org/racaljk/yvm) | ![](https://img.shields.io/badge/comiler-MSVC2017-brightgreen.svg) | ![](https://img.shields.io/badge/comiler-gcc7.0-brightgreen.svg)
 
@@ -16,7 +17,7 @@ YVM是用C++写的一个Java虚拟机，现在支持Java大部分功能，以及
 + [垃圾回收(标记清除算法)](./javalib_src/ydk/test/GCTest.java)
 
 # 构建和运行
-预置MSVC 2017工程文件,同时支持CMakeLists
+需要`cmake`进行构建，编译器支持`g++`,`msvc`，未来可能支持`clang`
 1. `配置`
 编辑`src/Option.h`,如果是Windows则
 ```cpp
@@ -26,22 +27,35 @@ YVM是用C++写的一个Java虚拟机，现在支持Java大部分功能，以及
 ```cpp
 #define TARGET_LINUX
 ```
-2. `编译` 如果使用MSVC,直接打开`src/yvm.sln`即可
-如果使用CMakeLists
+2. `编译` 三步搞定
 ```bash
 $ cd yvm
 $ cmake .
 $ make -j4
 ```
-2. `运行`
+3. `测试`
 ```bash
-# --runtime为在YVM上运行的Java程序所必须的运行时,多个值用";"分隔
-# 后面指定运行程序的全修饰名，如ydk.test.QuickSort
-./yvm --runtime=C:\Users\Cthulhu\Desktop\yvm\javalib ydk.test.QuickSort
+$ make test
+``` 
+4. `运行`
+```bash
+$ ./yvm -h
+Yvm - Yet another java Virtual Machine :)
+Usage:
+./yvm [option|option=value] program_name
+
+option:
+-h or --help                    List help documentations and usages.
+-rt or --runtime(required)                      Attach java runtime libraries of this YVM.
+-sp or --searchpath                      Add *.class to search path.
+
+You must specify the "runtime" flag to tell yvm where it could find jdk classes, and also program name is required.
+
+$ ./yvm --runtime=C:\Users\Cthulhu\Desktop\yvm\bytecode ydk.test.QuickSort
 ```
 
 # 关于JDK
-部分JDK类是JVM运行攸关的,但由于JDK比较复杂不便于初期开发,所以这里用重写过的JDK代替,源码参见[javalib_src](./javalib_src)目录,编译后`*.class`文件位于[javalib](./javalib)
+部分JDK类是JVM运行攸关的,但由于JDK比较复杂不便于初期开发,所以这里用重写过的JDK代替,源码参见[javaclass](./javaclass)目录,可以使用`compilejava.bat`进行编译，编译后`*.class`文件位于[bytecode](./bytecode).
 目前重写过的JDK类有:
 + `java.lang.String`
 + `java.lang.StringBuilder`

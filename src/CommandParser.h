@@ -70,6 +70,9 @@ struct Parser
 		}
 		else if (temp_string.substr(0, 1) == "-") {
 			temp_string.erase(0, 1);
+            if (temp_string[0]=='h'){
+                needHelpFlag = true;
+            }
 			size_t pos = temp_string.find_first_of('=');
 			if (pos != string::npos) {
 				std::string theFlag = temp_string.substr(0, pos);
@@ -125,11 +128,16 @@ struct Parser
 
     inline std::vector<std::string> &getFlagByName(const std::string & str) { return Flags.at(SimpleNames.find(str)->second).getFlagValues(); }
 
+    inline bool needHelp() const { return needHelpFlag; }
+
 private:
     std::string runningProgram;
 	int theIndex = -1;
+    //Whats this shit...
 	std::map<std::string, int> SimpleNames;
 	std::map<std::string, int> FullNames;
 	std::vector<Flag> Flags;
+
+    bool needHelpFlag = false;
 };
 #endif
