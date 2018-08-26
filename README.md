@@ -3,8 +3,8 @@
 [中文](https://github.com/racaljk/yvm/blob/master/README.md) | [English](https://github.com/racaljk/yvm/blob/master/README.EN.md)
 | [![Build Status](https://travis-ci.org/racaljk/yvm.svg?branch=master)](https://travis-ci.org/racaljk/yvm) | ![](https://img.shields.io/badge/comiler-MSVC2017-brightgreen.svg) | ![](https://img.shields.io/badge/comiler-gcc7.0-brightgreen.svg)
 
-YVM是用C++写的一个Java虚拟机，现在支持Java大部分功能，以及一个基于"标记清除算法"的并发垃圾回收器. 不过还有很多bug等待修复。
-感兴趣的朋友pull request/fork/star吧！
+YVM是用C++写的一个Java虚拟机，现在支持Java大部分功能，以及一个基于标记清除算法的并发垃圾回收器. 不过还有很多bug等待修复。
+感兴趣的朋友pull request/fork/star吧。
 
 # 已支持语言特性
 高级特性逐步支持中，可以开Issue提议或者直接PR
@@ -17,7 +17,7 @@ YVM是用C++写的一个Java虚拟机，现在支持Java大部分功能，以及
 + [垃圾回收(标记清除算法)](./javaclass/ydk/test/GCTest.java)
 
 # 构建和运行
-编译依赖于Boost库,请在`CMakeLists.txt`中手动配置Boost库位置:
+**编译依赖于[Boost](https://www.boost.org/)库**。请在`CMakeLists.txt`中手动配置Boost库位置:
 ```
 set(BOOST_ROOT "/your_boost_root_dir")
 ```
@@ -32,18 +32,13 @@ $ make test
 ```
 2. `运行`
 ```bash
-$ ./yvm -h
-Yvm - Yet another java Virtual Machine :)
+$ ./yvm --help
 Usage:
-./yvm [option|option=value] program_name
-
-option:
--h or --help                    List help documentations and usages.
--rt or --runtime(required)                      Attach java runtime libraries of this YVM.
--sp or --searchpath                      Add *.class to search path.
-
+  --help                List help documentations and usages.
+  --runtime arg         Attach java runtime libraries where yvm would lookup 
+                        classes at
+  --run arg             Program which would be executed soon
 You must specify the "runtime" flag to tell yvm where it could find jdk classes, and also program name is required.
-
 $ ./yvm --runtime=C:\Users\Cthulhu\Desktop\yvm\bytecode ydk.test.QuickSort
 ```
 

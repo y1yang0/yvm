@@ -12,9 +12,8 @@ endif()
 set(Boost_USE_STATIC_LIBS        ON)
 set(Boost_USE_MULTITHREADED      ON)
 set(BOOST_ROOT "F:\\cpplib\\boost_1_65_1")
+find_package(Boost COMPONENTS system filesystem program_options)
 
-
-find_package(Boost REQUIRED system filesystem)
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
     set(SOURCE_FILES src/Main.cpp src/MethodArea.cpp src/Frame.h src/ClassFile.h src/AccessFlag.h src/CommandParser.h src/RuntimeEnv.cpp
@@ -29,9 +28,10 @@ if(Boost_FOUND)
     endif()
 endif()
 
+
 enable_testing()
 if(WIN32)
-    add_test(NAME test_running_help COMMAND yvm -h)
+    add_test(NAME test_running_help COMMAND yvm --help)
     add_test(NAME test_running_BaseTest COMMAND yvm --runtime=${PROJECT_SOURCE_DIR}/bytecode ydk.test.BaseTest)
     #add_test(NAME test_running_CreateAsyncThreadsTest COMMAND yvm --runtime=${PROJECT_SOURCE_DIR}/bytecode ydk.test.CreateAsyncThreadsTest)
     #add_test(NAME test_running_GCTest COMMAND yvm --runtime=${PROJECT_SOURCE_DIR}/bytecode ydk.test.GCTest)

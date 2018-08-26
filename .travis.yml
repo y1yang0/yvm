@@ -13,6 +13,7 @@ matrix:
         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
 
 before_install:
+    - sudo apt-get install libboost-dev
     - eval "${MATRIX_EVAL}"
 
 # command to run tests

@@ -17,7 +17,7 @@ Advanced language features will support later, you can also PR to contribute you
 + [Garbage Collection(With mark-and-sweep policy)](./javaclass/ydk/test/GCTest.java)
 
 # Build and run
-**This project depends on Boost libraries.** You need to manually configure Boost root path in `CMakeLists.txt`:
+**This project depends on [Boost](https://www.boost.org/) libraries.** You need to manually configure Boost root path in `CMakeLists.txt`:
 ```
 set(BOOST_ROOT "/your_boost_root_dir")
 ```
@@ -32,18 +32,13 @@ $ make test
 ```
 2. `Run`
 ```bash
-$ ./yvm -h
-Yvm - Yet another java Virtual Machine :)
+$ ./yvm --help
 Usage:
-./yvm [option|option=value] program_name
-
-option:
--h or --help                    List help documentations and usages.
--rt or --runtime(required)                      Attach java runtime libraries of this YVM.
--sp or --searchpath                      Add *.class to search path.
-
+  --help                List help documentations and usages.
+  --runtime arg         Attach java runtime libraries where yvm would lookup 
+                        classes at
+  --run arg             Program which would be executed soon
 You must specify the "runtime" flag to tell yvm where it could find jdk classes, and also program name is required.
-
 $ ./yvm --runtime=C:\Users\Cthulhu\Desktop\yvm\bytecode ydk.test.QuickSort
 ```
 

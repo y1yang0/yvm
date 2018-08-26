@@ -12,7 +12,7 @@ BinPackArguments: true
 BinPackParameters: true
 BreakBeforeBraces: Custom
 BreakBeforeTernaryOperators: false
-ColumnLimit: 80
+ColumnLimit: 100
 IndentWidth: 4
 KeepEmptyLinesAtTheStartOfBlocks: true
 MaxEmptyLinesToKeep: 1

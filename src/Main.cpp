@@ -1,46 +1,48 @@
-#include "CommandParser.h"
 #include "Option.h"
 #include "YVM.h"
+#include <boost/program_options.hpp>
+#include <iostream>
 
 int main(int argc, char* argv[]) {
-	Parser cparser;
-	cparser.addFlag("h", "help", "List help documentations and uasges.");
-	cparser.addFlag("rt", "runtime", "Attach java runtime libraries of this YVM.");
-	cparser.addFlag("sp", "searchpath", "Add *.class to search path.");
-	cparser.parse(argc, argv);
+	using namespace boost::program_options;
 
-	bool needHelp = cparser.needHelp();
-	if (needHelp) {
-		std::cout << "Yvm - Yet another java Virtual Machine :)\n"
-		             "Usage:\n"
-		             "./yvm [option|option=value] program_name\n\n"
-		             "option:\n"
-		             "-h or --help\t\t\tList help documentations and usages.\n"
-		             "-rt or --runtime(required)\t\t\tAttach java runtime "
-		             "libraries of this YVM.\n"
-		             "-sp or --searchpath\t\t\t Add *.class to search path.\n\n"
-		             "You must specify the \"runtime\" flag to tell yvm where "
-		             "it "
-		             "could find jdk classes, and also program name is "
+	// Set flags
+	options_description opts("Usage");
+	opts.add_options()("help", "List help documentations and usages.")("runtime", value<std::vector<std::string>>(), "Attach java runtime libraries where yvm would lookup classes at")("run", value<std::string>(), "Program which would be executed soon");
+	positional_options_description p;
+	p.add("run", -1);
+
+	// Parsing
+	variables_map vm;
+	store(command_line_parser(argc, argv).options(opts).positional(p).run(), vm);
+	notify(vm);
+
+	// Flag checking
+	if (vm.count("help")) {
+		std::cout << opts
+		          << "You must specify the \"runtime\" flag to tell yvm where "
+		             "it could find jdk classes, and also program name is "
 		             "required.\n";
 		return 0;
 	}
-	auto& runtimeLibs = cparser.getFlagByName("rt");
-	auto& searchLibs  = cparser.getFlagByName("sp");
-	runtimeLibs.insert(runtimeLibs.end(), searchLibs.begin(), searchLibs.end());
-
-	YVM vm;
-	vm.warmUp(runtimeLibs);
-	auto& runningProgram = cparser.getRunningProgram();
-	if (runningProgram.empty()) {
-		std::cerr << " Fatal error: no running program specified.\n";
+	if (!vm.count("run")) {
+		std::cerr << "Fatal error: no running program specified.\n";
 		return 1;
 	}
-	for (auto& c : runningProgram) {
+	if (!vm.count("runtime")) {
+		std::cerr << "Fatal error: no runtime attached into yvm\n";
+		return 1;
+	}
+
+	// Create virtual machine and executing code
+	YVM yvm;
+	yvm.warmUp(vm["runtime"].as<std::vector<std::string>>());
+	std::string internalUsedClassName{vm["run"].as<std::string>()};
+	for (auto& c : internalUsedClassName) {
 		if (c == '.') {
 			c = '/';
 		}
 	}
-	vm.callMain(cparser.getRunningProgram().c_str());
+	yvm.callMain(internalUsedClassName.c_str());
 	return 0;
 }

@@ -190,7 +190,7 @@ std::string MethodArea::parseNameToPath(const char* name) {
 
 	boost::filesystem::path part2FileName;
 	std::vector<std::string> pathNode;
-	boost::split(pathNode, name, boost::is_any_of("/"), boost::token_compress_on);
+	boost::split(pathNode, name, boost::is_any_of("."), boost::token_compress_on);
 	for (auto& node : pathNode) {
 		part2FileName /= node;
     }
@@ -198,9 +198,9 @@ std::string MethodArea::parseNameToPath(const char* name) {
 	
 	for (const string& p : this->searchPaths) {
 		boost::filesystem::path part1FileName(p);
-		part1FileName.append(part2FileName.string());
+		part1FileName /= part2FileName;
 		if (boost::filesystem::exists(part1FileName)) {
-			return part1FileName.string(); // Return string representation only if it's a valid file path
+			return part1FileName.generic_string(); // Return string representation only if it's a valid file path
 		}
 	}
 	return std::string("");
