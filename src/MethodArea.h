@@ -75,7 +75,7 @@ private:
 	std::unordered_map<std::string, JavaClass*> classTable;
 	std::vector<std::string> searchPaths;
 
-	std::string parseNameToPath(const char* name);
+	const std::string parseNameToPath(const char* name);
 };
 
 #endif // YVM_METHODAREA_H

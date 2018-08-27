@@ -3,12 +3,12 @@ import ydk.lang.IO;
 public class GCTest {
     private String[] strings = null;
     private int cnt = 0;
-    private static final int MAX = 20000;
+    private static final int MAX = 2000;
     public static void produceGarbage(){
-        for(int i=0;i<10000;i++){ new Object(); }
+        for(int i=0;i<1000;i++){ new Object(); }
     }
     public static void produceArrayGarbage(){
-        for(int i=0;i<10000;i++) { Object[] unused = new Object[100]; }
+        for(int i=0;i<1000;i++) { Object[] unused = new Object[100]; }
     }
     public void fullGC(){
         for(int i=0;i<MAX;i++){ new Object(); }

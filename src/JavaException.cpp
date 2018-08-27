@@ -1,4 +1,4 @@
-﻿#include "JavaClass.h"
+#include "JavaClass.h"
 #include "JavaException.h"
 #include <cassert>
 #include <cstdio>

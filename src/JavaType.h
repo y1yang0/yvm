@@ -6,7 +6,6 @@
 
 class JavaClass;
 
-// These types widely use in jvm its internal
 struct JType {
 	virtual ~JType() = default;
 };

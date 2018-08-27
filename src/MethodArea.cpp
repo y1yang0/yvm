@@ -1,11 +1,11 @@
-#include "MethodArea.h"
 #include "AccessFlag.h"
 #include "Descriptor.h"
 #include "JavaClass.h"
+#include "MethodArea.h"
 
-#include <boost/filesystem.hpp>
-#include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/filesystem.hpp>
 
 MethodArea::MethodArea(const std::vector<std::string>& libPaths) {
 	for (const auto& path : libPaths) {
@@ -63,8 +63,7 @@ void MethodArea::linkJavaClass(const char* jcName) {
 
 	JavaClass* javaClass = yrt.ma->findJavaClass(jcName);
 	FOR_EACH(fieldOffset, javaClass->raw.fieldsCount) {
-		const char* descriptor =
-		    javaClass->getString(javaClass->raw.fields[fieldOffset].descriptorIndex);
+		const char* descriptor = javaClass->getString(javaClass->raw.fields[fieldOffset].descriptorIndex);
 		if (IS_FIELD_REF_CLASS(descriptor)) {
 			// Special handling for field whose type is another class
 			if (IS_FIELD_STATIC(javaClass->raw.fields[fieldOffset].accessFlags)) {
@@ -74,16 +73,14 @@ void MethodArea::linkJavaClass(const char* jcName) {
 					if (typeid(*javaClass->raw.fields[fieldOffset].attributes[fieldAttr]) == typeid(ATTR_ConstantValue)) {
 						if (strcmp("Ljava/lang/String;", descriptor) == 0) {
 							const char* constantStr = javaClass->getString(
-							    ((CONSTANT_String*) javaClass->raw.constPoolInfo[((ATTR_ConstantValue*) javaClass
-							                                                          ->raw
-							                                                          .fields[fieldOffset]
-							                                                          .attributes[fieldAttr])
-							                                                         ->constantValueIndex])
+							    ((CONSTANT_String*) javaClass->raw.constPoolInfo
+							         [((ATTR_ConstantValue*) javaClass->raw.fields[fieldOffset].attributes[fieldAttr])
+							              ->constantValueIndex])
 							        ->stringIndex);
-							int strLen = strlen(constantStr);
+							int strLen  = strlen(constantStr);
 							fieldObject = yrt.jheap->createObject(*yrt.ma->loadClassIfAbsent("java/lang/String"));
-							yrt.jheap->putObjectFieldByOffset(*fieldObject, 0,
-							                                  yrt.jheap->createCharArray(constantStr, strLen));
+							fieldObject = yrt.jheap->createObject(*yrt.ma->loadClassIfAbsent("java/lang/String"));
+							yrt.jheap->putObjectFieldByOffset(*fieldObject, 0, yrt.jheap->createCharArray(constantStr, strLen));
 						}
 					}
 				}
@@ -91,9 +88,9 @@ void MethodArea::linkJavaClass(const char* jcName) {
 				javaClass->sfield.insert(std::make_pair(fieldOffset, fieldObject));
 			}
 		} else if (IS_FIELD_REF_ARRAY(descriptor)) {
-			// Special handling for field whose type is array. We create a null JArray as a placeholder
-			// since we don't know more information about size of array, so we defer to allocate memory
-			// while meeting opcodes [newarray]/[multinewarray]
+			// Special handling for field whose type is array. We create a null JArray as a
+			// placeholder since we don't know more information about size of array, so we defer to
+			// allocate memory while meeting opcodes [newarray]/[multinewarray]
 
 			if (IS_FIELD_STATIC(javaClass->raw.fields[fieldOffset].accessFlags)) {
 				JArray* uninitializedArray = nullptr;
@@ -107,53 +104,43 @@ void MethodArea::linkJavaClass(const char* jcName) {
 
 				FOR_EACH(fieldAttr, javaClass->raw.fields[fieldOffset].attributeCount) {
 					if (typeid(*javaClass->raw.fields[fieldOffset].attributes[fieldAttr]) == typeid(ATTR_ConstantValue)) {
-						if (typeid(*javaClass->raw.constPoolInfo[((ATTR_ConstantValue*) javaClass
-						                                              ->raw
-						                                              .fields[fieldOffset]
-						                                              .attributes[fieldAttr])
-						                                             ->constantValueIndex]) == typeid(CONSTANT_Long)) {
+						if (typeid(*javaClass->raw.constPoolInfo
+						                [((ATTR_ConstantValue*) javaClass->raw.fields[fieldOffset].attributes[fieldAttr])
+						                     ->constantValueIndex]) == typeid(CONSTANT_Long)) {
 							((JLong*) basicField)->val =
-							    ((CONSTANT_Long*) javaClass->raw.constPoolInfo[((ATTR_ConstantValue*) javaClass
-							                                                        ->raw
-							                                                        .fields[fieldOffset]
-							                                                        .attributes[fieldAttr])
-							                                                       ->constantValueIndex])
+							    ((CONSTANT_Long*) javaClass->raw.constPoolInfo
+							         [((ATTR_ConstantValue*) javaClass->raw.fields[fieldOffset].attributes[fieldAttr])
+							              ->constantValueIndex])
 							        ->val;
-						} else if (typeid(*javaClass->raw.constPoolInfo[((ATTR_ConstantValue*) javaClass
-						                                                     ->raw
-						                                                     .fields[fieldOffset]
-						                                                     .attributes[fieldAttr])
-						                                                    ->constantValueIndex]) == typeid(CONSTANT_Double)) {
+						} else if (typeid(
+						               *javaClass->raw.constPoolInfo[((ATTR_ConstantValue*) javaClass
+						                                                  ->raw.fields[fieldOffset]
+						                                                  .attributes[fieldAttr])
+						                                                 ->constantValueIndex]) == typeid(CONSTANT_Double)) {
 							((JDouble*) basicField)->val =
-							    ((CONSTANT_Double*) javaClass->raw.constPoolInfo[((ATTR_ConstantValue*) javaClass
-							                                                          ->raw
-							                                                          .fields[fieldOffset]
-							                                                          .attributes[fieldAttr])
-							                                                         ->constantValueIndex])
+							    ((CONSTANT_Double*) javaClass->raw.constPoolInfo
+							         [((ATTR_ConstantValue*) javaClass->raw.fields[fieldOffset].attributes[fieldAttr])
+							              ->constantValueIndex])
 							        ->val;
-						} else if (typeid(*javaClass->raw.constPoolInfo[((ATTR_ConstantValue*) javaClass
-						                                                     ->raw
-						                                                     .fields[fieldOffset]
-						                                                     .attributes[fieldAttr])
-						                                                    ->constantValueIndex]) == typeid(CONSTANT_Float)) {
+						} else if (typeid(
+						               *javaClass->raw.constPoolInfo[((ATTR_ConstantValue*) javaClass
+						                                                  ->raw.fields[fieldOffset]
+						                                                  .attributes[fieldAttr])
+						                                                 ->constantValueIndex]) == typeid(CONSTANT_Float)) {
 							((JFloat*) basicField)->val =
-							    ((CONSTANT_Float*) javaClass->raw.constPoolInfo[((ATTR_ConstantValue*) javaClass
-							                                                         ->raw
-							                                                         .fields[fieldOffset]
-							                                                         .attributes[fieldAttr])
-							                                                        ->constantValueIndex])
+							    ((CONSTANT_Float*) javaClass->raw.constPoolInfo
+							         [((ATTR_ConstantValue*) javaClass->raw.fields[fieldOffset].attributes[fieldAttr])
+							              ->constantValueIndex])
 							        ->val;
-						} else if (typeid(*javaClass->raw.constPoolInfo[((ATTR_ConstantValue*) javaClass
-						                                                     ->raw
-						                                                     .fields[fieldOffset]
-						                                                     .attributes[fieldAttr])
-						                                                    ->constantValueIndex]) == typeid(CONSTANT_Integer)) {
+						} else if (typeid(
+						               *javaClass->raw.constPoolInfo[((ATTR_ConstantValue*) javaClass
+						                                                  ->raw.fields[fieldOffset]
+						                                                  .attributes[fieldAttr])
+						                                                 ->constantValueIndex]) == typeid(CONSTANT_Integer)) {
 							((JInt*) basicField)->val =
-							    ((CONSTANT_Integer*) javaClass->raw.constPoolInfo[((ATTR_ConstantValue*) javaClass
-							                                                           ->raw
-							                                                           .fields[fieldOffset]
-							                                                           .attributes[fieldAttr])
-							                                                          ->constantValueIndex])
+							    ((CONSTANT_Integer*) javaClass->raw.constPoolInfo
+							         [((ATTR_ConstantValue*) javaClass->raw.fields[fieldOffset].attributes[fieldAttr])
+							              ->constantValueIndex])
 							        ->val;
 						} else {
 							SHOULD_NOT_REACH_HERE
@@ -185,7 +172,7 @@ bool MethodArea::removeJavaClass(const char* jcName) {
 	return false;
 }
 
-std::string MethodArea::parseNameToPath(const char* name) {
+const std::string MethodArea::parseNameToPath(const char* name) {
 	// convert java.util.ArrayList to java/util/ArrayList.class
 
 	boost::filesystem::path part2FileName;
@@ -193,10 +180,10 @@ std::string MethodArea::parseNameToPath(const char* name) {
 	boost::split(pathNode, name, boost::is_any_of("."), boost::token_compress_on);
 	for (auto& node : pathNode) {
 		part2FileName /= node;
-    }
-	part2FileName.concat(".class"); //directly appending .class sufix
-	
-	for (const string& p : this->searchPaths) {
+	}
+	part2FileName.concat(".class"); // directly appending .class sufix
+
+	for (cons string &p : this->searchPaths) {
 		boost::filesystem::path part1FileName(p);
 		part1FileName /= part2FileName;
 		if (boost::filesystem::exists(part1FileName)) {

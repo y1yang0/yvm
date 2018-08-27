@@ -23,11 +23,6 @@ struct CodeAttrCore {
 	ATTR_Code::_exceptionTable* exceptionTable{};
 };
 
-/**
- * \brief This class does actual bytecode interruption. To accomplish code execution, it needs
- * sorts of information with regard to class file structure, runtime heap structure and function
- * calling stack,etc. So we set it as a friend class of that classes for convenience.
- */
 class CodeExecution {
 public:
 	CodeExecution() : currentFrame(nullptr) {}

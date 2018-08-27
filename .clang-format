@@ -6,10 +6,7 @@ AlignConsecutiveAssignments: true
 AlignEscapedNewlinesLeft: Left
 AllowShortBlocksOnASingleLine: true
 AllowShortFunctionsOnASingleLine: true
-AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: false
-BinPackArguments: true
-BinPackParameters: true
 BreakBeforeBraces: Custom
 BreakBeforeTernaryOperators: false
 ColumnLimit: 100
