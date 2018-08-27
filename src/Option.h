@@ -44,4 +44,4 @@
  */
 #define GC_SAFE_POINT
 
-#endif // !YVM_OPTION_H
+#endif  // !YVM_OPTION_H

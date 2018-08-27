@@ -16,10 +16,10 @@ find_package(Boost COMPONENTS system filesystem program_options)
 
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
-    set(SOURCE_FILES src/Main.cpp src/MethodArea.cpp src/Frame.h src/ClassFile.h src/AccessFlag.h src/RuntimeEnv.cpp
+    set(SOURCE_FILES src/Main.cpp src/MethodArea.cpp src/Frame.h src/ClassFile.h src/AccessFlag.h src/RuntimeEnv.cpp src/NativeMethod.h
             src/CodeExecution.cpp src/Debug.cpp src/Descriptor.cpp src/JavaClass.cpp src/JavaHeap.cpp src/CodeExecution.hpp 
             src/NativeMethod.cpp src/YVM.cpp src/Utils.h src/Utils.cpp src/JavaException.h src/JavaException.cpp src/ObjectMonitor.h 
-            src/ObjectMonitor.cpp src/GC.h src/GC.cpp src/Option.h src/Concurrent.hpp src/Concurrent.cpp )
+            src/ObjectMonitor.cpp src/GC.h src/GC.cpp src/Option.h src/Concurrent.hpp src/Concurrent.cpp src/Internal.h)
     add_executable(yvm ${SOURCE_FILES})
     link_directories(... ${Boost_LIBRARY_DIRS})
     target_link_libraries(yvm ${Boost_LIBRARIES})
@@ -40,6 +40,5 @@ if(WIN32)
     foreach(each_file ${test_file_name})
         string(REGEX REPLACE ".*/(.*)\.java" "\\1" curated_name ${each_file})
         add_test(NAME test_${curated_name} COMMAND yvm --runtime=${PROJECT_SOURCE_DIR}/bytecode "ydk.test.${curated_name}")
-        message("adding test: test_${curated_name}")
     endforeach(each_file ${test_file_name})
 endif()

@@ -7,16 +7,16 @@
 
 class ObjectMonitor {
 public:
-	void enter(std::thread::id tid);
-	void exit();
+    void enter(std::thread::id tid);
+    void exit();
 
 private:
-	std::mutex internalMtx;
+    std::mutex internalMtx;
 
-	volatile bool entered = false;
-	int32_t monitorCnt    = 0;
-	std::thread::id owner;
-	std::condition_variable cv;
+    volatile bool entered = false;
+    int32_t monitorCnt = 0;
+    std::thread::id owner;
+    std::condition_variable cv;
 };
 
 #endif
