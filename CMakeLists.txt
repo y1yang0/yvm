@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.5)
 project(yvm)
 
 set(CMAKE_CXX_STANDARD 14)
-add_compile_options(-O3)
 if(UNIX)
     set(CMAKE_EXE_LINKER_FLAGS "-lpthread")
 endif()

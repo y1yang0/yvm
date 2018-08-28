@@ -27,5 +27,6 @@ public class StringBuilder {
     public native StringBuilder append(String var1);
     public native StringBuilder append(int var1);
     public native StringBuilder append(char var1);
+    public native StringBuilder append(double var1);
     public native String toString();
 }

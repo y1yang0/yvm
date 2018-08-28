@@ -9,6 +9,8 @@
 #include "JavaType.h"
 #include "RuntimeEnv.h"
 
+#pragma warning(disable : 4244)
+
 struct MethodInfo;
 struct RuntimeEnv;
 extern RuntimeEnv yrt;
@@ -156,7 +158,7 @@ void CodeExecution::loadArrayItem2Stack() {
     }
     auto* ival = new LoadType;
     ival->val =
-        dynamic_cast<LoadType*>(yrt.jheap->getArrayItem(*arrayref, index->val))
+        dynamic_cast<LoadType*>(yrt.jheap->getElement(*arrayref, index->val))
             ->val;
     currentFrame->stack.push_back(ival);
 
@@ -179,7 +181,7 @@ inline void CodeExecution::loadArrayItem2Stack<JRef>() {
     }
 
     JType* objectref{};
-    JType* ptrArrItem = yrt.jheap->getArrayItem(*arrayref, index->val);
+    JType* ptrArrItem = yrt.jheap->getElement(*arrayref, index->val);
     if (typeid(*ptrArrItem) == typeid(JArray)) {
         objectref = new JArray;
         dynamic_cast<JArray*>(objectref)->length =
@@ -231,7 +233,7 @@ void CodeExecution::storeArrayItem() {
     if (index->val > arrayref->length || index->val < 0) {
         throw std::runtime_error("array index out of bounds");
     }
-    yrt.jheap->putArrayItem(*arrayref, index->val, value);
+    yrt.jheap->putElement(*arrayref, index->val, value);
 
     delete index;
     delete arrayref;
@@ -251,7 +253,7 @@ inline void CodeExecution::storeArrayItem<JRef>() {
     if (index->val > arrayref->length || index->val < 0) {
         throw std::runtime_error("array index out of bounds");
     }
-    yrt.jheap->putArrayItem(*arrayref, index->val, value);
+    yrt.jheap->putElement(*arrayref, index->val, value);
 
     delete index;
     delete arrayref;

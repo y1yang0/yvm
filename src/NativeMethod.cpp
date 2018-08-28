@@ -13,9 +13,9 @@ extern thread_local StackFrames frames;
 
 JType* ydk_lang_IO_print_str(RuntimeEnv* env) {
     JObject* str = (JObject*)frames.back()->locals[0];
-    auto& fields = env->jheap->getObjectFieldsByRef(str);
+    auto fields = env->jheap->getFields(str);
     JArray* chararr = (JArray*)fields[0];
-    auto& lengthAndData = env->jheap->getArrayItemsByRef(chararr);
+    auto lengthAndData = env->jheap->getElements(chararr);
     char* s = new char[lengthAndData.first + 1];
     for (int i = 0; i < lengthAndData.first; i++) {
         s[i] = (char)((JInt*)lengthAndData.second[i])->val;
@@ -46,88 +46,120 @@ JType* ydk_lang_Math_random(RuntimeEnv* env) {
 }
 
 JType* java_lang_stringbuilder_append_I(RuntimeEnv* env) {
-    JObject* instance = dynamic_cast<JObject*>(frames.back()->locals[0]);
+    JObject* caller = dynamic_cast<JObject*>(frames.back()->locals[0]);
     JInt* numParameter = dynamic_cast<JInt*>(frames.back()->locals[1]);
     std::string str{};
 
+    // append lhs string to str
     JArray* arr =
-        dynamic_cast<JArray*>(env->jheap->getObjectFieldByOffset(*instance, 0));
+        dynamic_cast<JArray*>(env->jheap->getFieldByOffset(*caller, 0));
     if (arr != nullptr) {
         for (int i = 0; i < arr->length; i++) {
-            str += (char)dynamic_cast<JInt*>(env->jheap->getArrayItem(*arr, i))
-                       ->val;
+            str +=
+                (char)dynamic_cast<JInt*>(env->jheap->getElement(*arr, i))->val;
         }
     }
 
+    // convert Int to string and append on str
     str += std::to_string(numParameter->val);
     JArray* newArr = env->jheap->createCharArray(str, str.length());
-    env->jheap->putObjectFieldByOffset(*instance, 0, newArr);
+    env->jheap->putFieldByOffset(*caller, 0, newArr);
 
-    env->jheap->removeArrayByRef(arr);
-    return instance;
+    // remove old lhs string since new str overlapped it
+    if (arr != nullptr) {
+        env->jheap->removeArray(arr->offset);
+    }
+
+    return caller;
 }
 
 JType* java_lang_stringbuilder_append_C(RuntimeEnv* env) {
-    JObject* instance = dynamic_cast<JObject*>(frames.back()->locals[0]);
+    JObject* caller = dynamic_cast<JObject*>(frames.back()->locals[0]);
     JInt* numParameter = dynamic_cast<JInt*>(frames.back()->locals[1]);
     std::string str{};
 
     JArray* arr =
-        dynamic_cast<JArray*>(env->jheap->getObjectFieldByOffset(*instance, 0));
+        dynamic_cast<JArray*>(env->jheap->getFieldByOffset(*caller, 0));
     if (arr != nullptr) {
         for (int i = 0; i < arr->length; i++) {
-            str += (char)dynamic_cast<JInt*>(env->jheap->getArrayItem(*arr, i))
-                       ->val;
+            str +=
+                (char)dynamic_cast<JInt*>(env->jheap->getElement(*arr, i))->val;
         }
     }
     char c = numParameter->val;
     str += c;
     JArray* newArr = env->jheap->createCharArray(str, str.length());
-    env->jheap->putObjectFieldByOffset(*instance, 0, newArr);
-
-    env->jheap->removeArrayByRef(arr);
-    return instance;
+    env->jheap->putFieldByOffset(*caller, 0, newArr);
+    if (arr != nullptr) {
+        env->jheap->removeArray(arr->offset);
+    }
+    return caller;
 }
 
 JType* java_lang_stringbuilder_append_str(RuntimeEnv* env) {
-    JObject* instance = dynamic_cast<JObject*>(frames.back()->locals[0]);
+    JObject* caller = dynamic_cast<JObject*>(frames.back()->locals[0]);
     JObject* strParameter = dynamic_cast<JObject*>(frames.back()->locals[1]);
     std::string str{};
 
+    auto p = env->jheap->getFieldByOffset(*caller, 0);
     JArray* arr =
-        dynamic_cast<JArray*>(env->jheap->getObjectFieldByOffset(*instance, 0));
+        dynamic_cast<JArray*>(env->jheap->getFieldByOffset(*caller, 0));
     if (nullptr != arr) {
         for (int i = 0; i < arr->length; i++) {
-            str += (char)dynamic_cast<JInt*>(env->jheap->getArrayItem(*arr, i))
-                       ->val;
+            str +=
+                (char)dynamic_cast<JInt*>(env->jheap->getElement(*arr, i))->val;
         }
     }
-    JArray* chararr = dynamic_cast<JArray*>(
-        env->jheap->getObjectFieldByOffset(*strParameter, 0));
+    JArray* chararr =
+        dynamic_cast<JArray*>(env->jheap->getFieldByOffset(*strParameter, 0));
     for (int i = 0; i < chararr->length; i++) {
-        str += (char)dynamic_cast<JInt*>(env->jheap->getArrayItem(*chararr, i))
-                   ->val;
+        str +=
+            (char)dynamic_cast<JInt*>(env->jheap->getElement(*chararr, i))->val;
     }
 
     JArray* newArr = env->jheap->createCharArray(str, str.length());
-    env->jheap->putObjectFieldByOffset(*instance, 0, newArr);
+    env->jheap->putFieldByOffset(*caller, 0, newArr);
 
-    env->jheap->removeArrayByRef(arr);
-    return instance;
+    if (arr != nullptr) {
+        env->jheap->removeArray(arr->offset);
+    }
+    return caller;
+}
+
+JType* java_lang_stringbuilder_append_D(RuntimeEnv* env) {
+    JObject* caller = dynamic_cast<JObject*>(frames.back()->locals[0]);
+    JDouble* numParameter = dynamic_cast<JDouble*>(frames.back()->locals[1]);
+    std::string str{};
+
+    JArray* arr =
+        dynamic_cast<JArray*>(env->jheap->getFieldByOffset(*caller, 0));
+    if (arr != nullptr) {
+        for (int i = 0; i < arr->length; i++) {
+            str +=
+                (char)dynamic_cast<JInt*>(env->jheap->getElement(*arr, i))->val;
+        }
+    }
+    str += std::to_string(numParameter->val);
+    JArray* newArr = env->jheap->createCharArray(str, str.length());
+    env->jheap->putFieldByOffset(*caller, 0, newArr);
+    if (arr != nullptr) {
+        env->jheap->removeArray(arr->offset);
+    }
+    return caller;
 }
 
 JType* java_lang_stringbuilder_tostring(RuntimeEnv* env) {
-    JObject* instance = dynamic_cast<JObject*>(frames.back()->locals[0]);
+    JObject* caller = dynamic_cast<JObject*>(frames.back()->locals[0]);
     JArray* value =
-        dynamic_cast<JArray*>(env->jheap->getObjectFieldByOffset(*instance, 0));
+        dynamic_cast<JArray*>(env->jheap->getFieldByOffset(*caller, 0));
     char* carr = new char[value->length];
     for (int i = 0; i < value->length; i++) {
         carr[i] =
-            (char)dynamic_cast<JInt*>(env->jheap->getArrayItem(*value, i))->val;
+            (char)dynamic_cast<JInt*>(env->jheap->getElement(*value, i))->val;
     }
     JObject* str =
         env->jheap->createObject(*env->ma->findJavaClass("java/lang/String"));
-    env->jheap->putObjectFieldByOffset(
+    env->jheap->putFieldByOffset(
         *str, 0, env->jheap->createCharArray(carr, value->length));
     delete[] carr;
 
@@ -135,11 +167,9 @@ JType* java_lang_stringbuilder_tostring(RuntimeEnv* env) {
 }
 
 JType* java_lang_thread_start(RuntimeEnv* env) {
-    auto* instance = dynamic_cast<JObject*>(frames.back()->locals[0]);
-    auto* runnableTask = (JObject*)cloneValue(
-        dynamic_cast<JObject*>(env->jheap->getObjectFieldByName(
-            env->ma->findJavaClass("java/lang/Thread"), "task",
-            "Ljava/lang/Runnable;", instance)));
+    auto* caller = dynamic_cast<JObject*>(frames.back()->locals[0]);
+    auto* runnableTask = (JObject*)cloneValue(dynamic_cast<JObject*>(
+        env->jheap->getFieldByName("task", "Ljava/lang/Runnable;", caller)));
 
     YVM::executor.createThread();
     future<void> subThreadF = YVM::executor.submit([=]() {

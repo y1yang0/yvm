@@ -27,12 +27,16 @@ static const char*((nativeFunctionTable[])[4]) = {
      FORCE(java_lang_stringbuilder_append_I)},
     {"java/lang/StringBuilder", "append", "(C)Ljava/lang/StringBuilder;",
      FORCE(java_lang_stringbuilder_append_C)},
+    {"java/lang/StringBuilder", "append", "(D)Ljava/lang/StringBuilder;",
+     FORCE(java_lang_stringbuilder_append_D)},
     {"java/lang/StringBuilder", "append",
      "(Ljava/lang/String;)Ljava/lang/StringBuilder;",
      FORCE(java_lang_stringbuilder_append_str)},
     {"java/lang/StringBuilder", "toString", "()Ljava/lang/String;",
      FORCE(java_lang_stringbuilder_tostring)},
-    {"java/lang/Thread", "start", "()V", FORCE(java_lang_thread_start)}};
+    {"java/lang/Thread", "start", "()V", FORCE(java_lang_thread_start)}
+
+};
 
 YVM::YVM() {
 #ifdef YVM_DEBUG_SHOW_SIZEOF_ALL_TYPE

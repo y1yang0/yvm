@@ -7,12 +7,12 @@ std::string Converter::javastring2stdtring(JObject* objectref) {
         return std::string();
     }
 
-    JArray* chararr = dynamic_cast<JArray*>(yrt.jheap->getObjectFieldByName(
-        yrt.ma->findJavaClass("java/lang/String"), "value", "[C", objectref));
+    JArray* chararr = dynamic_cast<JArray*>(
+        yrt.jheap->getFieldByName("value", "[C", objectref));
 
     std::string str;
     for (int i = 0; i < chararr->length; i++) {
-        JInt* ch = dynamic_cast<JInt*>(yrt.jheap->getArrayItem(*chararr, i));
+        JInt* ch = dynamic_cast<JInt*>(yrt.jheap->getElement(*chararr, i));
         str += (char)ch->val;
     }
     return str;

@@ -76,8 +76,7 @@ void ConcurrentGC::mark(JType* ref) {
             std::lock_guard<SpinLock> lock(objSpin);
             objectBitmap.insert(dynamic_cast<JObject*>(ref)->offset);
         }
-        auto fields = yrt.jheap->getObjectFieldsByOffset(
-            dynamic_cast<JObject*>(ref)->offset);
+        auto fields = yrt.jheap->getFields(dynamic_cast<JObject*>(ref));
         for (size_t i = 0; i < fields.size(); i++) {
             mark(fields[i]);
         }
@@ -86,8 +85,7 @@ void ConcurrentGC::mark(JType* ref) {
             std::lock_guard<SpinLock> lock(arrSpin);
             arrayBitmap.insert(dynamic_cast<JArray*>(ref)->offset);
         }
-        auto items = yrt.jheap->getArrayItemsByOffset(
-            dynamic_cast<JArray*>(ref)->offset);
+        auto items = yrt.jheap->getElements(dynamic_cast<JArray*>(ref));
 
         for (size_t i = 0; i < items.first; i++) {
             mark(items.second[i]);
@@ -99,13 +97,13 @@ void ConcurrentGC::mark(JType* ref) {
 
 void ConcurrentGC::sweep() {
     future<void> objectFuture = gcThreadPool.submit([this]() -> void {
-        for (auto pos = yrt.jheap->objheap.begin();
-             pos != yrt.jheap->objheap.end();) {
+        for (auto pos = yrt.jheap->objectContainer.container.begin();
+             pos != yrt.jheap->objectContainer.container.end();) {
             // If we can not find active object in object bitmap then clear it
             // Notice that here we don't need to lock objectBitmap since it must
             // be marked before sweeping
             if (objectBitmap.find(pos->first) == objectBitmap.cend()) {
-                yrt.jheap->objheap.erase(pos++);
+                yrt.jheap->objectContainer.container.erase(pos++);
             } else {
                 ++pos;
             }
@@ -113,15 +111,15 @@ void ConcurrentGC::sweep() {
     });
 
     future<void> arrayFuture = gcThreadPool.submit([this]() -> void {
-        for (auto pos = yrt.jheap->arrheap.begin();
-             pos != yrt.jheap->arrheap.end();) {
+        for (auto pos = yrt.jheap->arrayContainer.container.begin();
+             pos != yrt.jheap->arrayContainer.container.end();) {
             // DITTO
             if (arrayBitmap.find(pos->first) == arrayBitmap.cend()) {
                 for (size_t i = 0; i < pos->second.first; i++) {
                     delete pos->second.second[i];
                 }
                 delete[] pos->second.second;
-                yrt.jheap->arrheap.erase(pos++);
+                yrt.jheap->arrayContainer.container.erase(pos++);
             } else {
                 ++pos;
             }
@@ -130,11 +128,11 @@ void ConcurrentGC::sweep() {
 
     future<void> monitorFuture = gcThreadPool.submit([this]() -> void {
         // DITTO
-        for (auto pos = yrt.jheap->monitorheap.begin();
-             pos != yrt.jheap->monitorheap.end();) {
+        for (auto pos = yrt.jheap->monitorContainer.container.begin();
+             pos != yrt.jheap->monitorContainer.container.end();) {
             if (objectBitmap.find(pos->first) == objectBitmap.cend() ||
                 arrayBitmap.find(pos->first) == arrayBitmap.cend()) {
-                yrt.jheap->monitorheap.erase(pos++);
+                yrt.jheap->monitorContainer.container.erase(pos++);
             } else {
                 ++pos;
             }

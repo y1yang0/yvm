@@ -4,9 +4,9 @@
 #include "Internal.h"
 #include "Utils.h"
 
-/****************************************************************************
- * Constant tags
- ****************************************************************************/
+//--------------------------------------------------------------------------------
+// constant tags
+//--------------------------------------------------------------------------------
 enum ConstantTag {
     TAG_Class = 7,
     TAG_Fieldref = 9,
@@ -36,9 +36,9 @@ enum VariableInfoTag {
     ITEM_Double = 3
 };
 
-/****************************************************************************
- * ConstantPool definitions
- ****************************************************************************/
+//--------------------------------------------------------------------------------
+// constant pool definitions
+//--------------------------------------------------------------------------------
 struct ConstantPoolInfo {
     virtual ~ConstantPoolInfo() = default;
     ;
@@ -107,9 +107,9 @@ DEF_CONSTANT_WITH_2_FIELDS(MethodType, u2, descriptorIndex);
 DEF_CONSTANT_WITH_3_FIELDS(InvokeDynamic, u2, bootstrapMethodAttrIndex, u2,
                            nameAndTypeIndex);
 
-/****************************************************************************
- * Attributes definitions
- ****************************************************************************/
+//--------------------------------------------------------------------------------
+// attributes definitions
+//--------------------------------------------------------------------------------
 struct AttributeInfo {
     u2 attributeNameIndex;
     u4 attributeLength;
@@ -549,9 +549,9 @@ DEF_ATTR_START(MethodParameter) {
     ~ATTR_MethodParameter() override { delete[] parameters; }
 };
 
-/****************************************************************************
- * FieldInfo definition
- ****************************************************************************/
+//--------------------------------------------------------------------------------
+// field info definition
+//--------------------------------------------------------------------------------
 struct FieldInfo {
     u2 accessFlags;
     u2 nameIndex;
@@ -567,9 +567,9 @@ struct FieldInfo {
     }
 };
 
-/****************************************************************************
- * MethodInfo definition
- ****************************************************************************/
+//--------------------------------------------------------------------------------
+// method info definition
+//--------------------------------------------------------------------------------
 struct MethodInfo {
     u2 accessFlags;
     u2 nameIndex;
@@ -625,9 +625,9 @@ struct ClassFile {
     }
 };
 
-/**
- *\brief  Utilities for parsing class file
- */
+//--------------------------------------------------------------------------------
+// utility macros to parse class file
+//--------------------------------------------------------------------------------
 #define IS_ATTR_ConstantValue(PTR) if (strcmp(PTR, "ConstantValue") == 0)
 #define IS_ATTR_Code(PTR) if (strcmp(PTR, "Code") == 0)
 #define IS_ATTR_StackMapTable(PTR) if (strcmp(PTR, "StackMapTable") == 0)

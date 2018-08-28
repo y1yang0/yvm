@@ -8,81 +8,14 @@
 
 #pragma warning(disable : 4715)
 
-JavaHeap::~JavaHeap() {
-    {
-        std::lock_guard<std::recursive_mutex> lock(objMtx);
-        for (auto start = objheap.begin(); start != objheap.end(); ++start) {
-            for (auto* item : start->second) {
-                delete item;
-            }
-        }
-    }
-    {
-        std::lock_guard<std::recursive_mutex> lock(arrMtx);
-        for (auto start = arrheap.begin(); start != arrheap.end(); ++start) {
-            FOR_EACH(i, start->second.first) { delete start->second.second[i]; }
-            delete[] start->second.second;
-        }
-    }
-    {
-        std::lock_guard<std::recursive_mutex> lock(monitorMtx);
-        for (auto start = monitorheap.begin(); start != monitorheap.end();
-             ++start) {
-            delete start->second;
-        }
-    }
-}
+using namespace std;
 
-void JavaHeap::putObjectFieldByOffset(const JObject& object, size_t fieldOffset,
-                                      JType* value) {
-    std::lock_guard<std::recursive_mutex> lock(objMtx);
-    auto fields = objheap.find(object.offset);
-    // fields->second[fieldOffset] = new JType; NOTICE THAT THIS MODIFICATION
-    // DOESN'T TEST SPECIFICALLY YET
-    fields->second[fieldOffset] = value;
-}
-
-void JavaHeap::putArrayItem(const JArray& array, size_t index, JType* value) {
-    std::lock_guard<std::recursive_mutex> lock(arrMtx);
-    arrheap.find(array.offset)->second.second[index] = value;
-}
-
-JType* JavaHeap::getArrayItem(const JArray& array, size_t index) {
-    std::lock_guard<std::recursive_mutex> lock(arrMtx);
-    return arrheap.find(array.offset)->second.second[index];
-}
-
-JType* JavaHeap::getObjectFieldByOffset(const JObject& object,
-                                        size_t fieldOffset) {
-    std::lock_guard<std::recursive_mutex> lock(objMtx);
-    auto& fields = objheap.find(object.offset)->second;
-    return fields[fieldOffset];
-}
-
-void JavaHeap::removeArrayByRef(const JArray* arr) {
-    std::lock_guard<std::recursive_mutex> lock(arrMtx);
-    if (arr == nullptr) {
-        return;
-    }
-    auto pair = arrheap.find(arr->offset);
-    for (size_t i = 0; i < pair->second.first; i++) {
-        delete pair->second.second[i];
-    }
-    delete[] pair->second.second;
-    arrheap.erase(pair);
-}
-
-void JavaHeap::removeObjectByRef(const JObject* obj) {
-    std::lock_guard<std::recursive_mutex> lock(objMtx);
-    if (obj == nullptr) {
-        return;
-    }
-    objheap.erase(objheap.find(obj->offset));
-}
-
+//--------------------------------------------------------------------------------
+// object creation and array creation
+//--------------------------------------------------------------------------------
 void JavaHeap::createSuperFields(const JavaClass& javaClass,
                                  const JObject* object) {
-    std::lock_guard<std::recursive_mutex> lock(objMtx);
+    lock_guard<recursive_mutex> lock(objMtx);
 
     if (javaClass.raw.superClass != 0) {
         const JavaClass* superClass =
@@ -91,15 +24,15 @@ void JavaHeap::createSuperFields(const JavaClass& javaClass,
             // Note that we have already created static field variables when the
             // javaClass is linked into jvm (YVM::linkClass()) so we ignore all
             // static fields here.
-            const std::string& descriptor = superClass->getString(
+            const string& descriptor = superClass->getString(
                 superClass->raw.fields[i].descriptorIndex);
 
             if (IS_FIELD_REF_CLASS(descriptor)) {
                 // Special handling for field whose type is another class
                 if (!IS_FIELD_STATIC(superClass->raw.fields[i].accessFlags)) {
                     JObject* fieldObject = nullptr;
-                    yrt.jheap->objheap.find(object->offset)
-                        ->second.push_back(fieldObject);
+                    yrt.jheap->objectContainer.find(object->offset)
+                        .push_back(fieldObject);
                 }
             } else if (IS_FIELD_REF_ARRAY(descriptor)) {
                 // Special handling for field whose type is array. We create a
@@ -108,8 +41,8 @@ void JavaHeap::createSuperFields(const JavaClass& javaClass,
                 // memory while meeting opcodes [newarray]/[multinewarray]
                 if (!IS_FIELD_STATIC(superClass->raw.fields[i].accessFlags)) {
                     JArray* uninitializedArray = nullptr;
-                    yrt.jheap->objheap.find(object->offset)
-                        ->second.push_back(uninitializedArray);
+                    yrt.jheap->objectContainer.find(object->offset)
+                        .push_back(uninitializedArray);
                 }
             } else {
                 // Otherwise it's a basic type. We insert it into instance's
@@ -117,8 +50,8 @@ void JavaHeap::createSuperFields(const JavaClass& javaClass,
                 // flag
                 if (!IS_FIELD_STATIC(superClass->raw.fields[i].accessFlags)) {
                     JType* basicField = determineBasicType(descriptor);
-                    yrt.jheap->objheap.find(object->offset)
-                        ->second.push_back(basicField);
+                    yrt.jheap->objectContainer.find(object->offset)
+                        .push_back(basicField);
                 }
             }
         }
@@ -129,18 +62,18 @@ void JavaHeap::createSuperFields(const JavaClass& javaClass,
 }
 
 JObject* JavaHeap::createObject(const JavaClass& javaClass) {
-    std::lock_guard<std::recursive_mutex> lock(objMtx);
+    lock_guard<recursive_mutex> lock(objMtx);
 
     JObject* object = new JObject;
     object->jc = &javaClass;
-    object->offset = objheap.empty() ? 0 : (--objheap.end())->first + 1;
-    std::vector<JType*> instanceFields;
+    object->offset = objectContainer.place();
+    vector<JType*> instanceFields;
 
     FOR_EACH(fieldOffset, javaClass.raw.fieldsCount) {
         // Note that we have already created static field variables when the
         // javaClass is linked into jvm (YVM::linkClass()) so we ignore all
         // static fields here.
-        const std::string& descriptor = javaClass.getString(
+        const string& descriptor = javaClass.getString(
             javaClass.raw.fields[fieldOffset].descriptorIndex);
 
         if (IS_FIELD_REF_CLASS(descriptor)) {
@@ -152,8 +85,8 @@ JObject* JavaHeap::createObject(const JavaClass& javaClass) {
             }
         } else if (IS_FIELD_REF_ARRAY(descriptor)) {
             // Special handling for field whose type is array. We create a null
-            // JArray as a placeholder since we dont know more information about
-            // size of array, so we defer to allocate memory while meeting
+            // JArray as a placeholder since we don't know more information
+            // about size of array, so we defer to allocate memory while meeting
             // opcodes [newarray]/[multinewarray]
             if (!IS_FIELD_STATIC(
                     javaClass.raw.fields[fieldOffset].accessFlags)) {
@@ -170,30 +103,27 @@ JObject* JavaHeap::createObject(const JavaClass& javaClass) {
             }
         }
     }
-
-    objheap.insert(std::make_pair(object->offset, instanceFields));
+    objectContainer.find(object->offset) = instanceFields;
     createSuperFields(javaClass, object);
     return object;
 }
 
 JArray* JavaHeap::createPODArray(int atype, int length) {
-    std::lock_guard<std::recursive_mutex> lock(arrMtx);
+    lock_guard<recursive_mutex> lock(arrMtx);
 
     JArray* arr = new JArray;
     arr->length = length;
-    arr->offset = arrheap.empty() ? 0 : (--arrheap.end())->first + 1;
+    arr->offset = arrayContainer.place();
 
     JType** items = new JType*[arr->length];
     switch (atype) {
         case T_FLOAT:
             FOR_EACH(i, length) { items[i] = new JFloat; }
-            arrheap.insert(
-                std::make_pair(arr->offset, std::make_pair(length, items)));
+            arrayContainer.find(arr->offset) = make_pair(length, items);
             return arr;
         case T_DOUBLE:
             FOR_EACH(i, length) { items[i] = new JDouble; }
-            arrheap.insert(
-                std::make_pair(arr->offset, std::make_pair(length, items)));
+            arrayContainer.find(arr->offset) = make_pair(length, items);
             return arr;
         case T_BOOLEAN:
         case T_CHAR:
@@ -201,13 +131,11 @@ JArray* JavaHeap::createPODArray(int atype, int length) {
         case T_SHORT:
         case T_INT:
             FOR_EACH(i, length) { items[i] = new JInt; }
-            arrheap.insert(
-                std::make_pair(arr->offset, std::make_pair(length, items)));
+            arrayContainer.find(arr->offset) = make_pair(length, items);
             return arr;
         case T_LONG:
             FOR_EACH(i, length) { items[i] = new JLong; }
-            arrheap.insert(
-                std::make_pair(arr->offset, std::make_pair(length, items)));
+            arrayContainer.find(arr->offset) = make_pair(length, items);
             return arr;
         default:
             return nullptr;
@@ -215,117 +143,76 @@ JArray* JavaHeap::createPODArray(int atype, int length) {
 }
 
 JArray* JavaHeap::createObjectArray(const JavaClass& jc, int length) {
-    std::lock_guard<std::recursive_mutex> lock(arrMtx);
+    lock_guard<recursive_mutex> lock(arrMtx);
     JArray* arr = new JArray;
     arr->length = length;
-    arr->offset = arrheap.empty() ? 0 : (--arrheap.end())->first + 1;
+    arr->offset = arrayContainer.place();
 
     JType** items = new JType*[arr->length];
     FOR_EACH(i, length) { items[i] = createObject(jc); }
-    arrheap.insert(std::make_pair(arr->offset, std::make_pair(length, items)));
+    arrayContainer.find(arr->offset) = make_pair(length, items);
     return arr;
 }
 
-JArray* JavaHeap::createCharArray(const std::string& source, int length) {
-    std::lock_guard<std::recursive_mutex> lock(arrMtx);
+JArray* JavaHeap::createCharArray(const string& source, size_t length) {
+    lock_guard<recursive_mutex> lock(arrMtx);
     JArray* arr = new JArray;
     arr->length = length;
-    arr->offset = arrheap.empty() ? 0 : (--arrheap.end())->first + 1;
+    arr->offset = arrayContainer.place();
 
     JType** items = new JType*[arr->length];
     FOR_EACH(i, length) { items[i] = new JInt(source[i]); }
-    arrheap.insert(std::make_pair(arr->offset, std::make_pair(length, items)));
+    arrayContainer.find(arr->offset) = make_pair(length, items);
     return arr;
 }
 
-JType* JavaHeap::getObjectFieldByNameImpl(JavaClass* parsedJc,
-                                          const std::string& fieldName,
-                                          const std::string& fieldDescriptor,
-                                          JObject* object, size_t offset) {
-    std::lock_guard<std::recursive_mutex> lock(objMtx);
+JType* JavaHeap::getFieldByNameImpl(const JavaClass* parsedJc,
+                                    const string& name,
+                                    const string& descriptor, JObject* object,
+                                    size_t offset /*= 0*/) {
+    lock_guard<recursive_mutex> lock(objMtx);
     size_t howManyNonStaticFields = 0;
     FOR_EACH(i, parsedJc->raw.fieldsCount) {
         if (!IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {
             howManyNonStaticFields++;
-            const std::string& n =
+            const string& n =
                 parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
-            const std::string& d =
+            const string& d =
                 parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
-            if (n == fieldName && d == fieldDescriptor) {
-                return objheap.find(object->offset)->second.at(i + offset);
+            if (n == name && d == descriptor) {
+                return objectContainer.find(object->offset)[i + offset];
             }
         }
     }
     if (parsedJc->raw.superClass != 0) {
-        return getObjectFieldByNameImpl(
-            yrt.ma->findJavaClass(parsedJc->getSuperClassName()), fieldName,
-            fieldDescriptor, object, offset + howManyNonStaticFields);
+        return getFieldByNameImpl(
+            yrt.ma->findJavaClass(parsedJc->getSuperClassName()), name,
+            descriptor, object, offset + howManyNonStaticFields);
     }
     return nullptr;
 }
 
-void JavaHeap::putObjectFieldByNameImpl(JavaClass* parsedJc,
-                                        const std::string& fieldName,
-                                        const std::string& fieldDescriptor,
-                                        JObject* object, JType* value,
-                                        size_t offset) {
-    std::lock_guard<std::recursive_mutex> lock(objMtx);
+void JavaHeap::putFieldByNameImpl(const JavaClass* parsedJc, const string& name,
+                                  const string& descriptor, JObject* object,
+                                  JType* value, size_t offset /*= 0*/) {
+    lock_guard<recursive_mutex> lock(objMtx);
     size_t howManyNonStaticFields = 0;
     FOR_EACH(i, parsedJc->raw.fieldsCount) {
         if (!IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {
             howManyNonStaticFields++;
-            const std::string& n =
+            const string& n =
                 parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
-            const std::string& d =
+            const string& d =
                 parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
-            if (n == fieldName && d == fieldDescriptor) {
-                objheap.find(object->offset)->second.at(offset + i) = value;
+            if (n == name && d == descriptor) {
+                objectContainer.find(object->offset)[i + offset] = value;
                 return;
             }
         }
     }
     if (parsedJc->raw.superClass != 0) {
-        putObjectFieldByNameImpl(
-            yrt.ma->findJavaClass(parsedJc->getSuperClassName()), fieldName,
-            fieldDescriptor, object, value, offset + howManyNonStaticFields);
+        putFieldByNameImpl(yrt.ma->findJavaClass(parsedJc->getSuperClassName()),
+                           name, descriptor, object, value,
+                           offset + howManyNonStaticFields);
     }
-}
-
-bool JavaHeap::hasObjectMonitor(const JType* ref) {
-    std::lock_guard<std::recursive_mutex> lock(monitorMtx);
-    if (typeid(*ref) == typeid(JObject)) {
-        return monitorheap.find(dynamic_cast<const JObject*>(ref)->offset) !=
-               monitorheap.end();
-    }
-    if (typeid(*ref) == typeid(JArray)) {
-        return monitorheap.find(dynamic_cast<const JArray*>(ref)->offset) !=
-               monitorheap.end();
-    }
-    SHOULD_NOT_REACH_HERE
-}
-
-void JavaHeap::createObjectMonitor(const JType* ref) {
-    std::lock_guard<std::recursive_mutex> lock(monitorMtx);
-    if (typeid(*ref) == typeid(JObject)) {
-        monitorheap.insert(std::make_pair(
-            dynamic_cast<const JObject*>(ref)->offset, new ObjectMonitor()));
-    } else if (typeid(*ref) == typeid(JArray)) {
-        monitorheap.insert(std::make_pair(
-            dynamic_cast<const JArray*>(ref)->offset, new ObjectMonitor()));
-    } else {
-        SHOULD_NOT_REACH_HERE
-    }
-}
-
-ObjectMonitor* JavaHeap::findObjectMonitor(const JType* ref) {
-    std::lock_guard<std::recursive_mutex> lock(monitorMtx);
-    if (typeid(*ref) == typeid(JObject)) {
-        return monitorheap.find(dynamic_cast<const JObject*>(ref)->offset)
-            ->second;
-    }
-    if (typeid(*ref) == typeid(JArray)) {
-        return monitorheap.find(dynamic_cast<const JArray*>(ref)->offset)
-            ->second;
-    }
-    SHOULD_NOT_REACH_HERE
 }

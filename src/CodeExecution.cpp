@@ -13,6 +13,7 @@
 #include <iostream>
 
 #pragma warning(disable : 4715)
+#pragma warning(disable : 4244)
 
 JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
     for (decltype(ext.codeLength) op = 0; op < ext.codeLength; op++) {
@@ -342,7 +343,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                 if (index->val > arrayref->length || index->val < 0) {
                     throw std::runtime_error("array index out of bounds");
                 }
-                yrt.jheap->putArrayItem(*arrayref, index->val, value);
+                yrt.jheap->putElement(*arrayref, index->val, value);
 
                 delete index;
             } break;
@@ -361,7 +362,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                     if (index->val > arrayref->length || index->val < 0) {
                         throw std::runtime_error("array index out of bounds");
                     }
-                    yrt.jheap->putArrayItem(*arrayref, index->val, value);
+                    yrt.jheap->putElement(*arrayref, index->val, value);
 
                     delete index;
                 }
@@ -1023,9 +1024,9 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                 u2 index = consumeU2(ext.code, op);
                 JObject* objectref = currentStackPop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
-                JType* field = cloneValue(yrt.jheap->getObjectFieldByName(
-                    std::get<0>(symbolicRef), std::get<1>(symbolicRef),
-                    std::get<2>(symbolicRef), objectref));
+                JType* field = cloneValue(yrt.jheap->getFieldByName(
+                    std::get<1>(symbolicRef), std::get<2>(symbolicRef),
+                    objectref));
                 currentFrame->stack.push_back(field);
 
                 delete objectref;
@@ -1035,9 +1036,9 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                 JType* value = currentStackPop<JType>();
                 JObject* objectref = currentStackPop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
-                yrt.jheap->putObjectFieldByName(
-                    std::get<0>(symbolicRef), std::get<1>(symbolicRef),
-                    std::get<2>(symbolicRef), objectref, value);
+                yrt.jheap->putFieldByName(std::get<1>(symbolicRef),
+                                          std::get<2>(symbolicRef), objectref,
+                                          value);
 
                 delete objectref;
             } break;
@@ -1227,11 +1228,11 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                     throw std::runtime_error("null pointer");
                 }
 
-                if (!yrt.jheap->hasObjectMonitor(ref)) {
-                    yrt.jheap->createObjectMonitor(ref);
+                if (!yrt.jheap->hasMonitor(ref)) {
+                    dynamic_cast<JObject*>(ref)->offset =
+                        yrt.jheap->createMonitor();
                 }
-                yrt.jheap->findObjectMonitor(ref)->enter(
-                    std::this_thread::get_id());
+                yrt.jheap->findMonitor(ref)->enter(std::this_thread::get_id());
             } break;
             case op_monitorexit: {
                 JType* ref = currentStackPop<JType>();
@@ -1239,10 +1240,11 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                 if (ref == nullptr) {
                     throw std::runtime_error("null pointer");
                 }
-                if (!yrt.jheap->hasObjectMonitor(ref)) {
-                    yrt.jheap->createObjectMonitor(ref);
+                if (!yrt.jheap->hasMonitor(ref)) {
+                    dynamic_cast<JObject*>(ref)->offset =
+                        yrt.jheap->createMonitor();
                 }
-                yrt.jheap->findObjectMonitor(ref)->exit();
+                yrt.jheap->findMonitor(ref)->exit();
 
             } break;
             case op_wide: {
@@ -1296,11 +1298,8 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
     return nullptr;
 }
 
-/**
- * \brief This function does "ldc" opcode
- * \param jc type of JavaClass, which indicate where to resolve constant pool
- * index \param index constant pool index
- */
+//  This function does "ldc" opcode jc type of JavaClass, which indicate where
+//  to resolve
 void CodeExecution::loadConstantPoolItem2Stack(const JavaClass* jc, u2 index) {
     if (typeid(*jc->raw.constPoolInfo[index]) == typeid(CONSTANT_Integer)) {
         auto val =
@@ -1320,18 +1319,13 @@ void CodeExecution::loadConstantPoolItem2Stack(const JavaClass* jc, u2 index) {
         auto val = jc->getString(
             dynamic_cast<CONSTANT_String*>(jc->raw.constPoolInfo[index])
                 ->stringIndex);
-        JObject* str =
-            yrt.jheap->createObject(*yrt.ma->loadClassIfAbsent("java"
-                                                               "/lan"
-                                                               "g/"
-                                                               "Stri"
-                                                               "n"
-                                                               "g"));
+        JObject* str = yrt.jheap->createObject(
+            *yrt.ma->loadClassIfAbsent("java/lang/String"));
         JArray* value = yrt.jheap->createCharArray(val, val.length());
         // Put string  into str's field; according the source file of
         // java.lang.Object, we know that its first field was used to store
         // chars
-        yrt.jheap->putObjectFieldByOffset(*str, 0, value);
+        yrt.jheap->putFieldByOffset(*str, 0, value);
         currentFrame->stack.push_back(str);
     } else if (typeid(*jc->raw.constPoolInfo[index]) ==
                typeid(CONSTANT_Class)) {
@@ -1654,7 +1648,7 @@ bool CodeExecution::checkInstanceof(const JavaClass* jc, u2 index,
             }
         } else if (tType == TYPE_INTERFACE) {
             auto* firstComponent = dynamic_cast<JObject*>(
-                yrt.jheap->getArrayItem(*dynamic_cast<JArray*>(objectref), 0));
+                yrt.jheap->getElement(*dynamic_cast<JArray*>(objectref), 0));
             auto&& interfaceIdxs = firstComponent->jc->getInterfacesIndex();
             FOR_EACH(i, interfaceIdxs.size()) {
                 if (firstComponent->jc->getString(

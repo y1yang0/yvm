@@ -16,21 +16,19 @@ Advanced language features will support later, you can also PR to contribute you
 + [Synchronized block with object lock](./javaclass/ydk/test/SynchronizedBlockTest.java)
 + [Garbage Collection(With mark-and-sweep policy)](./javaclass/ydk/test/GCTest.java)
 
-# Build and run
-**This project depends on [Boost](https://www.boost.org/) libraries.** You need to manually configure Boost root path in `CMakeLists.txt`:
-```
-set(BOOST_ROOT "/your_boost_root_dir")
-```
-Thats all about to say. The following steps are so common:
-
-1. `Compile`
+# 构建和运行
++ Prerequisite
+  + [Boost](https://www.boost.org/)(>=1.65) 请在`CMakeLists.txt`中手动配置Boost库位置
+  + CMake(>=3.5)
+  + C++14
+  + gcc/msvc/mingw均可
++ Stereotype
 ```bash
 $ cd yvm
 $ cmake .
 $ make -j4
 $ make test
 ```
-2. `Run`
 ```bash
 $ ./yvm --help
 Usage:
@@ -41,16 +39,6 @@ Usage:
 You must specify the "runtime" flag to tell yvm where it could find jdk classes, and also program name is required.
 $ ./yvm --runtime=C:\Users\Cthulhu\Desktop\yvm\bytecode ydk.test.QuickSort
 ```
-
-# About JDK
-Any java virtual machines can not run a Java program without Java libraries. As you may know, some opcodes like `ldc`,`monitorenter/monitorexit`,`athrow` are internally requiring our virtual machine to operate JDK classes(`java.lang.Class`,`java.lang.String`,`java.lang.Throwable`,etc). Hence, I have to rewrite some [JDK classes](./javaclass) for building a runnable VM , because original JDK classes are so complicated that it's inconvenient for early developing.
-Rewrote JDK classes are as follows:
-+ `java.lang.String`
-+ `java.lang.StringBuilder`
-+ `java.lang.Throwable`
-+ `java.lang.Math(::random())`
-+ `java.lang.Runnable`
-+ `java.lang.Thread`
 
 # Running snapshots
 + helloworld
@@ -72,8 +60,54 @@ Rewrote JDK classes are as follows:
 ![](./public/gc_java.png)
 ![](./public/gc_sampling_2.png)
 
+# About JDK
+Any java virtual machines can not run a Java program without Java libraries. As you may know, some opcodes like `ldc`,`monitorenter/monitorexit`,`athrow` are internally requiring our virtual machine to operate JDK classes(`java.lang.Class`,`java.lang.String`,`java.lang.Throwable`,etc). Hence, I have to rewrite some [JDK classes](./javaclass) for building a runnable VM , because original JDK classes are so complicated that it's inconvenient for early developing.
+Rewrote JDK classes are as follows:
++ `java.lang.String`
++ `java.lang.StringBuilder`
++ `java.lang.Throwable`
++ `java.lang.Math(::random())`
++ `java.lang.Runnable`
++ `java.lang.Thread`
+
 # Development docs
-For more VM development documentation, see its [Wiki](https://github.com/racaljk/yvm/wiki), which contains various contents with regard to VM structures, usages, and design principal, etc.  
+## Internal object and array representations
+```cpp
+// Java heap holds instance's fields data which object referred to and elements
+// of an array. This is the core component of yvm, almost every memory
+// storage/access/deletion took place here.
+//
+// The ObjectContainer manages object's fields data, the key also the
+// only way to identify an object is the offset, you can use offset to get
+// object's fields data, push a field data into objects which specified by
+// offset and place a new area to store object fields Here is the internal
+// construction:
+//
+// [1]  ->  [field_a, field_b, field_c]
+// [2]  ->  []
+// [3]  ->  [field_a,field_b]
+// [4]  ->  [field_a]
+// [..] ->  [...]
+
+// The ArrayContainer manages array's elements as well as object pool
+//
+// [1]  ->   <3, [field_a, field_b, field_c]>
+// [2]  ->   <0, []>
+// [3]  ->   <2, [field_a,field_b]>
+// [4]  ->   <1, [field_a]>
+// [..] ->   <..,[...]>
+
+// MonitorContainer manages synchronous block monitors as well as the
+// above
+//
+// [1]  ->   ObjectMonitor*
+// [2]  ->   ObjectMonitor*
+// [3]  ->   ObjectMonitor*
+// [4]  ->   ObjectMonitor*
+// [..] ->   ObjectMonitor*
+
+```
+For more VM development documentation, see its [Wiki](https://github.com/racaljk/yvm/wiki) or source code comments, which contains various contents with regard to VM structures, usages, and design principal, etc.  
 
 # License
 Code licensed under the MIT License.

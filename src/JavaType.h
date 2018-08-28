@@ -4,13 +4,13 @@
 #include <cstddef>
 #include <cstdint>
 
+#define BASE_OF_JTYPE :public JType
+
 class JavaClass;
 
 struct JType {
-    virtual ~JType() = default;
+    virtual ~JType() = default;     // reserved for polymorphism
 };
-
-#define BASE_OF_JTYPE :public JType
 
 struct JVoid BASE_OF_JTYPE {};
 

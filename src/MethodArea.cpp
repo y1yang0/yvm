@@ -87,12 +87,12 @@ void MethodArea::linkJavaClass(const std::string& jcName) {
                                                    .attributes[fieldAttr])
                                                   ->constantValueIndex])
                                         ->stringIndex);
-                            int strLen = constantStr.length();
+                            size_t strLen = constantStr.length();
                             fieldObject = yrt.jheap->createObject(
                                 *yrt.ma->loadClassIfAbsent("java/lang/String"));
                             fieldObject = yrt.jheap->createObject(
                                 *yrt.ma->loadClassIfAbsent("java/lang/String"));
-                            yrt.jheap->putObjectFieldByOffset(
+                            yrt.jheap->putFieldByOffset(
                                 *fieldObject, 0,
                                 yrt.jheap->createCharArray(constantStr,
                                                            strLen));
