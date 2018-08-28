@@ -1025,8 +1025,8 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                 JObject* objectref = currentStackPop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
                 JType* field = cloneValue(yrt.jheap->getFieldByName(
-                    std::get<1>(symbolicRef), std::get<2>(symbolicRef),
-                    objectref));
+                    std::get<0>(symbolicRef), std::get<1>(symbolicRef),
+                    std::get<2>(symbolicRef), objectref));
                 currentFrame->stack.push_back(field);
 
                 delete objectref;
@@ -1036,9 +1036,9 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                 JType* value = currentStackPop<JType>();
                 JObject* objectref = currentStackPop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
-                yrt.jheap->putFieldByName(std::get<1>(symbolicRef),
-                                          std::get<2>(symbolicRef), objectref,
-                                          value);
+                yrt.jheap->putFieldByName(
+                    std::get<0>(symbolicRef), std::get<1>(symbolicRef),
+                    std::get<2>(symbolicRef), objectref, value);
 
                 delete objectref;
             } break;

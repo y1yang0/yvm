@@ -166,53 +166,56 @@ JArray* JavaHeap::createCharArray(const string& source, size_t length) {
     return arr;
 }
 
-JType* JavaHeap::getFieldByNameImpl(const JavaClass* parsedJc,
+JType* JavaHeap::getFieldByNameImpl(const JavaClass* desireLookup,
+                                    const JavaClass* currentLookup,
                                     const string& name,
                                     const string& descriptor, JObject* object,
                                     size_t offset /*= 0*/) {
     lock_guard<recursive_mutex> lock(objMtx);
     size_t howManyNonStaticFields = 0;
-    FOR_EACH(i, parsedJc->raw.fieldsCount) {
-        if (!IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {
+    FOR_EACH(i, desireLookup->raw.fieldsCount) {
+        if (!IS_FIELD_STATIC(desireLookup->raw.fields[i].accessFlags)) {
             howManyNonStaticFields++;
             const string& n =
-                parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
+                desireLookup->getString(desireLookup->raw.fields[i].nameIndex);
             const string& d =
-                parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
-            if (n == name && d == descriptor) {
+                desireLookup->getString(desireLookup->raw.fields[i].descriptorIndex);
+            if (n == name && d == descriptor && desireLookup == currentLookup) {
                 return objectContainer.find(object->offset)[i + offset];
             }
         }
     }
-    if (parsedJc->raw.superClass != 0) {
+    if (desireLookup->raw.superClass != 0) {
         return getFieldByNameImpl(
-            yrt.ma->findJavaClass(parsedJc->getSuperClassName()), name,
-            descriptor, object, offset + howManyNonStaticFields);
+            desireLookup, yrt.ma->findJavaClass(currentLookup->getSuperClassName()),
+            name, descriptor, object, offset + howManyNonStaticFields);
     }
     return nullptr;
 }
 
-void JavaHeap::putFieldByNameImpl(const JavaClass* parsedJc, const string& name,
-                                  const string& descriptor, JObject* object,
-                                  JType* value, size_t offset /*= 0*/) {
+void JavaHeap::putFieldByNameImpl(const JavaClass* desireLookup,
+                                  const JavaClass* currentLookup,
+                                  const string& name, const string& descriptor,
+                                  JObject* object, JType* value,
+                                  size_t offset /*= 0*/) {
     lock_guard<recursive_mutex> lock(objMtx);
     size_t howManyNonStaticFields = 0;
-    FOR_EACH(i, parsedJc->raw.fieldsCount) {
-        if (!IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {
+    FOR_EACH(i, desireLookup->raw.fieldsCount) {
+        if (!IS_FIELD_STATIC(desireLookup->raw.fields[i].accessFlags)) {
             howManyNonStaticFields++;
             const string& n =
-                parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
+                desireLookup->getString(desireLookup->raw.fields[i].nameIndex);
             const string& d =
-                parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
-            if (n == name && d == descriptor) {
+                desireLookup->getString(desireLookup->raw.fields[i].descriptorIndex);
+            if (n == name && d == descriptor && desireLookup == currentLookup) {
                 objectContainer.find(object->offset)[i + offset] = value;
                 return;
             }
         }
     }
-    if (parsedJc->raw.superClass != 0) {
-        putFieldByNameImpl(yrt.ma->findJavaClass(parsedJc->getSuperClassName()),
-                           name, descriptor, object, value,
-                           offset + howManyNonStaticFields);
+    if (desireLookup->raw.superClass != 0) {
+        putFieldByNameImpl(
+            desireLookup, yrt.ma->findJavaClass(currentLookup->getSuperClassName()),
+            name, descriptor, object, value, offset + howManyNonStaticFields);
     }
 }

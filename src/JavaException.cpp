@@ -1,7 +1,7 @@
+#include "JavaException.h"
 #include <cassert>
 #include <cstdio>
 #include "JavaClass.h"
-#include "JavaException.h"
 
 void StackTrace::printStackTrace() {
     assert(!exceptionStackTrace.empty());
@@ -25,6 +25,7 @@ void StackTrace::printStackTrace() {
 void StackTrace::setThrowExceptionInfo(JObject* throwableObject) {
     throwExceptionClass = throwableObject->jc;
     auto* messageField = dynamic_cast<JObject*>(yrt.jheap->getFieldByName(
-        "message", "Ljava/lang/String;", throwableObject));
+        yrt.ma->findJavaClass("java/lang/Throwable"), "message",
+        "Ljava/lang/String;", throwableObject));
     detailedMsg = Converter::javastring2stdtring(messageField);
 }

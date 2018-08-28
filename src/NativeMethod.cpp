@@ -169,7 +169,8 @@ JType* java_lang_stringbuilder_tostring(RuntimeEnv* env) {
 JType* java_lang_thread_start(RuntimeEnv* env) {
     auto* caller = dynamic_cast<JObject*>(frames.back()->locals[0]);
     auto* runnableTask = (JObject*)cloneValue(dynamic_cast<JObject*>(
-        env->jheap->getFieldByName("task", "Ljava/lang/Runnable;", caller)));
+        env->jheap->getFieldByName(yrt.ma->findJavaClass("java/lang/Thread"),
+                                   "task", "Ljava/lang/Runnable;", caller)));
 
     YVM::executor.createThread();
     future<void> subThreadF = YVM::executor.submit([=]() {

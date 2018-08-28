@@ -1,12 +1,12 @@
 package ydk.test;
 import ydk.lang.IO;
 
-class Base{
+class FieldBase{
     public int k = 1;
     public double d = 3.14;
     protected char c = 'F';
 }
-public class FieldAccess extends Base {
+public class FieldAccess extends FieldBase {
     private int k;
     private double d;
     private char c;

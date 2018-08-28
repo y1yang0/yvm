@@ -8,7 +8,7 @@ std::string Converter::javastring2stdtring(JObject* objectref) {
     }
 
     JArray* chararr = dynamic_cast<JArray*>(
-        yrt.jheap->getFieldByName("value", "[C", objectref));
+        yrt.jheap->getFieldByName(objectref->jc, "value", "[C", objectref));
 
     std::string str;
     for (int i = 0; i < chararr->length; i++) {

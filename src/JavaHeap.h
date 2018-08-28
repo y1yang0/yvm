@@ -132,15 +132,19 @@ public:
     JArray* createCharArray(const string& source, size_t length);
 
     //--------------------------------------------------------------------------------
-    // handle object fields
+    // get object's field by name and descriptor or set object's field by given
+    // value note that we should not use object->jc to instead the first
+    // argument since we might lookup a field in base class, while the derive
+    // class has the same name
     //--------------------------------------------------------------------------------
-    auto getFieldByName(const string& name, const string& descriptor,
-                        JObject* object) {
-        return getFieldByNameImpl(object->jc, name, descriptor, object, 0);
+    auto getFieldByName(const JavaClass* jc, const string& name,
+                        const string& descriptor, JObject* object) {
+        return getFieldByNameImpl(jc, object->jc, name, descriptor, object, 0);
     }
-    void putFieldByName(const string& name, const string& descriptor,
-                        JObject* object, JType* value) {
-        putFieldByNameImpl(object->jc, name, descriptor, object, value, 0);
+    void putFieldByName(const JavaClass* jc, const string& name,
+                        const string& descriptor, JObject* object,
+                        JType* value) {
+        putFieldByNameImpl(jc, object->jc, name, descriptor, object, value, 0);
     }
     void JavaHeap::putFieldByOffset(const JObject& object, size_t fieldOffset,
                                     JType* value) {
@@ -201,10 +205,20 @@ public:
 
 private:
     void createSuperFields(const JavaClass& javaClass, const JObject* object);
-    JType* getFieldByNameImpl(const JavaClass* parsedJc, const string& name,
-                              const string& descriptor, JObject* object,
-                              size_t offset = 0);
-    void putFieldByNameImpl(const JavaClass* parsedJc, const string& name,
+
+    //--------------------------------------------------------------------------------
+    // There might be two classes, which one has field_a, and another has the
+    // same field  name and the later(ClassA) extends previous class(ClassB),
+    // now if we want to get/set ClassB.field we must set desireLookup as
+    // ClassA, and currentLookup for object->jc, which means starts lookup from
+    // current object related class(ClassB)
+    //--------------------------------------------------------------------------------
+    JType* getFieldByNameImpl(const JavaClass* desireLookup,
+                              const JavaClass* currentLookup,
+                              const string& name, const string& descriptor,
+                              JObject* object, size_t offset = 0);
+    void putFieldByNameImpl(const JavaClass* desireLookup,
+                            const JavaClass* currentLookup, const string& name,
                             const string& descriptor, JObject* object,
                             JType* value, size_t offset = 0);
 
