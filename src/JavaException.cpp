@@ -1,14 +1,14 @@
-#include "JavaException.h"
 #include <cassert>
 #include <cstdio>
 #include "JavaClass.h"
+#include "JavaException.h"
 
 void StackTrace::printStackTrace() {
     assert(!exceptionStackTrace.empty());
     assert(throwExceptionClass != nullptr);
 
-    printf("Thrown %s at %s()\n", throwExceptionClass->getClassName(),
-           exceptionStackTrace[0]);
+    printf("Thrown %s at %s()\n", throwExceptionClass->getClassName().c_str(),
+           exceptionStackTrace[0].c_str());
     !detailedMsg.empty() ? printf("Reason:%s\n", detailedMsg.c_str())
                          : printf("");
 
@@ -18,7 +18,7 @@ void StackTrace::printStackTrace() {
         for (int i = 0; i < deep; i++) {
             printf("-");
         }
-        printf("By its caller %s()\n", exceptionStackTrace[p]);
+        printf("By its caller %s()\n", exceptionStackTrace[p].c_str());
     }
 }
 

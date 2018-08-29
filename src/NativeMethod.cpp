@@ -13,16 +13,20 @@ extern thread_local StackFrames frames;
 
 JType* ydk_lang_IO_print_str(RuntimeEnv* env) {
     JObject* str = (JObject*)frames.back()->locals[0];
-    auto fields = env->jheap->getFields(str);
-    JArray* chararr = (JArray*)fields[0];
-    auto lengthAndData = env->jheap->getElements(chararr);
-    char* s = new char[lengthAndData.first + 1];
-    for (int i = 0; i < lengthAndData.first; i++) {
-        s[i] = (char)((JInt*)lengthAndData.second[i])->val;
+    if (nullptr != str) {
+        auto fields = env->jheap->getFields(str);
+        JArray* chararr = (JArray*)fields[0];
+        auto lengthAndData = env->jheap->getElements(chararr);
+        char* s = new char[lengthAndData.first + 1];
+        for (int i = 0; i < lengthAndData.first; i++) {
+            s[i] = (char)((JInt*)lengthAndData.second[i])->val;
+        }
+        s[lengthAndData.first] = '\0';
+        std::cout << s;
+        delete[] s;
+    } else {
+        std::cout << "null";
     }
-    s[lengthAndData.first] = '\0';
-    std::cout << s;
-    delete[] s;
 
     return nullptr;
 }

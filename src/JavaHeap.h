@@ -1,36 +1,3 @@
-// Java heap holds instance's fields data which object referred to and elements
-// of an array. This is the core component of yvm, almost every memory
-// storage/access/deletion took place here.
-//
-// The ObjectContainer manages object's fields data, the key also the
-// only way to identify an object is the offset, you can use offset to get
-// object's fields data, push a field data into objects which specified by
-// offset and place a new area to store object fields Here is the internal
-// construction:
-//
-// [1]  ->  [field_a, field_b, field_c]
-// [2]  ->  []
-// [3]  ->  [field_a,field_b]
-// [4]  ->  [field_a]
-// [..] ->  [...]
-
-// The ArrayContainer manages array's elements as well as object pool
-//
-// [1]  ->   <3, [field_a, field_b, field_c]>
-// [2]  ->   <0, []>
-// [3]  ->   <2, [field_a,field_b]>
-// [4]  ->   <1, [field_a]>
-// [..] ->   <..,[...]>
-
-// MonitorContainer manages synchronous block monitors as well as the
-// above
-//
-// [1]  ->   ObjectMonitor*
-// [2]  ->   ObjectMonitor*
-// [3]  ->   ObjectMonitor*
-// [4]  ->   ObjectMonitor*
-// [..] ->   ObjectMonitor*
-
 #ifndef YVM_JAVAHEAP_H
 #define YVM_JAVAHEAP_H
 
@@ -81,6 +48,15 @@ private:
         container;
 };
 
+//--------------------------------------------------------------------------------
+// The ArrayContainer manages array's elements as well as object pool
+//
+// [1]  ->   <3, [field_a, field_b, field_c]>
+// [2]  ->   <0, []>
+// [3]  ->   <2, [field_a,field_b]>
+// [4]  ->   <1, [field_a]>
+// [..] ->   <..,[...]>
+//--------------------------------------------------------------------------------
 struct ArrayContainer : public Container<InternalArray> {
     ~ArrayContainer() override {
         for (auto intPairPair : getContainer()) {
@@ -91,6 +67,19 @@ struct ArrayContainer : public Container<InternalArray> {
         }
     }
 };
+//--------------------------------------------------------------------------------
+// The ObjectContainer manages object's fields data, the key also the
+// only way to identify an object is the offset, you can use offset to get
+// object's fields data, push a field data into objects which specified by
+// offset and place a new area to store object fields Here is the internal
+// construction:
+//
+// [1]  ->  [field_a, field_b, field_c]
+// [2]  ->  []
+// [3]  ->  [field_a,field_b]
+// [4]  ->  [field_a]
+// [..] ->  [...]
+//--------------------------------------------------------------------------------
 struct ObjectContainer : public Container<InternalObject> {
     ~ObjectContainer() override {
         for (auto intVecPair : getContainer()) {
@@ -100,6 +89,24 @@ struct ObjectContainer : public Container<InternalObject> {
         }
     }
 };
+
+//--------------------------------------------------------------------------------
+// MonitorContainer manages synchronous block monitors as well as the
+// above
+//
+// [1]  ->   ObjectMonitor*
+// [2]  ->   ObjectMonitor*
+// [3]  ->   ObjectMonitor*
+// [4]  ->   ObjectMonitor*
+// [..] ->   ObjectMonitor*// MonitorContainer manages synchronous block
+// monitors as well as the above
+//
+// [1]  ->   ObjectMonitor*
+// [2]  ->   ObjectMonitor*
+// [3]  ->   ObjectMonitor*
+// [4]  ->   ObjectMonitor*
+// [..] ->   ObjectMonitor*
+//--------------------------------------------------------------------------------
 struct MonitorContainer : public Container<InternalMonitor> {
     ~MonitorContainer() override {
         for (auto intMonitorPair : getContainer()) {
@@ -115,28 +122,23 @@ struct MonitorContainer : public Container<InternalMonitor> {
         return lastOffset;
     }
 };
-
+//--------------------------------------------------------------------------------
+// Java heap holds instance's fields data which object referred to and elements
+// of an array. This is the core component of yvm, almost every memory
+// storage/access/deletion took place here.
+//--------------------------------------------------------------------------------
 class JavaHeap {
     friend class CodeExecution;
     friend class ConcurrentGC;
 
 public:
     JavaHeap() = default;
-    //--------------------------------------------------------------------------------
-    // create an object on the heap. This is the only way to create objects in
-    // the yvm
-    //--------------------------------------------------------------------------------
+
     JObject* createObject(const JavaClass& javaClass);
     JArray* createPODArray(int atype, int length);
     JArray* createObjectArray(const JavaClass& jc, int length);
     JArray* createCharArray(const string& source, size_t length);
 
-    //--------------------------------------------------------------------------------
-    // get object's field by name and descriptor or set object's field by given
-    // value note that we should not use object->jc to instead the first
-    // argument since we might lookup a field in base class, while the derive
-    // class has the same name
-    //--------------------------------------------------------------------------------
     auto getFieldByName(const JavaClass* jc, const string& name,
                         const string& descriptor, JObject* object) {
         return getFieldByNameImpl(jc, object->jc, name, descriptor, object, 0);
@@ -159,9 +161,7 @@ public:
         lock_guard<recursive_mutex> lockMA(objMtx);
         return objectContainer.find(object->offset);
     }
-    //--------------------------------------------------------------------------------
-    // handle array elements
-    //--------------------------------------------------------------------------------
+
     void putElement(const JArray& array, size_t index, JType* value) {
         lock_guard<recursive_mutex> lock(arrMtx);
         arrayContainer.find(array.offset).second[index] = value;
@@ -175,9 +175,6 @@ public:
         return arrayContainer.find(array->offset);
     }
 
-    //--------------------------------------------------------------------------------
-    // release array/object memory
-    //--------------------------------------------------------------------------------
     void removeArray(size_t offset) {
         lock_guard<recursive_mutex> lock(arrMtx);
         arrayContainer.remove(offset);
@@ -187,9 +184,6 @@ public:
         objectContainer.remove(offset);
     }
 
-    //--------------------------------------------------------------------------------
-    // create/lookup monitors on the heap
-    //--------------------------------------------------------------------------------
     bool hasMonitor(const JType* ref) {
         lock_guard<recursive_mutex> lock(monitorMtx);
         return monitorContainer.has(dynamic_cast<const JObject*>(ref)->offset);
@@ -206,13 +200,6 @@ public:
 private:
     void createSuperFields(const JavaClass& javaClass, const JObject* object);
 
-    //--------------------------------------------------------------------------------
-    // There might be two classes, which one has field_a, and another has the
-    // same field  name and the later(ClassA) extends previous class(ClassB),
-    // now if we want to get/set ClassB.field we must set desireLookup as
-    // ClassA, and currentLookup for object->jc, which means starts lookup from
-    // current object related class(ClassB)
-    //--------------------------------------------------------------------------------
     JType* getFieldByNameImpl(const JavaClass* desireLookup,
                               const JavaClass* currentLookup,
                               const string& name, const string& descriptor,

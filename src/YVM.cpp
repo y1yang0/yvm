@@ -13,9 +13,9 @@
 YVM::ExecutorThreadPool YVM::executor;
 
 #define FORCE(x) (reinterpret_cast<char*>(x))
-/**
- * \brief {class_name,method_name,descriptor_name,function_pointer}
- */
+
+// registered java native methods table, it conforms to following rule:
+// {class_name,method_name,descriptor_name,function_pointer}
 static const char*((nativeFunctionTable[])[4]) = {
     {"ydk/lang/IO", "print", "(Ljava/lang/String;)V",
      FORCE(ydk_lang_IO_print_str)},
@@ -44,10 +44,13 @@ YVM::YVM() {
 #endif
 }
 
+// Load given class into jvm
 bool YVM::loadClass(const std::string& name) {
     return yrt.ma->loadJavaClass(name);
 }
 
+// link given class into jvm. A linkage exception would be occurred if given
+// class not existed before linking
 bool YVM::linkClass(const std::string& name) {
     if (!yrt.ma->findJavaClass(name)) {
         // It's not an logical endurable error, so we throw and linkage
@@ -59,6 +62,7 @@ bool YVM::linkClass(const std::string& name) {
     return true;
 }
 
+// Initialize given class.
 bool YVM::initClass(CodeExecution& exec, const std::string& name) {
     if (!yrt.ma->findJavaClass(name)) {
         // It's not an logical endurable error, so we throw and linkage
@@ -70,6 +74,9 @@ bool YVM::initClass(CodeExecution& exec, const std::string& name) {
     return true;
 }
 
+// Call java's "public static void main(String...)" method in the newly created
+// main thread. It also responsible for releasing reousrces and terminating
+// virtual machine after main method executing accomplished
 void YVM::callMain(const std::string& name) {
     executor.initialize(1);
 
@@ -101,6 +108,9 @@ void YVM::callMain(const std::string& name) {
     return;
 }
 
+// Warm up yvm. This function would register native methods into jvm before
+// actual code execution, and also initialize MethodArea with given java runtime
+// paths, which is the core component of this jvm
 void YVM::warmUp(const std::vector<std::string>& libPaths) {
     int p = sizeof nativeFunctionTable / sizeof nativeFunctionTable[0];
     for (int i = 0; i < p; i++) {
