@@ -29,8 +29,7 @@ void JavaHeap::createSuperFields(const JavaClass& javaClass,
                 // Special handling for field whose type is another class
                 if (!IS_FIELD_STATIC(superClass->raw.fields[i].accessFlags)) {
                     JObject* fieldObject = nullptr;
-                    yrt.jheap->objectContainer.find(object->offset)
-                        .push_back(fieldObject);
+                    objectContainer.find(object->offset).push_back(fieldObject);
                 }
             } else if (IS_FIELD_REF_ARRAY(descriptor)) {
                 // Special handling for field whose type is array. We create a
@@ -39,7 +38,7 @@ void JavaHeap::createSuperFields(const JavaClass& javaClass,
                 // memory while meeting opcodes [newarray]/[multinewarray]
                 if (!IS_FIELD_STATIC(superClass->raw.fields[i].accessFlags)) {
                     JArray* uninitializedArray = nullptr;
-                    yrt.jheap->objectContainer.find(object->offset)
+                    objectContainer.find(object->offset)
                         .push_back(uninitializedArray);
                 }
             } else {
@@ -48,8 +47,7 @@ void JavaHeap::createSuperFields(const JavaClass& javaClass,
                 // flag
                 if (!IS_FIELD_STATIC(superClass->raw.fields[i].accessFlags)) {
                     JType* basicField = determineBasicType(descriptor);
-                    yrt.jheap->objectContainer.find(object->offset)
-                        .push_back(basicField);
+                    objectContainer.find(object->offset).push_back(basicField);
                 }
             }
         }

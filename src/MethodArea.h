@@ -10,26 +10,35 @@
 #include <vector>
 #include "ClassFile.h"
 
+using namespace std;
+
 class CodeExecution;
 class JavaClass;
 class ConcurrentGC;
 
+//--------------------------------------------------------------------------------
+// Method area has responsible to manage all JavaClass objects. A complete
+// lifecycle of java class consists of loading class into jvm, linking those
+// loaded JavaClass which would initialize its static fields and finally
+// initializing them. findJavaClass() used to check if there is a specific
+// JavaClass existed in global class table.
+//--------------------------------------------------------------------------------
 class MethodArea {
     friend class ConcurrentGC;
 
 public:
-    MethodArea(const std::vector<std::string>& libPaths);
+    MethodArea(const vector<string>& libPaths);
     ~MethodArea();
 
-    JavaClass* findJavaClass(const std::string& jcName);
-    bool loadJavaClass(const std::string& jcName);
-    bool removeJavaClass(const std::string& jcName);
-    void linkJavaClass(const std::string& jcName);
-    void initJavaClass(CodeExecution& exec, const std::string& jcName);
+    JavaClass* findJavaClass(const string& jcName);
+    bool loadJavaClass(const string& jcName);
+    bool removeJavaClass(const string& jcName);
+    void linkJavaClass(const string& jcName);
+    void initJavaClass(CodeExecution& exec, const string& jcName);
 
 public:
-    JavaClass* loadClassIfAbsent(const std::string& jcName) {
-        std::lock_guard<std::recursive_mutex> lockMA(maMutex);
+    JavaClass* loadClassIfAbsent(const string& jcName) {
+        lock_guard<recursive_mutex> lockMA(maMutex);
 
         JavaClass* jc = findJavaClass(jcName);
         if (jc) {
@@ -39,8 +48,8 @@ public:
         return findJavaClass(jcName);
     }
 
-    void linkClassIfAbsent(const std::string& jcName) {
-        std::lock_guard<std::recursive_mutex> lockMA(maMutex);
+    void linkClassIfAbsent(const string& jcName) {
+        lock_guard<recursive_mutex> lockMA(maMutex);
 
         bool linked = false;
         for (auto p : linkedClasses) {
@@ -53,8 +62,8 @@ public:
         }
     }
 
-    void initClassIfAbsent(CodeExecution& exec, const std::string& jcName) {
-        std::lock_guard<std::recursive_mutex> lockMA(maMutex);
+    void initClassIfAbsent(CodeExecution& exec, const string& jcName) {
+        lock_guard<recursive_mutex> lockMA(maMutex);
 
         bool inited = false;
         for (auto p : initedClasses) {
@@ -68,14 +77,14 @@ public:
     }
 
 private:
-    std::recursive_mutex maMutex;
+    recursive_mutex maMutex;
 
-    std::unordered_set<std::string> linkedClasses;
-    std::unordered_set<std::string> initedClasses;
-    std::unordered_map<std::string, JavaClass*> classTable;
-    std::vector<std::string> searchPaths;
+    unordered_set<string> linkedClasses;
+    unordered_set<string> initedClasses;
+    unordered_map<string, JavaClass*> classTable;
+    vector<string> searchPaths;
 
-    const std::string parseNameToPath(const std::string& name);
+    const string parseNameToPath(const string& name);
 };
 
 #endif  // YVM_METHODAREA_H

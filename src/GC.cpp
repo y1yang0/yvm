@@ -7,6 +7,8 @@
 #include "MethodArea.h"
 #include "YVM.h"
 
+using namespace std;
+
 void ConcurrentGC::stopTheWorld() {
     unique_lock<mutex> lock(safepointWaitMtx);
     safepointWaitCnt++;
@@ -31,7 +33,7 @@ void ConcurrentGC::GCThreadPool::runPendingWork() {
 
         taskQueueMtx.lock();
         if (!taskQueue.empty()) {
-            auto task = std::move(taskQueue.front());
+            auto task = move(taskQueue.front());
             taskQueue.pop();
             taskQueueMtx.unlock();
             task();
@@ -65,7 +67,7 @@ void ConcurrentGC::gc(GCPolicy policy) {
 
 void ConcurrentGC::mark(JType* ref) {
     if (ref == nullptr) {
-        // Prevent from throwing std::bad_typeid since local variable table slot
+        // Prevent from throwing bad_typeid since local variable table slot
         // could be empty
         return;
     }
@@ -73,7 +75,7 @@ void ConcurrentGC::mark(JType* ref) {
         {
             // Mark() is very quickly and busy, so we use lightweight spin lock
             // instead of stl mutex
-            std::lock_guard<SpinLock> lock(objSpin);
+            lock_guard<SpinLock> lock(objSpin);
             objectBitmap.insert(dynamic_cast<JObject*>(ref)->offset);
         }
         auto fields = yrt.jheap->getFields(dynamic_cast<JObject*>(ref));
@@ -82,7 +84,7 @@ void ConcurrentGC::mark(JType* ref) {
         }
     } else if (typeid(*ref) == typeid(JArray)) {
         {
-            std::lock_guard<SpinLock> lock(arrSpin);
+            lock_guard<SpinLock> lock(arrSpin);
             arrayBitmap.insert(dynamic_cast<JArray*>(ref)->offset);
         }
         auto items = yrt.jheap->getElements(dynamic_cast<JArray*>(ref));
@@ -164,17 +166,17 @@ void ConcurrentGC::markAndSweep() {
 
     future<void> staticFieldsFuture = gcThreadPool.submit([this]() -> void {
         for (auto c : yrt.ma->classTable) {
-            std::for_each(
+            for_each(
                 c.second->sfield.cbegin(), c.second->sfield.cend(),
                 [this](const pair<size_t, JType*>& offset) {
                     if (typeid(*offset.second) == typeid(JObject)) {
                         {
-                            std::lock_guard<SpinLock> lock(objSpin);
+                            lock_guard<SpinLock> lock(objSpin);
                             objectBitmap.insert(offset.first);
                         }
                     } else if (typeid(*offset.second) == typeid(JArray)) {
                         {
-                            std::lock_guard<SpinLock> lock(arrSpin);
+                            lock_guard<SpinLock> lock(arrSpin);
                             arrayBitmap.insert(offset.first);
                         }
                     }

@@ -7,13 +7,15 @@
 #include "Option.h"
 #include "RuntimeEnv.h"
 
+using namespace std;
+
 struct JType;
 
 enum class GCPolicy { GC_MARK_AND_SWEEP };
 class ConcurrentGC {
 public:
     ConcurrentGC() : overMemoryThreshold(false), safepointWaitCnt(0) {
-        gcThreadPool.initialize(std::thread::hardware_concurrency());
+        gcThreadPool.initialize(thread::hardware_concurrency());
     }
 
     bool shallGC() const { return overMemoryThreshold; }
@@ -32,10 +34,10 @@ private:
     void markAndSweep();
     void mark(JType* ref);
     void sweep();
-    std::unordered_set<size_t> objectBitmap;
+    unordered_set<size_t> objectBitmap;
     SpinLock objSpin;
 
-    std::unordered_set<size_t> arrayBitmap;
+    unordered_set<size_t> arrayBitmap;
     SpinLock arrSpin;
     atomic_bool overMemoryThreshold;
     mutex overMemoryThresholdMtx;
@@ -80,9 +82,9 @@ struct HeapAllocator {
 
     template <class U>
     constexpr HeapAllocator(const HeapAllocator<U>&) noexcept {}
-    T* allocate(std::size_t n) {
-        if (n > std::size_t(-1) / sizeof(T)) throw std::bad_alloc();
-        if (auto p = static_cast<T*>(std::malloc(n * sizeof(T)))) {
+    T* allocate(size_t n) {
+        if (n > size_t(-1) / sizeof(T)) throw bad_alloc();
+        if (auto p = static_cast<T*>(malloc(n * sizeof(T)))) {
             thresholdVal += n * sizeof(T);
             if (thresholdVal >= YVM_GC_THRESHOLD_VALUE) {
                 yrt.gc->notifyGC();
@@ -90,10 +92,10 @@ struct HeapAllocator {
             }
             return p;
         }
-        throw std::bad_alloc();
+        throw bad_alloc();
     }
-    void deallocate(T* p, std::size_t val) noexcept {
-        std::free(p);
+    void deallocate(T* p, size_t val) noexcept {
+        free(p);
         thresholdVal -= val;
     }
 

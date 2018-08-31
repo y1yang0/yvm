@@ -3,9 +3,9 @@
 
 #include "ClassFile.h"
 #include "FileReader.h"
+#include "Internal.h"
 #include "JavaType.h"
 #include "MethodArea.h"
-#include "Internal.h"
 #include "YVM.h"
 
 #define JAVA_9_MAJOR 53
@@ -15,11 +15,13 @@
 
 #define JAVA_CLASS_FILE_MAGIC_NUMBER 0XCAFEBABE
 
-/**
- * \brief JavaClass is an in-memory representation of java class file. We should
- * call parseClassFile() to parse into proper structure before any operation on
- * JavaClass.
- */
+using namespace std;
+
+//--------------------------------------------------------------------------------
+// JavaClass is an in-memory representation of java class file. We should call
+// parseClassFile() to parse into proper structure before any operation on*
+// JavaClass.
+//--------------------------------------------------------------------------------
 class JavaClass {
     friend struct Inspector;
     friend struct YVM;
@@ -29,23 +31,23 @@ class JavaClass {
     friend class ConcurrentGC;
 
 public:
-    explicit JavaClass(const std::string& classFilePath);
+    explicit JavaClass(const string& classFilePath);
     ~JavaClass();
     JavaClass(const JavaClass& rhs) { this->raw = rhs.raw; }
 
 public:
-    const std::string getString(u2 index) const {
+    const string getString(u2 index) const {
         return reinterpret_cast<const char*>(
             dynamic_cast<CONSTANT_Utf8*>(raw.constPoolInfo[index])->bytes);
     }
 
-    const std::string getClassName() const {
+    const string getClassName() const {
         return getString(
             dynamic_cast<CONSTANT_Class*>(raw.constPoolInfo[raw.thisClass])
                 ->nameIndex);
     }
 
-    const std::string getSuperClassName() const {
+    const string getSuperClassName() const {
         return raw.superClass == 0
                    ? ""
                    : getString(dynamic_cast<CONSTANT_Class*>(
@@ -57,9 +59,9 @@ public:
 
     void parseClassFile();
 
-    std::vector<u2> getInterfacesIndex() const;
-    MethodInfo* getMethod(const std::string& methodName,
-                          const std::string& methodDescriptor) const;
+    vector<u2> getInterfacesIndex() const;
+    MethodInfo* getMethod(const string& methodName,
+                          const string& methodDescriptor) const;
 
 private:
     bool parseConstantPool(u2 cpCount);
@@ -77,7 +79,7 @@ private:
 private:
     ClassFile raw{};
     FileReader reader;
-    std::map<size_t, JType*> sfield;
+    map<size_t, JType*> sfield;
 };
 
 #endif  // YVM_JAVACLASS_H

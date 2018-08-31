@@ -22,7 +22,7 @@ static const char*((nativeFunctionTable[])[4]) = {
     {"ydk/lang/IO", "print", "(I)V", FORCE(ydk_lang_IO_print_I)},
     {"ydk/lang/IO", "print", "(C)V", FORCE(ydk_lang_IO_print_C)},
 
-    {"java/lang/Math", "random", "()D", FORCE(ydk_lang_Math_random)},
+    {"java/lang/Math", "random", "()D", FORCE(java_lang_Math_random)},
     {"java/lang/StringBuilder", "append", "(I)Ljava/lang/StringBuilder;",
      FORCE(java_lang_stringbuilder_append_I)},
     {"java/lang/StringBuilder", "append", "(C)Ljava/lang/StringBuilder;",
@@ -121,6 +121,5 @@ void YVM::warmUp(const std::vector<std::string>& libPaths) {
                                  const_cast<char*>(nativeFunctionTable[i][3])));
     }
 
-    // initialize runtime environment's search paths
     yrt.ma = new MethodArea(libPaths);
 }

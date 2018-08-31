@@ -8,7 +8,9 @@
 
 #pragma warning(disable : 4715)
 
-JavaClass::JavaClass(const std::string& classFilePath) : reader(classFilePath) {
+using namespace std;
+
+JavaClass::JavaClass(const string& classFilePath) : reader(classFilePath) {
     raw.constPoolInfo = nullptr;
     raw.fields = nullptr;
     raw.methods = nullptr;
@@ -21,9 +23,9 @@ JavaClass::~JavaClass() {
     }
 }
 
-std::vector<u2> JavaClass::getInterfacesIndex() const {
-    if (raw.interfacesCount == 0) return std::vector<u2>();
-    std::vector<u2> v;
+vector<u2> JavaClass::getInterfacesIndex() const {
+    if (raw.interfacesCount == 0) return vector<u2>();
+    vector<u2> v;
     FOR_EACH(i, raw.interfacesCount) {
         v.push_back(
             dynamic_cast<CONSTANT_Class*>(raw.constPoolInfo[raw.interfaces[i]])
@@ -32,14 +34,14 @@ std::vector<u2> JavaClass::getInterfacesIndex() const {
     return v;
 }
 
-MethodInfo* JavaClass::getMethod(const std::string& methodName,
-                                 const std::string& methodDescriptor) const {
+MethodInfo* JavaClass::getMethod(const string& methodName,
+                                 const string& methodDescriptor) const {
     FOR_EACH(i, raw.methodsCount) {
         assert(typeid(*raw.constPoolInfo[raw.methods[i].nameIndex]) ==
                typeid(CONSTANT_Utf8));
 
-        const std::string& mn = getString(raw.methods[i].nameIndex);
-        const std::string& md = getString(raw.methods[i].descriptorIndex);
+        const string& mn = getString(raw.methods[i].nameIndex);
+        const string& md = getString(raw.methods[i].descriptorIndex);
         if (mn == methodName && md == methodDescriptor) {
             return &raw.methods[i];
         }
@@ -63,7 +65,7 @@ void JavaClass::parseClassFile() {
     }
     raw.constPoolCount = reader.readget2();
     if (raw.constPoolCount > 0 && !parseConstantPool(raw.constPoolCount)) {
-        std::cerr << __func__ << ":Failed to parse constant pool\n";
+        cerr << __func__ << ":Failed to parse constant pool\n";
         exit(EXIT_FAILURE);
     }
 #ifdef YVM_DEBUG_SHOW_CONSTANT_POOL_TABLE
@@ -79,7 +81,7 @@ void JavaClass::parseClassFile() {
     raw.superClass = reader.readget2();
     raw.interfacesCount = reader.readget2();
     if (raw.interfacesCount > 0 && !parseInterface(raw.interfacesCount)) {
-        std::cerr << __func__ << ":Failed to parse interfaces\n";
+        cerr << __func__ << ":Failed to parse interfaces\n";
         exit(EXIT_FAILURE);
     }
 #ifdef YVM_DEBUG_SHOW_INTERFACE
@@ -88,7 +90,7 @@ void JavaClass::parseClassFile() {
 
     raw.fieldsCount = reader.readget2();
     if (raw.fieldsCount > 0 && !parseField(raw.fieldsCount)) {
-        std::cerr << __func__ << ":Failed to parse fields\n";
+        cerr << __func__ << ":Failed to parse fields\n";
         exit(EXIT_FAILURE);
     }
 #ifdef YVM_DEBUG_SHOW_CLASS_FIELD
@@ -97,7 +99,7 @@ void JavaClass::parseClassFile() {
 
     raw.methodsCount = reader.readget2();
     if (raw.methodsCount > 0 && !parseMethod(raw.methodsCount)) {
-        std::cerr << __func__ << ":Failed to parse methods\n";
+        cerr << __func__ << ":Failed to parse methods\n";
         exit(EXIT_FAILURE);
     }
 #ifdef YVM_DEBUG_SHOW_CLASS_METHOD
@@ -107,7 +109,7 @@ void JavaClass::parseClassFile() {
     raw.attributesCount = reader.readget2();
     if (raw.attributesCount > 0 &&
         !parseAttribute(raw.attributes, raw.attributesCount)) {
-        std::cerr << __func__ << ":Failed to parse class file's attributes\n";
+        cerr << __func__ << ":Failed to parse class file's attributes\n";
         exit(EXIT_FAILURE);
     }
 #ifdef YVM_DEBUG_SHOW_CLASS_ATTRIBUTE
@@ -115,13 +117,13 @@ void JavaClass::parseClassFile() {
 #endif
 
     if (!reader.haveNoExtraBytes()) {
-        std::cerr << __func__ << ":Extra bytes existed in class file\n";
+        cerr << __func__ << ":Extra bytes existed in class file\n";
         exit(EXIT_FAILURE);
     }
 
     return;
 error:
-    std::cerr << __func__ << ":Failed to read content from bytecode file \n";
+    cerr << __func__ << ":Failed to read content from bytecode file \n";
     exit(EXIT_FAILURE);
 }
 
@@ -130,7 +132,7 @@ bool JavaClass::parseConstantPool(u2 cpCount) {
     raw.constPoolInfo[0] = nullptr;
 
     if (!raw.constPoolInfo) {
-        std::cerr << "Can not allocate memory to load class file\n";
+        cerr << "Can not allocate memory to load class file\n";
         return false;
     }
 
@@ -296,7 +298,7 @@ bool JavaClass::parseConstantPool(u2 cpCount) {
                 break;
             }
             default:
-                std::cerr << "undefined constant pool type\n";
+                cerr << "undefined constant pool type\n";
                 return false;
         }
     }
@@ -319,8 +321,7 @@ bool JavaClass::parseInterface(u2 interfaceCount) {
 bool JavaClass::parseField(u2 fieldCount) {
     raw.fields = new FieldInfo[fieldCount];
     if (!raw.fields) {
-        std::cerr << __func__
-                  << ":Can not allocate memory to load class file\n";
+        cerr << __func__ << ":Can not allocate memory to load class file\n";
         return false;
     }
 
@@ -337,8 +338,7 @@ bool JavaClass::parseField(u2 fieldCount) {
 bool JavaClass::parseMethod(u2 methodCount) {
     raw.methods = new MethodInfo[methodCount];
     if (!raw.methods) {
-        std::cerr << __func__
-                  << ":Can not allocate memory to load class file\n";
+        cerr << __func__ << ":Can not allocate memory to load class file\n";
         return false;
     }
 
@@ -357,8 +357,7 @@ bool JavaClass::parseAttribute(AttributeInfo**(&attrs), u2 attributeCount) {
     attrs = new AttributeInfo*[attributeCount];
 
     if (attrs == nullptr) {
-        std::cerr << __func__
-                  << ":Can not allocate memory to load class file\n";
+        cerr << __func__ << ":Can not allocate memory to load class file\n";
         return false;
     }
 
@@ -831,7 +830,7 @@ VerificationTypeInfo* JavaClass::determineVerificationType(u1 tag) {
             return new VariableInfo_Double;
         }
         default:
-            std::cerr << __func__ << ":Incorrect tag of verification type\n";
+            cerr << __func__ << ":Incorrect tag of verification type\n";
             return nullptr;
     }
     SHOULD_NOT_REACH_HERE
@@ -950,7 +949,7 @@ ElementValue* JavaClass::readToElementValueStructure() {
             return e;
         }
         default:
-            std::cerr << __func__ << ":Incorrect element value type\n";
+            cerr << __func__ << ":Incorrect element value type\n";
             return nullptr;
     }
 

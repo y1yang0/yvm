@@ -148,12 +148,12 @@ public:
                         JType* value) {
         putFieldByNameImpl(jc, object->jc, name, descriptor, object, value, 0);
     }
-    void JavaHeap::putFieldByOffset(const JObject& object, size_t fieldOffset,
+    void putFieldByOffset(const JObject& object, size_t fieldOffset,
                                     JType* value) {
         lock_guard<recursive_mutex> lock(objMtx);
         objectContainer.find(object.offset)[fieldOffset] = value;
     }
-    auto JavaHeap::getFieldByOffset(const JObject& object, size_t fieldOffset) {
+    auto getFieldByOffset(const JObject& object, size_t fieldOffset) {
         lock_guard<recursive_mutex> lock(objMtx);
         return objectContainer.find(object.offset)[fieldOffset];
     }

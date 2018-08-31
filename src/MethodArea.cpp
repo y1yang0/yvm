@@ -7,7 +7,9 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/filesystem.hpp>
 
-MethodArea::MethodArea(const std::vector<std::string>& libPaths) {
+using namespace std;
+
+MethodArea::MethodArea(const vector<string>& libPaths) {
     for (const auto& path : libPaths) {
         searchPaths.push_back(path);
     }
@@ -19,8 +21,8 @@ MethodArea::~MethodArea() {
     }
 }
 
-JavaClass* MethodArea::findJavaClass(const std::string& jcName) {
-    std::lock_guard<std::recursive_mutex> lockMA(maMutex);
+JavaClass* MethodArea::findJavaClass(const string& jcName) {
+    lock_guard<recursive_mutex> lockMA(maMutex);
 
     const auto pos = classTable.find(jcName);
     if (pos != classTable.end()) {
@@ -29,8 +31,8 @@ JavaClass* MethodArea::findJavaClass(const std::string& jcName) {
     return nullptr;
 }
 
-bool MethodArea::loadJavaClass(const std::string& jcName) {
-    std::lock_guard<std::recursive_mutex> lockMA(maMutex);
+bool MethodArea::loadJavaClass(const string& jcName) {
+    lock_guard<recursive_mutex> lockMA(maMutex);
 
     auto path = parseNameToPath(jcName);
 
@@ -38,7 +40,7 @@ bool MethodArea::loadJavaClass(const std::string& jcName) {
         // Load this class which specified by jcName (it' a path string)
         auto* jc = new JavaClass(path);
         jc->parseClassFile();
-        classTable.insert(std::make_pair(jc->getClassName(), jc));
+        classTable.insert(make_pair(jc->getClassName(), jc));
 
         // Load super class if it doesn't exist in the class table
         if (!jc->getSuperClassName().empty() &&
@@ -47,7 +49,7 @@ bool MethodArea::loadJavaClass(const std::string& jcName) {
         }
 
         // Load super interfaces if existed
-        std::vector<u2>&& interfacesIdx = jc->getInterfacesIndex();
+        vector<u2>&& interfacesIdx = jc->getInterfacesIndex();
         if (jc->getInterfacesIndex().empty()) {
             for (auto idx : interfacesIdx) {
                 this->loadJavaClass(jc->getString(idx));
@@ -59,12 +61,12 @@ bool MethodArea::loadJavaClass(const std::string& jcName) {
     return false;
 }
 
-void MethodArea::linkJavaClass(const std::string& jcName) {
-    std::lock_guard<std::recursive_mutex> lockMA(maMutex);
+void MethodArea::linkJavaClass(const string& jcName) {
+    lock_guard<recursive_mutex> lockMA(maMutex);
 
-    JavaClass* javaClass = yrt.ma->findJavaClass(jcName);
+    JavaClass* javaClass = findJavaClass(jcName);
     FOR_EACH(fieldOffset, javaClass->raw.fieldsCount) {
-        const std::string& descriptor = javaClass->getString(
+        const string& descriptor = javaClass->getString(
             javaClass->raw.fields[fieldOffset].descriptorIndex);
         if (IS_FIELD_REF_CLASS(descriptor)) {
             // Special handling for field whose type is another class
@@ -78,20 +80,18 @@ void MethodArea::linkJavaClass(const std::string& jcName) {
                                     .attributes[fieldAttr]) ==
                         typeid(ATTR_ConstantValue)) {
                         if ("Ljava/lang/String;" == descriptor) {
-                            const std::string& constantStr =
-                                javaClass->getString(
-                                    ((CONSTANT_String*)
-                                         javaClass->raw.constPoolInfo
-                                             [((ATTR_ConstantValue*)javaClass
-                                                   ->raw.fields[fieldOffset]
-                                                   .attributes[fieldAttr])
-                                                  ->constantValueIndex])
-                                        ->stringIndex);
+                            const string& constantStr = javaClass->getString(
+                                ((CONSTANT_String*)javaClass->raw.constPoolInfo
+                                     [((ATTR_ConstantValue*)javaClass->raw
+                                           .fields[fieldOffset]
+                                           .attributes[fieldAttr])
+                                          ->constantValueIndex])
+                                    ->stringIndex);
                             size_t strLen = constantStr.length();
                             fieldObject = yrt.jheap->createObject(
-                                *yrt.ma->loadClassIfAbsent("java/lang/String"));
+                                *loadClassIfAbsent("java/lang/String"));
                             fieldObject = yrt.jheap->createObject(
-                                *yrt.ma->loadClassIfAbsent("java/lang/String"));
+                                *loadClassIfAbsent("java/lang/String"));
                             yrt.jheap->putFieldByOffset(
                                 *fieldObject, 0,
                                 yrt.jheap->createCharArray(constantStr,
@@ -100,8 +100,7 @@ void MethodArea::linkJavaClass(const std::string& jcName) {
                     }
                 }
 
-                javaClass->sfield.insert(
-                    std::make_pair(fieldOffset, fieldObject));
+                javaClass->sfield.insert(make_pair(fieldOffset, fieldObject));
             }
         } else if (IS_FIELD_REF_ARRAY(descriptor)) {
             // Special handling for field whose type is array. We create a null
@@ -113,7 +112,7 @@ void MethodArea::linkJavaClass(const std::string& jcName) {
                     javaClass->raw.fields[fieldOffset].accessFlags)) {
                 JArray* uninitializedArray = nullptr;
                 javaClass->sfield.insert(
-                    std::make_pair(fieldOffset, uninitializedArray));
+                    make_pair(fieldOffset, uninitializedArray));
             }
         } else {
             // Otherwise it's a basic type. We insert it into instance's field
@@ -185,22 +184,21 @@ void MethodArea::linkJavaClass(const std::string& jcName) {
                     }
                 }
 
-                javaClass->sfield.insert(
-                    std::make_pair(fieldOffset, basicField));
+                javaClass->sfield.insert(make_pair(fieldOffset, basicField));
             }
         }
     }
     linkedClasses.insert(javaClass->getClassName());
 }
 
-void MethodArea::initJavaClass(CodeExecution& exec, const std::string& jcName) {
-    std::lock_guard<std::recursive_mutex> lockMA(maMutex);
+void MethodArea::initJavaClass(CodeExecution& exec, const string& jcName) {
+    lock_guard<recursive_mutex> lockMA(maMutex);
     initedClasses.insert(jcName);
-    exec.invokeByName(yrt.ma->findJavaClass(jcName), "<clinit>", "()V");
+    exec.invokeByName(findJavaClass(jcName), "<clinit>", "()V");
 }
 
-bool MethodArea::removeJavaClass(const std::string& jcName) {
-    std::lock_guard<std::recursive_mutex> lockMA(maMutex);
+bool MethodArea::removeJavaClass(const string& jcName) {
+    lock_guard<recursive_mutex> lockMA(maMutex);
 
     auto pos = classTable.find(jcName);
     if (pos != classTable.end()) {
@@ -210,11 +208,11 @@ bool MethodArea::removeJavaClass(const std::string& jcName) {
     return false;
 }
 
-const std::string MethodArea::parseNameToPath(const std::string& name) {
+const string MethodArea::parseNameToPath(const string& name) {
     // convert java.util.ArrayList to /jdk/xxx/java/util/ArrayList.class
 
     boost::filesystem::path part2FileName;
-    std::vector<std::string> pathNode;
+    vector<string> pathNode;
     boost::split(pathNode, name, boost::is_any_of("."),
                  boost::token_compress_on);
     for (auto& node : pathNode) {
@@ -231,5 +229,5 @@ const std::string MethodArea::parseNameToPath(const std::string& name) {
                                     // a valid file path
         }
     }
-    return std::string("");
+    return string("");
 }

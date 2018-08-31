@@ -6,7 +6,7 @@
 int main(int argc, char* argv[]) {
     using namespace boost::program_options;
 
-    // Set flags
+    // Command arguments handling
     options_description opts("Usage");
     opts.add_options()("help", "List help documentations and usages.")(
         "runtime", value<std::vector<std::string>>(),
@@ -15,13 +15,11 @@ int main(int argc, char* argv[]) {
     positional_options_description p;
     p.add("run", -1);
 
-    // Parsing
     variables_map vm;
     store(command_line_parser(argc, argv).options(opts).positional(p).run(),
           vm);
     notify(vm);
 
-    // Flag checking
     if (vm.count("help")) {
         std::cout << opts
                   << "You must specify the \"runtime\" flag to tell yvm where "
