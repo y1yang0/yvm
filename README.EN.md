@@ -1,4 +1,4 @@
-![](./public/dragon.png) Yet another java Virtual Machine
+![](./public/moonight.png)  Yet another java Virtual Machine
 
 [中文](https://github.com/racaljk/yvm/blob/master/README.md) | [English](https://github.com/racaljk/yvm/blob/master/README.EN.md)
 | [![Build Status](https://travis-ci.org/racaljk/yvm.svg?branch=master)](https://travis-ci.org/racaljk/yvm) | ![](https://img.shields.io/badge/comiler-MSVC2017-brightgreen.svg) | ![](https://img.shields.io/badge/comiler-gcc7.0-brightgreen.svg)
@@ -16,12 +16,11 @@ Advanced language features will support later, you can also PR to contribute you
 + [Synchronized block with object lock](./javaclass/ydk/test/SynchronizedBlockTest.java)
 + [Garbage Collection(With mark-and-sweep policy)](./javaclass/ydk/test/GCTest.java)
 
-# 构建和运行
+# Build and run
 + Prerequisite
-  + [Boost](https://www.boost.org/)(>=1.65) 请在`CMakeLists.txt`中手动配置Boost库位置
-  + CMake(>=3.5)
+  + [Boost](https://www.boost.org/)(>=1.65) Please set Boost root directory in `CMakeLists.txt` manually if automatic cmake detecting can not find that
   + C++14
-  + gcc/msvc/mingw均可
+  + gcc/msvc/mingw
 + Stereotype
 ```bash
 $ cd yvm
@@ -60,7 +59,114 @@ $ ./yvm --runtime=C:\Users\Cthulhu\Desktop\yvm\bytecode ydk.test.QuickSort
 ![](./public/gc_java.png)
 ![](./public/gc_sampling_2.png)
 
-# About JDK
+# Development docs
+## 1. From bytecode to an object 
+`MethodArea` used to handle a complete lifecycle of JavaClass, its APIs are self-explanatory:
+```cpp
+class MethodArea {
+public:
+    // We need runtime classes paths since virutal machien searches 
+    // dependent classes from those locations
+    MethodArea(const vector<string>& libPaths);
+    ~MethodArea();
+
+    // find if it's already existed
+    JavaClass* findJavaClass(const string& jcName);
+    // load class which specified by jcName
+    bool loadJavaClass(const string& jcName);
+    //remove class which specified by jcName（Used for gc）
+    bool removeJavaClass(const string& jcName);
+    // link class which specified by jcName，initialize its static fields
+    void linkJavaClass(const string& jcName);
+    // initialize class specified by jcName，call the static{} block
+    void initJavaClass(CodeExecution& exec, const string& jcName);
+
+public:
+    //auxiliary functions
+    JavaClass* loadClassIfAbsent(const string& jcName);
+    void linkClassIfAbsent(const string& jcName);
+    void initClassIfAbsent(CodeExecution& exec, const string& jcName);
+}
+```
+For example, we have a bytecode file named `Test.class`，it would be available for jvm through the following steps：
+
+`Test.class[in the disk]`-> `loadJavaClass("Test.class")[in memory]` -> `linkJavaClass("Test.class")`->`initJavaClass("Test.class")`
+
+Now we can create corresponding objects as soon as above steps accomplished：
+```cpp
+// yrt is a global runtime variable，ma stands for MethodArea module,jheap stands for JavaHeap module
+JavaClass* testClass = yrt.ma->findJavaClass("Test.class");
+JObject* testInstance = yrt.jheap->createObject(*testClass);
+```
+## 2.1 Object inside
+jvm'stack only holds basic numeric data and object/array reference, which we call the JObject, it has the following structure:
+```cpp
+struct JObject {
+    std::size_t offset = 0; 
+    const JavaClass* jc{}; 
+};
+```
+`offset` stands for an object，all operations of object in heap required this offset。`jc` reference to the JavaClass。
+Object records in heap constructed with <offset, fields> pair
+```
+[1]  ->  [field_a, field_b, field_c]
+[2]  ->  []
+[3]  ->  [field_a,field_b]
+[4]  ->  [field_a]
+[..] ->  [...]
+```
+If we holds the object's offset, we can do anything of that object
+
+Array is almost the same as object, it has a length field instead of jc since it's unnecessary for array to hold a meta class reference.
+```cpp
+struct JArray {
+    int length = 0;
+    std::size_t offset = 0; 
+};
+[1]  ->   <3, [field_a, field_b, field_c]>
+[2]  ->   <0, []>
+[3]  ->   <2, [field_a,field_b]>
+[4]  ->   <1, [field_a]>
+[..] ->   <..,[...]>
+```
+## 2.2 From object creation to extinction
+As above mentioned, a JObject holds offset and jc. MethodArea has responsible to manage JavaClass which referenced by jc, another offset field referenced JObject, which would be managed by JavaHeap. `JavaHeap` provided a large number of self-explanatory APIs:
+```cpp
+class JavaHeap {
+public:
+    JObject* createObject(const JavaClass& javaClass);
+    JArray* createObjectArray(const JavaClass& jc, int length);
+
+    auto getFieldByName(const JavaClass* jc, const string& name,
+                        const string& descriptor, JObject* object);
+    void putFieldByName(const JavaClass* jc, const string& name,
+                        const string& descriptor, JObject* object,
+                        JType* value);
+    void putElement(const JArray& array, size_t index, JType* value);
+    auto getElement(const JArray& array, size_t index);
+    
+    void removeArray(size_t offset;
+    void removeObject(size_t offset);
+};
+```
+Back to the above example again, assume its corresponding Java class structure are as follows:
+```java
+public class Test{
+    public int k;
+    private String hello;
+}
+```
+In the first step, we've already got `testClass`, now we can do more things:
+```cpp
+const JavaClass* testClass = yrt.ma->findJavaClass("Test.class");
+JObject* testInstance = yrt.jheap->createObject(*testClass);
+// get the field hello
+JObject*  helloField = yrt.jheap->getFieldByName(testClass,"hello","Ljava/lang/String;",testInstance);
+//set the field k
+yrt.jheap->putFieldByName(testClass,"k","I",testInstance);
+```
+
+## Ⅰ. About JDK
 Any java virtual machines can not run a Java program without Java libraries. As you may know, some opcodes like `ldc`,`monitorenter/monitorexit`,`athrow` are internally requiring our virtual machine to operate JDK classes(`java.lang.Class`,`java.lang.String`,`java.lang.Throwable`,etc). Hence, I have to rewrite some [JDK classes](./javaclass) for building a runnable VM , because original JDK classes are so complicated that it's inconvenient for early developing.
 Rewrote JDK classes are as follows:
 + `java.lang.String`
@@ -69,44 +175,6 @@ Rewrote JDK classes are as follows:
 + `java.lang.Math(::random())`
 + `java.lang.Runnable`
 + `java.lang.Thread`
-
-# Development docs
-## Internal object and array representations
-```cpp
-// Java heap holds instance's fields data which object referred to and elements
-// of an array. This is the core component of yvm, almost every memory
-// storage/access/deletion took place here.
-//
-// The ObjectContainer manages object's fields data, the key also the
-// only way to identify an object is the offset, you can use offset to get
-// object's fields data, push a field data into objects which specified by
-// offset and place a new area to store object fields Here is the internal
-// construction:
-//
-// [1]  ->  [field_a, field_b, field_c]
-// [2]  ->  []
-// [3]  ->  [field_a,field_b]
-// [4]  ->  [field_a]
-// [..] ->  [...]
-
-// The ArrayContainer manages array's elements as well as object pool
-//
-// [1]  ->   <3, [field_a, field_b, field_c]>
-// [2]  ->   <0, []>
-// [3]  ->   <2, [field_a,field_b]>
-// [4]  ->   <1, [field_a]>
-// [..] ->   <..,[...]>
-
-// MonitorContainer manages synchronous block monitors as well as the
-// above
-//
-// [1]  ->   ObjectMonitor*
-// [2]  ->   ObjectMonitor*
-// [3]  ->   ObjectMonitor*
-// [4]  ->   ObjectMonitor*
-// [..] ->   ObjectMonitor*
-
-```
 For more VM development documentation, see its [Wiki](https://github.com/racaljk/yvm/wiki) or source code comments, which contains various contents with regard to VM structures, usages, and design principal, etc.  
 
 # License

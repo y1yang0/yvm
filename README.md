@@ -1,4 +1,4 @@
-![](./public/dragon.png) Yet another java Virtual Machine
+![](./public/moonight.png) Yet another java Virtual Machine
 
 [中文](https://github.com/racaljk/yvm/blob/master/README.md) | [English](https://github.com/racaljk/yvm/blob/master/README.EN.md)
 | [![Build Status](https://travis-ci.org/racaljk/yvm.svg?branch=master)](https://travis-ci.org/racaljk/yvm) | ![](https://img.shields.io/badge/comiler-MSVC2017-brightgreen.svg) | ![](https://img.shields.io/badge/comiler-gcc7.0-brightgreen.svg)
@@ -59,7 +59,6 @@ $ ./yvm --runtime=C:\Users\Cthulhu\Desktop\yvm\bytecode ydk.test.QuickSort
 + 垃圾回收
 ![](./public/gc_java.png)
 ![](./public/gc_sampling_2.png)
-
 
 # 开发文档
 ## 1. 从字节码到对象
