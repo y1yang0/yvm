@@ -1,4 +1,4 @@
-![](./public/moonight.png) Yet another java Virtual Machine
+ <p align="center"><img height="60%" width="80%" src="./public/moonight.png"></p>
 
 [中文](https://github.com/racaljk/yvm/blob/master/README.md) | [English](https://github.com/racaljk/yvm/blob/master/README.EN.md)
 | [![Build Status](https://travis-ci.org/racaljk/yvm.svg?branch=master)](https://travis-ci.org/racaljk/yvm) | ![](https://img.shields.io/badge/comiler-MSVC2017-brightgreen.svg) | ![](https://img.shields.io/badge/comiler-gcc7.0-brightgreen.svg)
@@ -61,7 +61,9 @@ $ ./yvm --runtime=C:\Users\Cthulhu\Desktop\yvm\bytecode ydk.test.QuickSort
 ![](./public/gc_sampling_2.png)
 
 # 开发文档
-## 1. 从字节码到对象
+<details>
+  <summary>1. 从字节码到对象</summary>
+
 `MethodArea`负责管理字节码到JavaClass的完整生命周期。`MethodArea`的方法是自解释的：
 ```cpp
 class MethodArea {
@@ -100,7 +102,11 @@ public:
 JavaClass* testClass = yrt.ma->findJavaClass("Test.class");
 JObject* testInstance = yrt.jheap->createObject(*testClass);
 ```
-## 2.1 对象内部构造
+</details>
+
+<details>
+<summary>2.1 对象内部构造</summary>
+
 虚拟机执行时栈上存放的都是JObject,它的结构如下：
 ```cpp
 struct JObject {
@@ -131,7 +137,10 @@ struct JArray {
 [4]  ->   <1, [field_a]>
 [..] ->   <..,[...]>
 ```
-## 2.2 从对象创建到消亡
+</details>
+<details>
+<summary>2.2 从对象创建到消亡</summary>
+
 上面提到，对象持有一个offset和jc，其中jc表示的JavaClass是由`MethodArea`负责管理的，offset则是由`JavaHeap`负责管理。`JavaHeap`提供了大量API，这里选取的是最重要的:
 ```cpp
 class JavaHeap {
@@ -174,7 +183,10 @@ JObject*  helloField = yrt.jheap->getFieldByName(testClass,"hello","Ljava/lang/S
 yrt.jheap->putFieldByName(testClass,"k","I",testInstance);
 ```
 
-## Ⅰ. 关于JDK
+</details>
+<details>
+<summary>Ⅰ. 关于JDK</summary>
+
 部分JDK类是JVM运行攸关的,但由于JDK比较复杂不便于初期开发,所以这里用重写过的JDK代替,源码参见[javaclass](./javaclass)目录,可以使用`compilejava.bat`进行编译，编译后`*.class`文件位于[bytecode](./bytecode).
 目前重写过的JDK类有:
 + `java.lang.String`
@@ -183,8 +195,10 @@ yrt.jheap->putFieldByName(testClass,"k","I",testInstance);
 + `java.lang.Math(::random())`
 + `java.lang.Runnable`
 + `java.lang.Thread`
++ 
+</details>
 
 [Wiki](https://github.com/racaljk/yvm/wiki)和源码中有很多详细的开发文档，如果想探索关于`YVM`的更多内容，请移步浏览.
 
 # License
-Code licensed under the MIT License.
+所有代码基于[MIT](./LICENSE)协议
