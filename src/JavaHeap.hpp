@@ -122,7 +122,7 @@ struct MonitorContainer : public Container<InternalMonitor> {
             lastOffset = (--getContainer().end())->first;
         }
         getContainer().insert(make_pair(lastOffset + 1, new ObjectMonitor()));
-        return lastOffset;
+        return lastOffset + 1;
     }
 };
 //--------------------------------------------------------------------------------

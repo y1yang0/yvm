@@ -38,9 +38,7 @@ public:
 
 public:
     JavaClass* loadClassIfAbsent(const string& jcName);
-
     void linkClassIfAbsent(const string& jcName);
-
     void initClassIfAbsent(CodeExecution& exec, const string& jcName);
 
 private:
@@ -52,6 +50,7 @@ private:
     unordered_set<string> linkedClasses;
     unordered_set<string> initedClasses;
     unordered_map<string, JavaClass*> classTable;
+
     vector<string> searchPaths;
 };
 
