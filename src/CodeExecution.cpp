@@ -2,9 +2,8 @@
 #include "ClassFile.h"
 #include "CodeExecution.hpp"
 #include "Debug.h"
-#include "Descriptor.h"
 #include "JavaClass.h"
-#include "JavaHeap.h"
+#include "JavaHeap.hpp"
 #include "Option.h"
 
 #include <cassert>

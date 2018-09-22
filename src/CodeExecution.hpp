@@ -5,7 +5,7 @@
 #include "ClassFile.h"
 #include "Frame.h"
 #include "JavaException.h"
-#include "JavaHeap.h"
+#include "JavaHeap.hpp"
 #include "JavaType.h"
 #include "RuntimeEnv.h"
 

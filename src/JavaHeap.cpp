@@ -1,7 +1,6 @@
 #include "AccessFlag.h"
-#include "Descriptor.h"
 #include "JavaClass.h"
-#include "JavaHeap.h"
+#include "JavaHeap.hpp"
 #include "JavaType.h"
 #include "NativeMethod.h"
 #include "Utils.h"

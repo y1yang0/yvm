@@ -6,7 +6,7 @@ if(UNIX)
     set(CMAKE_EXE_LINKER_FLAGS "-lpthread")
 endif()
 
-# YOU MAY CHANGE THESE OPTIONS TO ADAPT YOUR ENVIRONMENT
+# YOU *SHOULD* CHANGE THESE OPTIONS TO ADAPT YOUR ENVIRONMENT
 # BOOST LIBRARY
 set(Boost_USE_STATIC_LIBS        ON)
 set(Boost_USE_MULTITHREADED      ON)
@@ -16,7 +16,7 @@ find_package(Boost COMPONENTS system filesystem program_options)
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
     set(SOURCE_FILES src/Main.cpp src/MethodArea.cpp src/Frame.h src/ClassFile.h src/AccessFlag.h src/RuntimeEnv.cpp src/NativeMethod.h
-            src/CodeExecution.cpp src/Debug.cpp src/Descriptor.cpp src/JavaClass.cpp src/JavaHeap.cpp src/CodeExecution.hpp 
+            src/CodeExecution.cpp src/Debug.cpp src/JavaClass.cpp src/JavaHeap.cpp src/JavaHeap.hpp src/CodeExecution.hpp
             src/NativeMethod.cpp src/YVM.cpp src/Utils.h src/Utils.cpp src/JavaException.h src/JavaException.cpp src/ObjectMonitor.h 
             src/ObjectMonitor.cpp src/GC.h src/GC.cpp src/Option.h src/Concurrent.hpp src/Concurrent.cpp src/Internal.h)
     add_executable(yvm ${SOURCE_FILES})

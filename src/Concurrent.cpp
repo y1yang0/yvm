@@ -4,7 +4,7 @@
 using namespace std;
 
 void ThreadPool::initialize(int startThreadNum) noexcept {
-    for (unsigned i = 0; i < startThreadNum; i++) {
+    for (int i = 0; i < startThreadNum; i++) {
         threads.emplace_back(&ThreadPool::runPendingWork, this);
     }
 }

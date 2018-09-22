@@ -1,6 +1,6 @@
 #include "Frame.h"
 #include "GC.h"
-#include "JavaHeap.h"
+#include "JavaHeap.hpp"
 #include "MethodArea.h"
 #include "RuntimeEnv.h"
 

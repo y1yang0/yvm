@@ -4,7 +4,7 @@
 #include <string>
 #include "Frame.h"
 #include "JavaClass.h"
-#include "JavaHeap.h"
+#include "JavaHeap.hpp"
 #include "MethodArea.h"
 #include "NativeMethod.h"
 #include "YVM.h"

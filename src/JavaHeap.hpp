@@ -11,10 +11,6 @@
 
 using namespace std;
 
-using InternalObject = vector<JType*>;
-using InternalArray = pair<size_t, JType**>;
-using InternalMonitor = ObjectMonitor*;
-
 template <typename Type>
 class Container {
     friend class ConcurrentGC;
@@ -22,31 +18,35 @@ class Container {
 public:
     explicit Container() = default;
     virtual ~Container() {}
-    virtual size_t place() {
-        size_t lastOffset = 0;
-        if (!container.empty()) {
-            lastOffset = (--container.end())->first;
-        }
-        container.insert(make_pair(lastOffset + 1, Type{}));
-        return lastOffset + 1;
-    }
-    void remove(size_t offset) {
-        if (container.find(offset) != container.end()) {
-            container.erase(offset);
-        }
-    }
-    Type& find(size_t offset) { return container.find(offset)->second; }
-    bool has(size_t offset) {
-        return container.find(offset) != container.end();
-    }
+
+    virtual size_t place();
+    void remove(size_t offset);
+    Type& find(size_t offset) { return data.find(offset)->second; }
+    bool has(size_t offset) { return data.find(offset) != data.end(); }
 
 protected:
-    auto& getContainer() { return container; }
+    auto& getContainer() { return data; }
 
 private:
-    map<size_t, Type, less<>, HeapAllocator<pair<const size_t, Type>>>
-        container;
+    map<size_t, Type, less<>, HeapAllocator<pair<const size_t, Type>>> data;
 };
+
+template <typename Type>
+void Container<Type>::remove(size_t offset) {
+    if (data.find(offset) != data.end()) {
+        data.erase(offset);
+    }
+}
+
+template <typename Type>
+size_t Container<Type>::place() {
+    size_t lastOffset = 0;
+    if (!data.empty()) {
+        lastOffset = (--data.end())->first;
+    }
+    data.insert(make_pair(lastOffset + 1, Type{}));
+    return lastOffset + 1;
+}
 
 //--------------------------------------------------------------------------------
 // The ArrayContainer manages array's elements as well as object pool
@@ -57,6 +57,7 @@ private:
 // [4]  ->   <1, [field_a]>
 // [..] ->   <..,[...]>
 //--------------------------------------------------------------------------------
+using InternalArray = pair<size_t, JType**>;
 struct ArrayContainer : public Container<InternalArray> {
     ~ArrayContainer() override {
         for (auto intPairPair : getContainer()) {
@@ -80,6 +81,7 @@ struct ArrayContainer : public Container<InternalArray> {
 // [4]  ->  [field_a]
 // [..] ->  [...]
 //--------------------------------------------------------------------------------
+using InternalObject = vector<JType*>;
 struct ObjectContainer : public Container<InternalObject> {
     ~ObjectContainer() override {
         for (auto intVecPair : getContainer()) {
@@ -107,6 +109,7 @@ struct ObjectContainer : public Container<InternalObject> {
 // [4]  ->   ObjectMonitor*
 // [..] ->   ObjectMonitor*
 //--------------------------------------------------------------------------------
+using InternalMonitor = ObjectMonitor*;
 struct MonitorContainer : public Container<InternalMonitor> {
     ~MonitorContainer() override {
         for (auto intMonitorPair : getContainer()) {
@@ -149,7 +152,7 @@ public:
         putFieldByNameImpl(jc, object->jc, name, descriptor, object, value, 0);
     }
     void putFieldByOffset(const JObject& object, size_t fieldOffset,
-                                    JType* value) {
+                          JType* value) {
         lock_guard<recursive_mutex> lock(objMtx);
         objectContainer.find(object.offset)[fieldOffset] = value;
     }

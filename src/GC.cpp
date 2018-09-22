@@ -2,7 +2,7 @@
 #include "Concurrent.hpp"
 #include "GC.h"
 #include "JavaClass.h"
-#include "JavaHeap.h"
+#include "JavaHeap.hpp"
 #include "JavaType.h"
 #include "MethodArea.h"
 #include "YVM.h"
@@ -99,13 +99,13 @@ void ConcurrentGC::mark(JType* ref) {
 
 void ConcurrentGC::sweep() {
     future<void> objectFuture = gcThreadPool.submit([this]() -> void {
-        for (auto pos = yrt.jheap->objectContainer.container.begin();
-             pos != yrt.jheap->objectContainer.container.end();) {
+        for (auto pos = yrt.jheap->objectContainer.data.begin();
+             pos != yrt.jheap->objectContainer.data.end();) {
             // If we can not find active object in object bitmap then clear it
             // Notice that here we don't need to lock objectBitmap since it must
             // be marked before sweeping
             if (objectBitmap.find(pos->first) == objectBitmap.cend()) {
-                yrt.jheap->objectContainer.container.erase(pos++);
+                yrt.jheap->objectContainer.data.erase(pos++);
             } else {
                 ++pos;
             }
@@ -113,15 +113,15 @@ void ConcurrentGC::sweep() {
     });
 
     future<void> arrayFuture = gcThreadPool.submit([this]() -> void {
-        for (auto pos = yrt.jheap->arrayContainer.container.begin();
-             pos != yrt.jheap->arrayContainer.container.end();) {
+        for (auto pos = yrt.jheap->arrayContainer.data.begin();
+             pos != yrt.jheap->arrayContainer.data.end();) {
             // DITTO
             if (arrayBitmap.find(pos->first) == arrayBitmap.cend()) {
                 for (size_t i = 0; i < pos->second.first; i++) {
                     delete pos->second.second[i];
                 }
                 delete[] pos->second.second;
-                yrt.jheap->arrayContainer.container.erase(pos++);
+                yrt.jheap->arrayContainer.data.erase(pos++);
             } else {
                 ++pos;
             }
@@ -130,11 +130,11 @@ void ConcurrentGC::sweep() {
 
     future<void> monitorFuture = gcThreadPool.submit([this]() -> void {
         // DITTO
-        for (auto pos = yrt.jheap->monitorContainer.container.begin();
-             pos != yrt.jheap->monitorContainer.container.end();) {
+        for (auto pos = yrt.jheap->monitorContainer.data.begin();
+             pos != yrt.jheap->monitorContainer.data.end();) {
             if (objectBitmap.find(pos->first) == objectBitmap.cend() ||
                 arrayBitmap.find(pos->first) == arrayBitmap.cend()) {
-                yrt.jheap->monitorContainer.container.erase(pos++);
+                yrt.jheap->monitorContainer.data.erase(pos++);
             } else {
                 ++pos;
             }

@@ -1,5 +1,4 @@
 #include "AccessFlag.h"
-#include "Descriptor.h"
 #include "JavaClass.h"
 #include "MethodArea.h"
 
@@ -195,6 +194,45 @@ void MethodArea::initJavaClass(CodeExecution& exec, const string& jcName) {
     lock_guard<recursive_mutex> lockMA(maMutex);
     initedClasses.insert(jcName);
     exec.invokeByName(findJavaClass(jcName), "<clinit>", "()V");
+}
+
+JavaClass* MethodArea::loadClassIfAbsent(const string& jcName) {
+    lock_guard<recursive_mutex> lockMA(maMutex);
+
+    JavaClass* jc = findJavaClass(jcName);
+    if (jc) {
+        return jc;
+    }
+    loadJavaClass(jcName);
+    return findJavaClass(jcName);
+}
+
+void MethodArea::linkClassIfAbsent(const string& jcName) {
+    lock_guard<recursive_mutex> lockMA(maMutex);
+
+    bool linked = false;
+    for (auto p : linkedClasses) {
+        if (p == jcName) {
+            linked = true;
+        }
+    }
+    if (!linked) {
+        linkJavaClass(jcName);
+    }
+}
+
+void MethodArea::initClassIfAbsent(CodeExecution& exec, const string& jcName) {
+    lock_guard<recursive_mutex> lockMA(maMutex);
+
+    bool inited = false;
+    for (auto p : initedClasses) {
+        if (p == jcName) {
+            inited = true;
+        }
+    }
+    if (!inited) {
+        initJavaClass(exec, jcName);
+    }
 }
 
 bool MethodArea::removeJavaClass(const string& jcName) {

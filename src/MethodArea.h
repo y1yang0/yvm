@@ -37,44 +37,14 @@ public:
     void initJavaClass(CodeExecution& exec, const string& jcName);
 
 public:
-    JavaClass* loadClassIfAbsent(const string& jcName) {
-        lock_guard<recursive_mutex> lockMA(maMutex);
+    JavaClass* loadClassIfAbsent(const string& jcName);
 
-        JavaClass* jc = findJavaClass(jcName);
-        if (jc) {
-            return jc;
-        }
-        loadJavaClass(jcName);
-        return findJavaClass(jcName);
-    }
+    void linkClassIfAbsent(const string& jcName);
 
-    void linkClassIfAbsent(const string& jcName) {
-        lock_guard<recursive_mutex> lockMA(maMutex);
+    void initClassIfAbsent(CodeExecution& exec, const string& jcName);
 
-        bool linked = false;
-        for (auto p : linkedClasses) {
-            if (p == jcName) {
-                linked = true;
-            }
-        }
-        if (!linked) {
-            linkJavaClass(jcName);
-        }
-    }
-
-    void initClassIfAbsent(CodeExecution& exec, const string& jcName) {
-        lock_guard<recursive_mutex> lockMA(maMutex);
-
-        bool inited = false;
-        for (auto p : initedClasses) {
-            if (p == jcName) {
-                inited = true;
-            }
-        }
-        if (!inited) {
-            initJavaClass(exec, jcName);
-        }
-    }
+private:
+    const string parseNameToPath(const string& name);
 
 private:
     recursive_mutex maMutex;
@@ -83,8 +53,6 @@ private:
     unordered_set<string> initedClasses;
     unordered_map<string, JavaClass*> classTable;
     vector<string> searchPaths;
-
-    const string parseNameToPath(const string& name);
 };
 
 #endif  // YVM_METHODAREA_H
