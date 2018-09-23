@@ -1,7 +1,7 @@
  <p align="center"><img height="60%" width="80%" src="./public/moonight.png"></p>
 
 [中文](https://github.com/racaljk/yvm/blob/master/README.md) | [English](https://github.com/racaljk/yvm/blob/master/README.EN.md)
-| [![Build Status](https://travis-ci.org/racaljk/yvm.svg?branch=master)](https://travis-ci.org/racaljk/yvm) | ![](https://img.shields.io/badge/compiler-MSVC2017-brightgreen.svg) | ![](https://img.shields.io/badge/compiler-gcc7.0-brightgreen.svg)
+| [![Build Status](https://travis-ci.org/racaljk/yvm.svg?branch=master)](https://travis-ci.org/racaljk/yvm) | [![Codacy Badge](https://api.codacy.com/project/badge/Grade/233025ae523846109922307106d634ab)](https://www.codacy.com/app/racaljk/yvm?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=racaljk/yvm&amp;utm_campaign=Badge_Grade) | ![](https://img.shields.io/badge/compiler-MSVC2017-brightgreen.svg) | ![](https://img.shields.io/badge/compiler-gcc7.0-brightgreen.svg)
 
 YVM是用C++写的一个Java虚拟机，现在支持Java大部分功能，以及一个基于标记清除算法的并发垃圾回收器. 不过还有很多bug等待修复。
 感兴趣的朋友pull request/fork/star吧。
