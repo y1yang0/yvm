@@ -59,7 +59,7 @@ $ ./yvm --runtime=C:\Users\Cthulhu\Desktop\yvm\bytecode ydk.test.QuickSort
 ![](./public/gc_java.png)
 ![](./public/gc_sampling_2.png)
 
-# Development docs
+# Developing and hacking
 <details>
 <summary>1. From bytecode to an object </summary>
 
@@ -81,13 +81,13 @@ public:
     // link class which specified by jcName，initialize its fields
     void linkJavaClass(const string& jcName);
     // initialize class specified by jcName，call the static{} block
-    void initJavaClass(CodeExecution& exec, const string& jcName);
+    void initJavaClass(Interpreter& exec, const string& jcName);
 
 public:
     //auxiliary functions
     JavaClass* loadClassIfAbsent(const string& jcName);
     void linkClassIfAbsent(const string& jcName);
-    void initClassIfAbsent(CodeExecution& exec, const string& jcName);
+    void initClassIfAbsent(Interpreter& exec, const string& jcName);
 }
 ```
 For example, we have a bytecode file named `Test.class`，it would be available for jvm only if the following steps finished：
@@ -189,6 +189,51 @@ Rewrote JDK classes are as follows:
 + `java.lang.Math(::random())`
 + `java.lang.Runnable`
 + `java.lang.Thread`
+</details>
+
+<details> 
+<summary> II. Structure of source code </summary>
+
+```bash
+racaljk@ubuntu:~/yvm/src$ tree .
+.
+├── AccessFlag.h            # Access flag of class, method, field类
+├── ClassFile.h             # Corresponding structures for .class file
+├── Interpreter.cpp         # Core. Code execution engine
+├── Interpreter.hpp
+├── Concurrent.cpp          # Concurrency utilities
+├── Concurrent.hpp
+├── Debug.cpp               # Debuggin utilities
+├── Debug.h
+├── FileReader.h            # Read .class
+├── Frame.h                 # Runtime frame
+├── GC.cpp                  # Core. Garbage collector
+├── GC.h
+├── Internal.h              # Types that widely used within internal vm
+├── JavaClass.cpp           # Core. Representation of java class
+├── JavaClass.h
+├── JavaException.cpp       # Exception handling
+├── JavaException.h
+├── JavaHeap.cpp            # Core. Runtime heap, used to manage objects and arrays
+├── JavaHeap.hpp
+├── JavaType.h              # Java primitive types and reference type definitions
+├── Main.cpp                # Parse command line arguments
+├── MethodArea.cpp          # Core. Method area, used to manage JavaClass
+├── MethodArea.h
+├── NativeMethod.cpp        # Implementations of java native methods
+├── NativeMethod.h
+├── ObjectMonitor.cpp       # synchronized syntax implementation
+├── ObjectMonitor.h
+├── Option.h                # VM arguments and options
+├── RuntimeEnv.cpp          # Core. Definitions of runtime structures
+├── RuntimeEnv.h
+├── Utils.cpp               # Tools and utilities
+├── Utils.h
+├── YVM.cpp                 # Abstraction of virtual machine
+└── YVM.h
+
+0 directories, 34 files
+```
 </details>
 
 For more development documentations, see its [Wiki](https://github.com/racaljk/yvm/wiki) or source code comments(recommend), which contains various contents with regard to its structures, usages, and design principles, etc.  

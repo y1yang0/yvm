@@ -1,7 +1,7 @@
 #include "AccessFlag.h"
 #include "ClassFile.h"
-#include "CodeExecution.hpp"
 #include "Debug.h"
+#include "Interpreter.hpp"
 #include "JavaClass.h"
 #include "JavaHeap.hpp"
 #include "Option.h"
@@ -11,14 +11,21 @@
 #include <functional>
 #include <iostream>
 
+#define IS_COMPUTATIONAL_TYPE_1(value) \
+    (typeid(*value) != typeid(JDouble) && typeid(*value) != typeid(JLong))
+#define IS_COMPUTATIONAL_TYPE_2(value) \
+    (typeid(*value) == typeid(JDouble) || typeid(*value) == typeid(JLong))
+
 #pragma warning(disable : 4715)
 #pragma warning(disable : 4244)
 
-JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
+JType *Interpreter::execCode(const JavaClass *jc, CodeAttrCore &&ext) {
     for (decltype(ext.codeLength) op = 0; op < ext.codeLength; op++) {
+        // If callee propagates a unhandled exception, try to handle  it. When
+        // we can not handle it, propagates it to upper and returns
         if (exception.hasUnhandledException()) {
             op--;
-            auto* throwableObject = currentStackPop<JObject>();
+            auto *throwableObject = currentStackPop<JObject>();
             if (throwableObject == nullptr) {
                 throw std::runtime_error("null pointer");
             }
@@ -30,7 +37,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
 
             if (handleException(jc, ext, throwableObject, op)) {
                 while (!currentFrame->stack.empty()) {
-                    auto* temp = currentStackPop<JType>();
+                    auto *temp = currentStackPop<JType>();
                     delete temp;
                 }
                 currentFrame->stack.push_back(throwableObject);
@@ -45,12 +52,13 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
         }
         Inspector::printOpcode(ext.code, op);
 #endif
+        // Interpreting through big switching
         switch (ext.code[op]) {
             case op_nop: {
                 // DO NOTHING :-)
             } break;
             case op_aconst_null: {
-                JObject* obj = nullptr;
+                JObject *obj = nullptr;
                 currentFrame->stack.push_back(obj);
             } break;
             case op_iconst_m1: {
@@ -115,18 +123,18 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                 const u2 index = consumeU2(ext.code, op);
                 if (typeid(*jc->raw.constPoolInfo[index]) ==
                     typeid(CONSTANT_Double)) {
-                    auto val = dynamic_cast<CONSTANT_Double*>(
+                    auto val = dynamic_cast<CONSTANT_Double *>(
                                    jc->raw.constPoolInfo[index])
                                    ->val;
-                    JDouble* dval = new JDouble;
+                    JDouble *dval = new JDouble;
                     dval->val = val;
                     currentFrame->stack.push_back(dval);
                 } else if (typeid(*jc->raw.constPoolInfo[index]) ==
                            typeid(CONSTANT_Long)) {
-                    auto val = dynamic_cast<CONSTANT_Long*>(
+                    auto val = dynamic_cast<CONSTANT_Long *>(
                                    jc->raw.constPoolInfo[index])
                                    ->val;
-                    JLong* lval = new JLong;
+                    JLong *lval = new JLong;
                     lval->val = val;
                     currentFrame->stack.push_back(lval);
                 } else {
@@ -215,14 +223,12 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             case op_aload_3: {
                 load2Stack<JRef>(3);
             } break;
-#if __cplusplus >= 201703L
-                [[fallthrough]]
-#endif
-                case op_saload : case op_caload : case op_baload
-                    : case op_iaload : {
-                    loadArrayItem2Stack<JInt>();
-                }
-                break;
+            case op_saload:
+            case op_caload:
+            case op_baload:
+            case op_iaload: {
+                loadArrayItem2Stack<JInt>();
+            } break;
             case op_laload: {
                 loadArrayItem2Stack<JLong>();
             } break;
@@ -331,11 +337,11 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                 storeArrayItem<JRef>();
             } break;
             case op_bastore: {
-                JInt* value = currentStackPop<JInt>();
+                JInt *value = currentStackPop<JInt>();
                 value->val = static_cast<int8_t>(value->val);
 
-                JInt* index = currentStackPop<JInt>();
-                JArray* arrayref = currentStackPop<JArray>();
+                JInt *index = currentStackPop<JInt>();
+                JArray *arrayref = currentStackPop<JArray>();
                 if (arrayref == nullptr) {
                     throw std::runtime_error("null pointer");
                 }
@@ -346,26 +352,23 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
 
                 delete index;
             } break;
-#if __cplusplus >= 201103L
-                [[fallthrough]]
-#endif
-                case op_sastore : case op_castore : {
-                    JInt* value = currentStackPop<JInt>();
-                    value->val = static_cast<int16_t>(value->val);
+            case op_sastore:
+            case op_castore: {
+                JInt *value = currentStackPop<JInt>();
+                value->val = static_cast<int16_t>(value->val);
 
-                    JInt* index = currentStackPop<JInt>();
-                    JArray* arrayref = currentStackPop<JArray>();
-                    if (arrayref == nullptr) {
-                        throw std::runtime_error("null pointer");
-                    }
-                    if (index->val > arrayref->length || index->val < 0) {
-                        throw std::runtime_error("array index out of bounds");
-                    }
-                    yrt.jheap->putElement(*arrayref, index->val, value);
-
-                    delete index;
+                JInt *index = currentStackPop<JInt>();
+                JArray *arrayref = currentStackPop<JArray>();
+                if (arrayref == nullptr) {
+                    throw std::runtime_error("null pointer");
                 }
-                break;
+                if (index->val > arrayref->length || index->val < 0) {
+                    throw std::runtime_error("array index out of bounds");
+                }
+                yrt.jheap->putElement(*arrayref, index->val, value);
+
+                delete index;
+            } break;
             case op_pop: {
                 delete currentStackPop<JType>();
             } break;
@@ -374,7 +377,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                 delete currentStackPop<JType>();
             } break;
             case op_dup: {
-                JType* value = currentStackPop<JType>();
+                JType *value = currentStackPop<JType>();
 
                 assert(typeid(*value) != typeid(JLong) &&
                        typeid(*value) != typeid(JDouble));
@@ -382,8 +385,8 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                 currentFrame->stack.push_back(cloneValue(value));
             } break;
             case op_dup_x1: {
-                JType* value1 = currentStackPop<JType>();
-                JType* value2 = currentStackPop<JType>();
+                JType *value1 = currentStackPop<JType>();
+                JType *value2 = currentStackPop<JType>();
 
                 assert(IS_COMPUTATIONAL_TYPE_1(value1));
                 assert(IS_COMPUTATIONAL_TYPE_1(value2));
@@ -393,9 +396,9 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                 currentFrame->stack.push_back(value1);
             } break;
             case op_dup_x2: {
-                JType* value1 = currentStackPop<JType>();
-                JType* value2 = currentStackPop<JType>();
-                JType* value3 = currentStackPop<JType>();
+                JType *value1 = currentStackPop<JType>();
+                JType *value2 = currentStackPop<JType>();
+                JType *value3 = currentStackPop<JType>();
 
                 if (IS_COMPUTATIONAL_TYPE_1(value1) &&
                     IS_COMPUTATIONAL_TYPE_1(value2) &&
@@ -418,8 +421,8 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                 }
             } break;
             case op_dup2: {
-                JType* value1 = currentStackPop<JType>();
-                JType* value2 = currentStackPop<JType>();
+                JType *value1 = currentStackPop<JType>();
+                JType *value2 = currentStackPop<JType>();
 
                 if (IS_COMPUTATIONAL_TYPE_1(value1) &&
                     IS_COMPUTATIONAL_TYPE_1(value2)) {
@@ -439,9 +442,9 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                 }
             } break;
             case op_dup2_x1: {
-                JType* value1 = currentStackPop<JType>();
-                JType* value2 = currentStackPop<JType>();
-                JType* value3 = currentStackPop<JType>();
+                JType *value1 = currentStackPop<JType>();
+                JType *value2 = currentStackPop<JType>();
+                JType *value3 = currentStackPop<JType>();
 
                 if (IS_COMPUTATIONAL_TYPE_1(value1) &&
                     IS_COMPUTATIONAL_TYPE_1(value2) &&
@@ -465,10 +468,10 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                 }
             } break;
             case op_dup2_x2: {
-                JType* value1 = currentStackPop<JType>();
-                JType* value2 = currentStackPop<JType>();
-                JType* value3 = currentStackPop<JType>();
-                JType* value4 = currentStackPop<JType>();
+                JType *value1 = currentStackPop<JType>();
+                JType *value2 = currentStackPop<JType>();
+                JType *value3 = currentStackPop<JType>();
+                JType *value4 = currentStackPop<JType>();
                 if (IS_COMPUTATIONAL_TYPE_1(value1) &&
                     IS_COMPUTATIONAL_TYPE_1(value2) &&
                     IS_COMPUTATIONAL_TYPE_1(value3) &&
@@ -495,8 +498,8 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                 }
             } break;
             case op_swap: {
-                JType* value1 = currentStackPop<JType>();
-                JType* value2 = currentStackPop<JType>();
+                JType *value1 = currentStackPop<JType>();
+                JType *value2 = currentStackPop<JType>();
 
                 assert(IS_COMPUTATIONAL_TYPE_1(value1));
                 assert(IS_COMPUTATIONAL_TYPE_1(value2));
@@ -505,17 +508,17 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                     std::swap(value1, value2);
                 } else if (typeid(*value1) == typeid(JInt) &&
                            typeid(*value2) == typeid(JFloat)) {
-                    const int32_t temp = dynamic_cast<JInt*>(value1)->val;
-                    dynamic_cast<JInt*>(value1)->val = static_cast<int32_t>(
-                        dynamic_cast<JFloat*>(value2)->val);
-                    dynamic_cast<JFloat*>(value2)->val =
+                    const int32_t temp = dynamic_cast<JInt *>(value1)->val;
+                    dynamic_cast<JInt *>(value1)->val = static_cast<int32_t>(
+                        dynamic_cast<JFloat *>(value2)->val);
+                    dynamic_cast<JFloat *>(value2)->val =
                         static_cast<float>(temp);
                 } else if (typeid(*value1) == typeid(JFloat) &&
                            typeid(*value2) == typeid(JInt)) {
-                    const float temp = dynamic_cast<JFloat*>(value1)->val;
-                    dynamic_cast<JFloat*>(value1)->val =
-                        static_cast<int32_t>(dynamic_cast<JInt*>(value2)->val);
-                    dynamic_cast<JInt*>(value2)->val =
+                    const float temp = dynamic_cast<JFloat *>(value1)->val;
+                    dynamic_cast<JFloat *>(value1)->val =
+                        static_cast<int32_t>(dynamic_cast<JInt *>(value2)->val);
+                    dynamic_cast<JInt *>(value2)->val =
                         static_cast<int32_t>(temp);
                 } else if (typeid(*value1) == typeid(JFloat) &&
                            typeid(*value2) == typeid(JFloat)) {
@@ -662,16 +665,16 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                 const int8_t count = ext.code[++op];
                 const int32_t extendedCount = count;
                 if (IS_JINT(currentFrame->locals[index])) {
-                    dynamic_cast<JInt*>(currentFrame->locals[index])->val +=
+                    dynamic_cast<JInt *>(currentFrame->locals[index])->val +=
                         extendedCount;
                 } else if (IS_JLong(currentFrame->locals[index])) {
-                    dynamic_cast<JLong*>(currentFrame->locals[index])->val +=
+                    dynamic_cast<JLong *>(currentFrame->locals[index])->val +=
                         extendedCount;
                 } else if (IS_JFloat(currentFrame->locals[index])) {
-                    dynamic_cast<JFloat*>(currentFrame->locals[index])->val +=
+                    dynamic_cast<JFloat *>(currentFrame->locals[index])->val +=
                         extendedCount;
                 } else if (IS_JDouble(currentFrame->locals[index])) {
-                    dynamic_cast<JDouble*>(currentFrame->locals[index])->val +=
+                    dynamic_cast<JDouble *>(currentFrame->locals[index])->val +=
                         extendedCount;
                 } else {
                     SHOULD_NOT_REACH_HERE
@@ -713,85 +716,76 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             case op_d2f: {
                 typeCast<JDouble, JFloat>();
             } break;
-#if __cplusplus >= 201703L
-                [[fallthrough]]
-#endif
-                case op_i2c : case op_i2b : {
-                    auto* value = currentStackPop<JInt>();
-                    auto* result = new JInt;
-                    result->val = (int8_t)(value->val);
-                    currentFrame->stack.push_back(result);
-                    delete value;
-                }
-                break;
+            case op_i2c:
+            case op_i2b: {
+                auto *value = currentStackPop<JInt>();
+                auto *result = new JInt;
+                result->val = (int8_t)(value->val);
+                currentFrame->stack.push_back(result);
+                delete value;
+            } break;
             case op_i2s: {
-                auto* value = currentStackPop<JInt>();
-                auto* result = new JInt;
+                auto *value = currentStackPop<JInt>();
+                auto *result = new JInt;
                 result->val = (int16_t)(value->val);
                 currentFrame->stack.push_back(result);
                 delete value;
             } break;
             case op_lcmp: {
-                auto* value2 = currentStackPop<JLong>();
-                auto* value1 = currentStackPop<JLong>();
+                auto *value2 = currentStackPop<JLong>();
+                auto *value1 = currentStackPop<JLong>();
                 if (value1->val > value2->val) {
-                    auto* result = new JInt(1);
+                    auto *result = new JInt(1);
                     currentFrame->stack.push_back(result);
                 } else if (value1->val == value2->val) {
-                    auto* result = new JInt(0);
+                    auto *result = new JInt(0);
                     currentFrame->stack.push_back(result);
                 } else {
-                    auto* result = new JInt(-1);
+                    auto *result = new JInt(-1);
                     currentFrame->stack.push_back(result);
                 }
                 delete value1;
                 delete value2;
             } break;
-#if __cplusplus >= 201703L
-                [[fallthrough]]
-#endif
-                case op_fcmpg : case op_fcmpl : {
-                    auto* value2 = currentStackPop<JFloat>();
-                    auto* value1 = currentStackPop<JFloat>();
-                    if (value1->val > value2->val) {
-                        auto* result = new JInt(1);
-                        currentFrame->stack.push_back(result);
-                    } else if (std::abs(value1->val - value2->val) < 0.000001) {
-                        auto* result = new JInt(0);
-                        currentFrame->stack.push_back(result);
-                    } else {
-                        auto* result = new JInt(-1);
-                        currentFrame->stack.push_back(result);
-                    }
-                    delete value1;
-                    delete value2;
+            case op_fcmpg:
+            case op_fcmpl: {
+                auto *value2 = currentStackPop<JFloat>();
+                auto *value1 = currentStackPop<JFloat>();
+                if (value1->val > value2->val) {
+                    auto *result = new JInt(1);
+                    currentFrame->stack.push_back(result);
+                } else if (std::abs(value1->val - value2->val) < 0.000001) {
+                    auto *result = new JInt(0);
+                    currentFrame->stack.push_back(result);
+                } else {
+                    auto *result = new JInt(-1);
+                    currentFrame->stack.push_back(result);
                 }
-                break;
-#if __cplusplus >= 201703L
-                [[fallthrough]]
-#endif
-                case op_dcmpl : case op_dcmpg : {
-                    auto* value2 = currentStackPop<JDouble>();
-                    auto* value1 = currentStackPop<JDouble>();
-                    if (value1->val > value2->val) {
-                        auto* result = new JInt(1);
-                        currentFrame->stack.push_back(result);
-                    } else if (std::abs(value1->val - value2->val) <
-                               0.000000000001) {
-                        auto* result = new JInt(0);
-                        currentFrame->stack.push_back(result);
-                    } else {
-                        auto* result = new JInt(-1);
-                        currentFrame->stack.push_back(result);
-                    }
-                    delete value1;
-                    delete value2;
+                delete value1;
+                delete value2;
+            } break;
+            case op_dcmpl:
+            case op_dcmpg: {
+                auto *value2 = currentStackPop<JDouble>();
+                auto *value1 = currentStackPop<JDouble>();
+                if (value1->val > value2->val) {
+                    auto *result = new JInt(1);
+                    currentFrame->stack.push_back(result);
+                } else if (std::abs(value1->val - value2->val) <
+                           0.000000000001) {
+                    auto *result = new JInt(0);
+                    currentFrame->stack.push_back(result);
+                } else {
+                    auto *result = new JInt(-1);
+                    currentFrame->stack.push_back(result);
                 }
-                break;
+                delete value1;
+                delete value2;
+            } break;
             case op_ifeq: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto* value = currentStackPop<JInt>();
+                auto *value = currentStackPop<JInt>();
                 if (value->val == 0) {
                     op = currentOffset + branchindex;
                 }
@@ -800,7 +794,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             case op_ifne: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto* value = currentStackPop<JInt>();
+                auto *value = currentStackPop<JInt>();
                 if (value->val != 0) {
                     op = currentOffset + branchindex;
                 }
@@ -809,7 +803,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             case op_iflt: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto* value = currentStackPop<JInt>();
+                auto *value = currentStackPop<JInt>();
                 if (value->val < 0) {
                     op = currentOffset + branchindex;
                 }
@@ -818,7 +812,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             case op_ifge: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto* value = currentStackPop<JInt>();
+                auto *value = currentStackPop<JInt>();
                 if (value->val >= 0) {
                     op = currentOffset + branchindex;
                 }
@@ -827,7 +821,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             case op_ifgt: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto* value = currentStackPop<JInt>();
+                auto *value = currentStackPop<JInt>();
                 if (value->val > 0) {
                     op = currentOffset + branchindex;
                 }
@@ -836,7 +830,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             case op_ifle: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto* value = currentStackPop<JInt>();
+                auto *value = currentStackPop<JInt>();
                 if (value->val <= 0) {
                     op = currentOffset + branchindex;
                 }
@@ -845,8 +839,8 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             case op_if_icmpeq: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto* value2 = currentStackPop<JInt>();
-                auto* value1 = currentStackPop<JInt>();
+                auto *value2 = currentStackPop<JInt>();
+                auto *value1 = currentStackPop<JInt>();
                 if (value1->val == value2->val) {
                     op = currentOffset + branchindex;
                 }
@@ -856,8 +850,8 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             case op_if_icmpne: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto* value2 = currentStackPop<JInt>();
-                auto* value1 = currentStackPop<JInt>();
+                auto *value2 = currentStackPop<JInt>();
+                auto *value1 = currentStackPop<JInt>();
                 if (value1->val != value2->val) {
                     op = currentOffset + branchindex;
                 }
@@ -867,8 +861,8 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             case op_if_icmplt: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto* value2 = currentStackPop<JInt>();
-                auto* value1 = currentStackPop<JInt>();
+                auto *value2 = currentStackPop<JInt>();
+                auto *value1 = currentStackPop<JInt>();
                 if (value1->val < value2->val) {
                     op = currentOffset + branchindex;
                 }
@@ -878,8 +872,8 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             case op_if_icmpge: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto* value2 = currentStackPop<JInt>();
-                auto* value1 = currentStackPop<JInt>();
+                auto *value2 = currentStackPop<JInt>();
+                auto *value1 = currentStackPop<JInt>();
                 if (value1->val >= value2->val) {
                     op = currentOffset + branchindex;
                 }
@@ -889,8 +883,8 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             case op_if_icmpgt: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto* value2 = currentStackPop<JInt>();
-                auto* value1 = currentStackPop<JInt>();
+                auto *value2 = currentStackPop<JInt>();
+                auto *value1 = currentStackPop<JInt>();
                 if (value1->val > value2->val) {
                     op = currentOffset + branchindex;
                 }
@@ -900,8 +894,8 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             case op_if_icmple: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto* value2 = currentStackPop<JInt>();
-                auto* value1 = currentStackPop<JInt>();
+                auto *value2 = currentStackPop<JInt>();
+                auto *value1 = currentStackPop<JInt>();
                 if (value1->val <= value2->val) {
                     op = currentOffset + branchindex;
                 }
@@ -911,8 +905,8 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             case op_if_acmpeq: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto* value2 = currentStackPop<JObject>();
-                auto* value1 = currentStackPop<JObject>();
+                auto *value2 = currentStackPop<JObject>();
+                auto *value1 = currentStackPop<JObject>();
                 if (value1->offset == value2->offset &&
                     value1->jc == value2->jc) {
                     op = currentOffset + branchindex;
@@ -923,8 +917,8 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             case op_if_acmpne: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto* value2 = currentStackPop<JObject>();
-                auto* value1 = currentStackPop<JObject>();
+                auto *value2 = currentStackPop<JObject>();
+                auto *value1 = currentStackPop<JObject>();
                 if (value1->offset != value2->offset ||
                     value1->jc != value2->jc) {
                     op = currentOffset + branchindex;
@@ -956,7 +950,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                     jumpOffset.push_back(consumeU4(ext.code, op));
                 }
 
-                auto* index = currentStackPop<JInt>();
+                auto *index = currentStackPop<JInt>();
                 if (index->val < low || index->val > high) {
                     op = currentOffset + defaultIndex;
                 } else {
@@ -976,7 +970,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                     matchOffset.insert(std::make_pair(consumeU4(ext.code, op),
                                                       consumeU4(ext.code, op)));
                 }
-                auto* key = currentStackPop<JInt>();
+                auto *key = currentStackPop<JInt>();
                 auto res = matchOffset.find(key->val);
                 if (res != matchOffset.end()) {
                     op = currentOffset + (*res).second;
@@ -1006,14 +1000,14 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             case op_getstatic: {
                 const u2 index = consumeU2(ext.code, op);
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
-                JType* field = cloneValue(getStaticField(
+                JType *field = cloneValue(getStaticField(
                     std::get<0>(symbolicRef), std::get<1>(symbolicRef),
                     std::get<2>(symbolicRef)));
                 currentFrame->stack.push_back(field);
             } break;
             case op_putstatic: {
                 u2 index = consumeU2(ext.code, op);
-                JType* value = currentStackPop<JType>();
+                JType *value = currentStackPop<JType>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
                 putStaticField(std::get<0>(symbolicRef),
                                std::get<1>(symbolicRef),
@@ -1021,9 +1015,9 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             } break;
             case op_getfield: {
                 u2 index = consumeU2(ext.code, op);
-                JObject* objectref = currentStackPop<JObject>();
+                JObject *objectref = currentStackPop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
-                JType* field = cloneValue(yrt.jheap->getFieldByName(
+                JType *field = cloneValue(yrt.jheap->getFieldByName(
                     std::get<0>(symbolicRef), std::get<1>(symbolicRef),
                     std::get<2>(symbolicRef), objectref));
                 currentFrame->stack.push_back(field);
@@ -1032,8 +1026,8 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             } break;
             case op_putfield: {
                 const u2 index = consumeU2(ext.code, op);
-                JType* value = currentStackPop<JType>();
-                JObject* objectref = currentStackPop<JObject>();
+                JType *value = currentStackPop<JType>();
+                JObject *objectref = currentStackPop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
                 yrt.jheap->putFieldByName(
                     std::get<0>(symbolicRef), std::get<1>(symbolicRef),
@@ -1065,7 +1059,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             } break;
             case op_invokespecial: {
                 const u2 index = consumeU2(ext.code, op);
-                std::tuple<JavaClass*, std::string, std::string> symbolicRef;
+                std::tuple<JavaClass *, std::string, std::string> symbolicRef;
 
                 if (typeid(*jc->raw.constPoolInfo[index]) ==
                     typeid(CONSTANT_InterfaceMethodref)) {
@@ -1080,7 +1074,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
 
                 // If all of the following are true, let C be the direct
                 // superclass of the current class :
-                JavaClass* symbolicRefClass = std::get<0>(symbolicRef);
+                JavaClass *symbolicRefClass = std::get<0>(symbolicRef);
                 if ("<init>" != std::get<1>(symbolicRef)) {
                     if (!IS_CLASS_INTERFACE(
                             symbolicRefClass->raw.accessFlags)) {
@@ -1141,17 +1135,17 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             } break;
             case op_new: {
                 const u2 index = consumeU2(ext.code, op);
-                JObject* objectref = execNew(jc, index);
+                JObject *objectref = execNew(jc, index);
                 currentFrame->stack.push_back(objectref);
             } break;
             case op_newarray: {
                 const u1 atype = ext.code[++op];
-                JInt* count = currentStackPop<JInt>();
+                JInt *count = currentStackPop<JInt>();
 
                 if (count->val < 0) {
                     throw std::runtime_error("negative array size");
                 }
-                JArray* arrayref = yrt.jheap->createPODArray(atype, count->val);
+                JArray *arrayref = yrt.jheap->createPODArray(atype, count->val);
 
                 currentFrame->stack.push_back(arrayref);
                 delete count;
@@ -1159,31 +1153,31 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             case op_anewarray: {
                 const u2 index = consumeU2(ext.code, op);
                 auto symbolicRef = parseClassSymbolicReference(jc, index);
-                JInt* count = currentStackPop<JInt>();
+                JInt *count = currentStackPop<JInt>();
 
                 if (count->val < 0) {
                     throw std::runtime_error("negative array size");
                 }
-                JArray* arrayref = yrt.jheap->createObjectArray(
+                JArray *arrayref = yrt.jheap->createObjectArray(
                     *std::get<0>(symbolicRef), count->val);
 
                 currentFrame->stack.push_back(arrayref);
                 delete count;
             } break;
             case op_arraylength: {
-                JArray* arrayref = currentStackPop<JArray>();
+                JArray *arrayref = currentStackPop<JArray>();
 
                 if (arrayref == nullptr) {
                     throw std::runtime_error("null pointer\n");
                 }
-                JInt* length = new JInt;
+                JInt *length = new JInt;
                 length->val = arrayref->length;
                 currentFrame->stack.push_back(length);
 
                 delete arrayref;
             } break;
             case op_athrow: {
-                auto* throwableObject = currentStackPop<JObject>();
+                auto *throwableObject = currentStackPop<JObject>();
                 if (throwableObject == nullptr) {
                     throw std::runtime_error("null pointer");
                 }
@@ -1195,7 +1189,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
 
                 if (handleException(jc, ext, throwableObject, op)) {
                     while (!currentFrame->stack.empty()) {
-                        auto* temp = currentStackPop<JType>();
+                        auto *temp = currentStackPop<JType>();
                         delete temp;
                     }
                     currentFrame->stack.push_back(throwableObject);
@@ -1210,7 +1204,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             } break;
             case op_instanceof: {
                 const u2 index = consumeU2(ext.code, op);
-                auto* objectref = currentStackPop<JObject>();
+                auto *objectref = currentStackPop<JObject>();
                 if (objectref == nullptr) {
                     currentFrame->stack.push_back(new JInt(0));
                 }
@@ -1221,26 +1215,26 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
                 }
             } break;
             case op_monitorenter: {
-                JType* ref = currentStackPop<JType>();
+                JType *ref = currentStackPop<JType>();
 
                 if (ref == nullptr) {
                     throw std::runtime_error("null pointer");
                 }
 
                 if (!yrt.jheap->hasMonitor(ref)) {
-                    dynamic_cast<JObject*>(ref)->offset =
+                    dynamic_cast<JObject *>(ref)->offset =
                         yrt.jheap->createMonitor();
                 }
                 yrt.jheap->findMonitor(ref)->enter(std::this_thread::get_id());
             } break;
             case op_monitorexit: {
-                JType* ref = currentStackPop<JType>();
+                JType *ref = currentStackPop<JType>();
 
                 if (ref == nullptr) {
                     throw std::runtime_error("null pointer");
                 }
                 if (!yrt.jheap->hasMonitor(ref)) {
-                    dynamic_cast<JObject*>(ref)->offset =
+                    dynamic_cast<JObject *>(ref)->offset =
                         yrt.jheap->createMonitor();
                 }
                 yrt.jheap->findMonitor(ref)->exit();
@@ -1255,7 +1249,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             case op_ifnull: {
                 u4 currentOffset = op - 1;
                 int16_t branchIndex = consumeU2(ext.code, op);
-                JObject* value = currentStackPop<JObject>();
+                JObject *value = currentStackPop<JObject>();
                 if (value == nullptr) {
                     delete value;
                     op = currentOffset + branchIndex;
@@ -1264,7 +1258,7 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
             case op_ifnonnull: {
                 u4 currentOffset = op - 1;
                 int16_t branchIndex = consumeU2(ext.code, op);
-                JObject* value = currentStackPop<JObject>();
+                JObject *value = currentStackPop<JObject>();
                 if (value != nullptr) {
                     delete value;
                     op = currentOffset + branchIndex;
@@ -1299,28 +1293,28 @@ JType* CodeExecution::execCode(const JavaClass* jc, CodeAttrCore&& ext) {
 
 //  This function does "ldc" opcode jc type of JavaClass, which indicate where
 //  to resolve
-void CodeExecution::loadConstantPoolItem2Stack(const JavaClass* jc, u2 index) {
+void Interpreter::loadConstantPoolItem2Stack(const JavaClass *jc, u2 index) {
     if (typeid(*jc->raw.constPoolInfo[index]) == typeid(CONSTANT_Integer)) {
         auto val =
-            dynamic_cast<CONSTANT_Integer*>(jc->raw.constPoolInfo[index])->val;
-        JInt* ival = new JInt;
+            dynamic_cast<CONSTANT_Integer *>(jc->raw.constPoolInfo[index])->val;
+        JInt *ival = new JInt;
         ival->val = val;
         currentFrame->stack.push_back(ival);
     } else if (typeid(*jc->raw.constPoolInfo[index]) ==
                typeid(CONSTANT_Float)) {
         auto val =
-            dynamic_cast<CONSTANT_Float*>(jc->raw.constPoolInfo[index])->val;
-        JFloat* fval = new JFloat;
+            dynamic_cast<CONSTANT_Float *>(jc->raw.constPoolInfo[index])->val;
+        JFloat *fval = new JFloat;
         fval->val = val;
         currentFrame->stack.push_back(fval);
     } else if (typeid(*jc->raw.constPoolInfo[index]) ==
                typeid(CONSTANT_String)) {
         auto val = jc->getString(
-            dynamic_cast<CONSTANT_String*>(jc->raw.constPoolInfo[index])
+            dynamic_cast<CONSTANT_String *>(jc->raw.constPoolInfo[index])
                 ->stringIndex);
-        JObject* str = yrt.jheap->createObject(
+        JObject *str = yrt.jheap->createObject(
             *yrt.ma->loadClassIfAbsent("java/lang/String"));
-        JArray* value = yrt.jheap->createCharArray(val, val.length());
+        JArray *value = yrt.jheap->createCharArray(val, val.length());
         // Put string  into str's field; according the source file of
         // java.lang.Object, we know that its first field was used to store
         // chars
@@ -1342,12 +1336,11 @@ void CodeExecution::loadConstantPoolItem2Stack(const JavaClass* jc, u2 index) {
     }
 }
 
-bool CodeExecution::handleException(const JavaClass* jc,
-                                    const CodeAttrCore& ext,
-                                    const JObject* objectref, u4& op) {
+bool Interpreter::handleException(const JavaClass *jc, const CodeAttrCore &ext,
+                                  const JObject *objectref, u4 &op) {
     FOR_EACH(i, ext.exceptionTableLength) {
-        const std::string& catchTypeName = jc->getString(
-            dynamic_cast<CONSTANT_Class*>(
+        const std::string &catchTypeName = jc->getString(
+            dynamic_cast<CONSTANT_Class *>(
                 jc->raw.constPoolInfo[ext.exceptionTable[i].catchType])
                 ->nameIndex);
 
@@ -1371,26 +1364,25 @@ bool CodeExecution::handleException(const JavaClass* jc,
     return false;
 }
 
-std::tuple<JavaClass*, std::string, std::string>
-CodeExecution::parseFieldSymbolicReference(const JavaClass* jc,
-                                           u2 index) const {
-    const std::string& symbolicReferenceFieldName = jc->getString(
-        dynamic_cast<CONSTANT_NameAndType*>(
-            jc->raw.constPoolInfo[dynamic_cast<CONSTANT_Fieldref*>(
+std::tuple<JavaClass *, std::string, std::string>
+Interpreter::parseFieldSymbolicReference(const JavaClass *jc, u2 index) const {
+    const std::string &symbolicReferenceFieldName = jc->getString(
+        dynamic_cast<CONSTANT_NameAndType *>(
+            jc->raw.constPoolInfo[dynamic_cast<CONSTANT_Fieldref *>(
                                       jc->raw.constPoolInfo[index])
                                       ->nameAndTypeIndex])
             ->nameIndex);
 
-    const std::string& symbolicReferenceFieldDescriptor = jc->getString(
-        dynamic_cast<CONSTANT_NameAndType*>(
-            jc->raw.constPoolInfo[dynamic_cast<CONSTANT_Fieldref*>(
+    const std::string &symbolicReferenceFieldDescriptor = jc->getString(
+        dynamic_cast<CONSTANT_NameAndType *>(
+            jc->raw.constPoolInfo[dynamic_cast<CONSTANT_Fieldref *>(
                                       jc->raw.constPoolInfo[index])
                                       ->nameAndTypeIndex])
             ->descriptorIndex);
 
-    JavaClass* symbolicReferenceClass = yrt.ma->loadClassIfAbsent(jc->getString(
-        dynamic_cast<CONSTANT_Class*>(
-            jc->raw.constPoolInfo[dynamic_cast<CONSTANT_Fieldref*>(
+    JavaClass *symbolicReferenceClass = yrt.ma->loadClassIfAbsent(jc->getString(
+        dynamic_cast<CONSTANT_Class *>(
+            jc->raw.constPoolInfo[dynamic_cast<CONSTANT_Fieldref *>(
                                       jc->raw.constPoolInfo[index])
                                       ->classIndex])
             ->nameIndex));
@@ -1401,30 +1393,30 @@ CodeExecution::parseFieldSymbolicReference(const JavaClass* jc,
                            symbolicReferenceFieldDescriptor);
 }
 
-std::tuple<JavaClass*, std::string, std::string>
-CodeExecution::parseInterfaceMethodSymbolicReference(const JavaClass* jc,
-                                                     u2 index) const {
-    const std::string& symbolicReferenceInterfaceMethodName = jc->getString(
-        dynamic_cast<CONSTANT_NameAndType*>(
-            jc->raw.constPoolInfo[dynamic_cast<CONSTANT_InterfaceMethodref*>(
+std::tuple<JavaClass *, std::string, std::string>
+Interpreter::parseInterfaceMethodSymbolicReference(const JavaClass *jc,
+                                                   u2 index) const {
+    const std::string &symbolicReferenceInterfaceMethodName = jc->getString(
+        dynamic_cast<CONSTANT_NameAndType *>(
+            jc->raw.constPoolInfo[dynamic_cast<CONSTANT_InterfaceMethodref *>(
                                       jc->raw.constPoolInfo[index])
                                       ->nameAndTypeIndex])
             ->nameIndex);
 
-    const std::string& symbolicReferenceInterfaceMethodDescriptor =
+    const std::string &symbolicReferenceInterfaceMethodDescriptor =
         jc->getString(
-            dynamic_cast<CONSTANT_NameAndType*>(
+            dynamic_cast<CONSTANT_NameAndType *>(
                 jc->raw
-                    .constPoolInfo[dynamic_cast<CONSTANT_InterfaceMethodref*>(
+                    .constPoolInfo[dynamic_cast<CONSTANT_InterfaceMethodref *>(
                                        jc->raw.constPoolInfo[index])
                                        ->nameAndTypeIndex])
                 ->descriptorIndex);
 
-    JavaClass* symbolicReferenceInterfaceMethodClass =
+    JavaClass *symbolicReferenceInterfaceMethodClass =
         yrt.ma->loadClassIfAbsent(jc->getString(
-            dynamic_cast<CONSTANT_Class*>(
+            dynamic_cast<CONSTANT_Class *>(
                 jc->raw
-                    .constPoolInfo[dynamic_cast<CONSTANT_InterfaceMethodref*>(
+                    .constPoolInfo[dynamic_cast<CONSTANT_InterfaceMethodref *>(
                                        jc->raw.constPoolInfo[index])
                                        ->classIndex])
                 ->nameIndex));
@@ -1436,27 +1428,26 @@ CodeExecution::parseInterfaceMethodSymbolicReference(const JavaClass* jc,
                            symbolicReferenceInterfaceMethodDescriptor);
 }
 
-std::tuple<JavaClass*, std::string, std::string>
-CodeExecution::parseMethodSymbolicReference(const JavaClass* jc,
-                                            u2 index) const {
-    const std::string& symbolicReferenceMethodName = jc->getString(
-        dynamic_cast<CONSTANT_NameAndType*>(
-            jc->raw.constPoolInfo[dynamic_cast<CONSTANT_Methodref*>(
+std::tuple<JavaClass *, std::string, std::string>
+Interpreter::parseMethodSymbolicReference(const JavaClass *jc, u2 index) const {
+    const std::string &symbolicReferenceMethodName = jc->getString(
+        dynamic_cast<CONSTANT_NameAndType *>(
+            jc->raw.constPoolInfo[dynamic_cast<CONSTANT_Methodref *>(
                                       jc->raw.constPoolInfo[index])
                                       ->nameAndTypeIndex])
             ->nameIndex);
 
-    const std::string& symbolicReferenceMethodDescriptor = jc->getString(
-        dynamic_cast<CONSTANT_NameAndType*>(
-            jc->raw.constPoolInfo[dynamic_cast<CONSTANT_Methodref*>(
+    const std::string &symbolicReferenceMethodDescriptor = jc->getString(
+        dynamic_cast<CONSTANT_NameAndType *>(
+            jc->raw.constPoolInfo[dynamic_cast<CONSTANT_Methodref *>(
                                       jc->raw.constPoolInfo[index])
                                       ->nameAndTypeIndex])
             ->descriptorIndex);
 
-    JavaClass* symbolicReferenceMethodClass =
+    JavaClass *symbolicReferenceMethodClass =
         yrt.ma->loadClassIfAbsent(jc->getString(
-            dynamic_cast<CONSTANT_Class*>(
-                jc->raw.constPoolInfo[dynamic_cast<CONSTANT_Methodref*>(
+            dynamic_cast<CONSTANT_Class *>(
+                jc->raw.constPoolInfo[dynamic_cast<CONSTANT_Methodref *>(
                                           jc->raw.constPoolInfo[index])
                                           ->classIndex])
                 ->nameIndex));
@@ -1467,10 +1458,11 @@ CodeExecution::parseMethodSymbolicReference(const JavaClass* jc,
                            symbolicReferenceMethodDescriptor);
 }
 
-std::tuple<JavaClass*> CodeExecution::parseClassSymbolicReference(
-    const JavaClass* jc, u2 index) const {
-    const std::string& ref = jc->getString(
-        dynamic_cast<CONSTANT_Class*>(jc->raw.constPoolInfo[index])->nameIndex);
+std::tuple<JavaClass *> Interpreter::parseClassSymbolicReference(
+    const JavaClass *jc, u2 index) const {
+    const std::string &ref = jc->getString(
+        dynamic_cast<CONSTANT_Class *>(jc->raw.constPoolInfo[index])
+            ->nameIndex);
     std::string str{ref};
     if (ref[0] == '[') {
         str = peelArrayComponentTypeFrom(ref);
@@ -1478,17 +1470,17 @@ std::tuple<JavaClass*> CodeExecution::parseClassSymbolicReference(
     return std::make_tuple(yrt.ma->loadClassIfAbsent(str));
 }
 
-JType* CodeExecution::getStaticField(JavaClass* parsedJc,
-                                     const std::string& fieldName,
-                                     const std::string& fieldDescriptor) {
+JType *Interpreter::getStaticField(JavaClass *parsedJc,
+                                   const std::string &fieldName,
+                                   const std::string &fieldDescriptor) {
     yrt.ma->linkClassIfAbsent(parsedJc->getClassName());
     yrt.ma->initClassIfAbsent(*this, parsedJc->getClassName());
 
     FOR_EACH(i, parsedJc->raw.fieldsCount) {
         if (IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {
-            const std::string& n =
+            const std::string &n =
                 parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
-            const std::string& d =
+            const std::string &d =
                 parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
             if (n == fieldName && d == fieldDescriptor) {
                 return parsedJc->sfield.find(i)->second;
@@ -1503,18 +1495,18 @@ JType* CodeExecution::getStaticField(JavaClass* parsedJc,
     return nullptr;
 }
 
-void CodeExecution::putStaticField(JavaClass* parsedJc,
-                                   const std::string& fieldName,
-                                   const std::string& fieldDescriptor,
-                                   JType* value) {
+void Interpreter::putStaticField(JavaClass *parsedJc,
+                                 const std::string &fieldName,
+                                 const std::string &fieldDescriptor,
+                                 JType *value) {
     yrt.ma->linkClassIfAbsent(parsedJc->getClassName());
     yrt.ma->initClassIfAbsent(*this, parsedJc->getClassName());
 
     FOR_EACH(i, parsedJc->raw.fieldsCount) {
         if (IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {
-            const std::string& n =
+            const std::string &n =
                 parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
-            const std::string& d =
+            const std::string &d =
                 parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
             if (n == fieldName && d == fieldDescriptor) {
                 parsedJc->sfield.find(i)->second = value;
@@ -1528,10 +1520,10 @@ void CodeExecution::putStaticField(JavaClass* parsedJc,
     }
 }
 
-JObject* CodeExecution::execNew(const JavaClass* jc, u2 index) {
-    yrt.ma->linkClassIfAbsent(const_cast<JavaClass*>(jc)->getClassName());
+JObject *Interpreter::execNew(const JavaClass *jc, u2 index) {
+    yrt.ma->linkClassIfAbsent(const_cast<JavaClass *>(jc)->getClassName());
     yrt.ma->initClassIfAbsent(*this,
-                              const_cast<JavaClass*>(jc)->getClassName());
+                              const_cast<JavaClass *>(jc)->getClassName());
 
     if (typeid(*jc->raw.constPoolInfo[index]) != typeid(CONSTANT_Class)) {
         throw std::runtime_error(
@@ -1539,12 +1531,13 @@ JObject* CodeExecution::execNew(const JavaClass* jc, u2 index) {
             "interface\n");
     }
     std::string className = jc->getString(
-        dynamic_cast<CONSTANT_Class*>(jc->raw.constPoolInfo[index])->nameIndex);
-    JavaClass* newClass = yrt.ma->loadClassIfAbsent(className);
+        dynamic_cast<CONSTANT_Class *>(jc->raw.constPoolInfo[index])
+            ->nameIndex);
+    JavaClass *newClass = yrt.ma->loadClassIfAbsent(className);
     return yrt.jheap->createObject(*newClass);
 }
 
-CodeAttrCore CodeExecution::getCodeAttrCore(const MethodInfo* m) {
+CodeAttrCore Interpreter::getCodeAttrCore(const MethodInfo *m) {
     CodeAttrCore ext{};
     if (!m) {
         return ext;
@@ -1552,16 +1545,17 @@ CodeAttrCore CodeExecution::getCodeAttrCore(const MethodInfo* m) {
 
     FOR_EACH(i, m->attributeCount) {
         if (typeid(*m->attributes[i]) == typeid(ATTR_Code)) {
-            ext.code = dynamic_cast<ATTR_Code*>(m->attributes[i])->code;
-            ext.codeLength = ((ATTR_Code*)m->attributes[i])->codeLength;
+            ext.code = dynamic_cast<ATTR_Code *>(m->attributes[i])->code;
+            ext.codeLength = ((ATTR_Code *)m->attributes[i])->codeLength;
             ext.maxLocal =
-                dynamic_cast<ATTR_Code*>(m->attributes[i])->maxLocals;
-            ext.maxStack = dynamic_cast<ATTR_Code*>(m->attributes[i])->maxStack;
+                dynamic_cast<ATTR_Code *>(m->attributes[i])->maxLocals;
+            ext.maxStack =
+                dynamic_cast<ATTR_Code *>(m->attributes[i])->maxStack;
             ext.exceptionTableLength =
-                dynamic_cast<ATTR_Code*>(m->attributes[i])
+                dynamic_cast<ATTR_Code *>(m->attributes[i])
                     ->exceptionTableLength;
             ext.exceptionTable =
-                dynamic_cast<ATTR_Code*>(m->attributes[i])->exceptionTable;
+                dynamic_cast<ATTR_Code *>(m->attributes[i])->exceptionTable;
             ext.valid = true;
             break;
         }
@@ -1569,11 +1563,11 @@ CodeAttrCore CodeExecution::getCodeAttrCore(const MethodInfo* m) {
     return ext;
 }
 
-bool CodeExecution::checkInstanceof(const JavaClass* jc, u2 index,
-                                    JType* objectref) {
+bool Interpreter::checkInstanceof(const JavaClass *jc, u2 index,
+                                  JType *objectref) {
     std::string TclassName =
-        (char*)dynamic_cast<CONSTANT_Utf8*>(
-            jc->raw.constPoolInfo[dynamic_cast<CONSTANT_Class*>(
+        (char *)dynamic_cast<CONSTANT_Utf8 *>(
+            jc->raw.constPoolInfo[dynamic_cast<CONSTANT_Class *>(
                                       jc->raw.constPoolInfo[index])
                                       ->nameIndex])
             ->bytes;
@@ -1595,25 +1589,25 @@ bool CodeExecution::checkInstanceof(const JavaClass* jc, u2 index,
 
     if (typeid(objectref) == typeid(JObject)) {
         if (!IS_CLASS_INTERFACE(
-                dynamic_cast<JObject*>(objectref)->jc->raw.accessFlags)) {
+                dynamic_cast<JObject *>(objectref)->jc->raw.accessFlags)) {
             // If it's an ordinary class
             if (tType == TYPE_CLASS) {
-                if (yrt.ma->findJavaClass(dynamic_cast<JObject*>(objectref)
+                if (yrt.ma->findJavaClass(dynamic_cast<JObject *>(objectref)
                                               ->jc->getClassName())
                             ->getClassName() == TclassName ||
-                    yrt.ma->findJavaClass(dynamic_cast<JObject*>(objectref)
+                    yrt.ma->findJavaClass(dynamic_cast<JObject *>(objectref)
                                               ->jc->getSuperClassName())
                             ->getClassName() == TclassName) {
                     return true;
                 }
             } else if (tType == TYPE_INTERFACE) {
-                auto&& interfaceIdxs =
-                    dynamic_cast<JObject*>(objectref)->jc->getInterfacesIndex();
+                auto &&interfaceIdxs = dynamic_cast<JObject *>(objectref)
+                                           ->jc->getInterfacesIndex();
                 FOR_EACH(i, interfaceIdxs.size()) {
                     std::string interfaceName =
-                        dynamic_cast<JObject*>(objectref)->jc->getString(
-                            dynamic_cast<CONSTANT_Class*>(
-                                dynamic_cast<JObject*>(objectref)
+                        dynamic_cast<JObject *>(objectref)->jc->getString(
+                            dynamic_cast<CONSTANT_Class *>(
+                                dynamic_cast<JObject *>(objectref)
                                     ->jc->raw.constPoolInfo[interfaceIdxs[i]])
                                 ->nameIndex);
                     if (interfaceName == TclassName) {
@@ -1630,9 +1624,9 @@ bool CodeExecution::checkInstanceof(const JavaClass* jc, u2 index,
                     return true;
                 }
             } else if (tType == TYPE_INTERFACE) {
-                if (TclassName ==
-                        dynamic_cast<JObject*>(objectref)->jc->getClassName() ||
-                    TclassName == dynamic_cast<JObject*>(objectref)
+                if (TclassName == dynamic_cast<JObject *>(objectref)
+                                      ->jc->getClassName() ||
+                    TclassName == dynamic_cast<JObject *>(objectref)
                                       ->jc->getSuperClassName()) {
                     return true;
                 }
@@ -1646,12 +1640,12 @@ bool CodeExecution::checkInstanceof(const JavaClass* jc, u2 index,
                 return true;
             }
         } else if (tType == TYPE_INTERFACE) {
-            auto* firstComponent = dynamic_cast<JObject*>(
-                yrt.jheap->getElement(*dynamic_cast<JArray*>(objectref), 0));
-            auto&& interfaceIdxs = firstComponent->jc->getInterfacesIndex();
+            auto *firstComponent = dynamic_cast<JObject *>(
+                yrt.jheap->getElement(*dynamic_cast<JArray *>(objectref), 0));
+            auto &&interfaceIdxs = firstComponent->jc->getInterfacesIndex();
             FOR_EACH(i, interfaceIdxs.size()) {
                 if (firstComponent->jc->getString(
-                        dynamic_cast<CONSTANT_Class*>(
+                        dynamic_cast<CONSTANT_Class *>(
                             firstComponent->jc->raw
                                 .constPoolInfo[interfaceIdxs[i]])
                             ->nameIndex) == TclassName) {
@@ -1668,12 +1662,12 @@ bool CodeExecution::checkInstanceof(const JavaClass* jc, u2 index,
     }
 }
 
-std::pair<MethodInfo*, const JavaClass*> CodeExecution::findMethod(
-    const JavaClass* jc, const std::string& methodName,
-    const std::string& methodDescriptor) {
+std::pair<MethodInfo *, const JavaClass *> Interpreter::findMethod(
+    const JavaClass *jc, const std::string &methodName,
+    const std::string &methodDescriptor) {
     // Find corresponding method at current object's class;
     FOR_EACH(i, jc->raw.methodsCount) {
-        auto* methodInfo = jc->getMethod(methodName, methodDescriptor);
+        auto *methodInfo = jc->getMethod(methodName, methodDescriptor);
         if (methodInfo) {
             return std::make_pair(methodInfo, jc);
         }
@@ -1681,7 +1675,7 @@ std::pair<MethodInfo*, const JavaClass*> CodeExecution::findMethod(
     // Find corresponding method at object's super class unless it's an instance
     // of
     if (jc->raw.superClass != 0) {
-        JavaClass* superClass =
+        JavaClass *superClass =
             yrt.ma->loadClassIfAbsent(jc->getSuperClassName());
         auto methodPair = findMethod(jc, methodName, methodDescriptor);
         if (methodPair.first) {
@@ -1692,13 +1686,13 @@ std::pair<MethodInfo*, const JavaClass*> CodeExecution::findMethod(
     // interface class existing
     if (jc->raw.interfacesCount > 0) {
         FOR_EACH(eachInterface, jc->raw.interfacesCount) {
-            const std::string& interfaceName = jc->getString(
-                dynamic_cast<CONSTANT_Class*>(
+            const std::string &interfaceName = jc->getString(
+                dynamic_cast<CONSTANT_Class *>(
                     jc->raw.constPoolInfo[jc->raw.interfaces[eachInterface]])
                     ->nameIndex);
-            JavaClass* interfaceClass =
+            JavaClass *interfaceClass =
                 yrt.ma->loadClassIfAbsent(interfaceName);
-            auto* methodInfo =
+            auto *methodInfo =
                 interfaceClass->getMethod(methodName, methodDescriptor);
             if (methodInfo && (!IS_METHOD_ABSTRACT(methodInfo->accessFlags) &&
                                !IS_METHOD_STATIC(methodInfo->accessFlags) &&
@@ -1716,30 +1710,30 @@ std::pair<MethodInfo*, const JavaClass*> CodeExecution::findMethod(
     return std::make_pair(nullptr, nullptr);
 }
 
-void CodeExecution::pushMethodArguments(Frame* frame,
-                                        std::vector<int>& parameter) {
+void Interpreter::pushMethodArguments(Frame *frame,
+                                      std::vector<int> &parameter) {
     for (int64_t i = (int64_t)parameter.size() - 1; i >= 0; i--) {
         if (parameter[i] == T_INT || parameter[i] == T_BOOLEAN ||
             parameter[i] == T_CHAR || parameter[i] == T_BYTE ||
             parameter[i] == T_SHORT) {
-            auto* v = currentStackPop<JInt>();
+            auto *v = currentStackPop<JInt>();
             frame->locals.push_front(v);
         } else if (parameter[i] == T_FLOAT) {
-            auto* v = currentStackPop<JFloat>();
+            auto *v = currentStackPop<JFloat>();
             frame->locals.push_front(v);
         } else if (parameter[i] == T_DOUBLE) {
-            auto* v = currentStackPop<JDouble>();
+            auto *v = currentStackPop<JDouble>();
             frame->locals.push_front(nullptr);
             frame->locals.push_front(v);
         } else if (parameter[i] == T_LONG) {
-            auto* v = currentStackPop<JLong>();
+            auto *v = currentStackPop<JLong>();
             frame->locals.push_front(nullptr);
             frame->locals.push_front(v);
         } else if (parameter[i] == T_EXTRA_ARRAY) {
-            auto* v = currentStackPop<JArray>();
+            auto *v = currentStackPop<JArray>();
             frame->locals.push_front(v);
         } else if (parameter[i] == T_EXTRA_OBJECT) {
-            auto* v = currentStackPop<JObject>();
+            auto *v = currentStackPop<JObject>();
             frame->locals.push_front(v);
         } else {
             SHOULD_NOT_REACH_HERE;
@@ -1747,15 +1741,15 @@ void CodeExecution::pushMethodArguments(Frame* frame,
     }
 }
 
-JObject* CodeExecution::pushMethodThisArgument(Frame* frame) {
-    auto* objectref = currentStackPop<JObject>();
+JObject *Interpreter::pushMethodThisArgument(Frame *frame) {
+    auto *objectref = currentStackPop<JObject>();
     frame->locals.push_front(objectref);
     return objectref;
 }
 
-void CodeExecution::invokeByName(JavaClass* jc, const std::string& methodName,
-                                 const std::string& methodDescriptor) {
-    const MethodInfo* m = jc->getMethod(methodName, methodDescriptor);
+void Interpreter::invokeByName(JavaClass *jc, const std::string &methodName,
+                               const std::string &methodDescriptor) {
+    const MethodInfo *m = jc->getMethod(methodName, methodDescriptor);
     CodeAttrCore ext = getCodeAttrCore(m);
     const int returnType =
         std::get<0>(peelMethodParameterAndType(methodDescriptor));
@@ -1777,7 +1771,7 @@ void CodeExecution::invokeByName(JavaClass* jc, const std::string& methodName,
 #endif
 
     // Actual method calling routine
-    Frame* frame = new Frame;
+    Frame *frame = new Frame;
     frame->locals.resize(ext.maxLocal);
     frames.push_back(frame);
     currentFrame = frames.back();
@@ -1786,7 +1780,7 @@ void CodeExecution::invokeByName(JavaClass* jc, const std::string& methodName,
         frame->locals.resize(ext.maxLocal);
     }
 
-    JType* returnValue{};
+    JType *returnValue{};
     if (IS_METHOD_NATIVE(m->accessFlags)) {
         returnValue = cloneValue(
             execNative(jc->getClassName(), methodName, methodDescriptor));
@@ -1814,9 +1808,9 @@ void CodeExecution::invokeByName(JavaClass* jc, const std::string& methodName,
     }
 }
 
-void CodeExecution::invokeInterface(const JavaClass* jc,
-                                    const std::string& methodName,
-                                    const std::string& methodDescriptor) {
+void Interpreter::invokeInterface(const JavaClass *jc,
+                                  const std::string &methodName,
+                                  const std::string &methodDescriptor) {
     // Invoke interface method
 
     const auto invokingMethod = findMethod(jc, methodName, methodDescriptor);
@@ -1825,7 +1819,7 @@ void CodeExecution::invokeInterface(const JavaClass* jc,
         std::cout << "-";
     }
     std::cout << "Execute "
-              << const_cast<JavaClass*>(invokingMethod.second)->getClassName()
+              << const_cast<JavaClass *>(invokingMethod.second)->getClassName()
               << "::" << methodName << "() " << methodDescriptor << "\n";
 #endif
 
@@ -1836,7 +1830,7 @@ void CodeExecution::invokeInterface(const JavaClass* jc,
     auto parameterAndReturnType = peelMethodParameterAndType(methodDescriptor);
     const int returnType = std::get<0>(parameterAndReturnType);
     auto parameter = std::get<1>(parameterAndReturnType);
-    Frame* frame = new Frame;
+    Frame *frame = new Frame;
     pushMethodArguments(frame, parameter);
     pushMethodThisArgument(frame);
 
@@ -1849,10 +1843,10 @@ void CodeExecution::invokeInterface(const JavaClass* jc,
         frame->locals.resize(ext.maxLocal);
     }
 
-    JType* returnValue{};
+    JType *returnValue{};
     if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
         returnValue = cloneValue(execNative(
-            const_cast<JavaClass*>(invokingMethod.second)->getClassName(),
+            const_cast<JavaClass *>(invokingMethod.second)->getClassName(),
             methodName, methodDescriptor));
     } else {
         returnValue =
@@ -1874,15 +1868,15 @@ void CodeExecution::invokeInterface(const JavaClass* jc,
     }
 }
 
-void CodeExecution::invokeVirtual(const std::string& methodName,
-                                  const std::string& methodDescriptor) {
+void Interpreter::invokeVirtual(const std::string &methodName,
+                                const std::string &methodDescriptor) {
     auto parameterAndReturnType = peelMethodParameterAndType(methodDescriptor);
     const int returnType = std::get<0>(parameterAndReturnType);
     auto parameter = std::get<1>(parameterAndReturnType);
 
-    Frame* frame = new Frame;
+    Frame *frame = new Frame;
     pushMethodArguments(frame, parameter);
-    auto* objectref = pushMethodThisArgument(frame);
+    auto *objectref = pushMethodThisArgument(frame);
     frames.push_back(frame);
     this->currentFrame = frame;
 
@@ -1899,15 +1893,15 @@ void CodeExecution::invokeVirtual(const std::string& methodName,
         std::cout << "-";
     }
     std::cout << "Execute "
-              << const_cast<JavaClass*>(invokingMethod.second)->getClassName()
+              << const_cast<JavaClass *>(invokingMethod.second)->getClassName()
               << "::" << methodName << "() " << methodDescriptor << "\n";
 #endif
 
-    JType* returnValue{};
+    JType *returnValue{};
     if (invokingMethod.first) {
         if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
             returnValue = cloneValue(execNative(
-                const_cast<JavaClass*>(invokingMethod.second)->getClassName(),
+                const_cast<JavaClass *>(invokingMethod.second)->getClassName(),
                 invokingMethod.second->getString(
                     invokingMethod.first->nameIndex),
                 invokingMethod.second->getString(
@@ -1935,9 +1929,9 @@ void CodeExecution::invokeVirtual(const std::string& methodName,
     }
 }
 
-void CodeExecution::invokeSpecial(const JavaClass* jc,
-                                  const std::string& methodName,
-                                  const std::string& methodDescriptor) {
+void Interpreter::invokeSpecial(const JavaClass *jc,
+                                const std::string &methodName,
+                                const std::string &methodDescriptor) {
     //  Invoke instance method; special handling for superclass, private,
     //  and instance initialization method invocations
 
@@ -1945,9 +1939,9 @@ void CodeExecution::invokeSpecial(const JavaClass* jc,
     const int returnType = std::get<0>(parameterAndReturnType);
     auto parameter = std::get<1>(parameterAndReturnType);
 
-    Frame* frame = new Frame;
+    Frame *frame = new Frame;
     pushMethodArguments(frame, parameter);
-    auto* objectref = pushMethodThisArgument(frame);
+    auto *objectref = pushMethodThisArgument(frame);
     frames.push_back(frame);
     this->currentFrame = frame;
 
@@ -1957,15 +1951,15 @@ void CodeExecution::invokeSpecial(const JavaClass* jc,
         std::cout << "-";
     }
     std::cout << "Execute "
-              << const_cast<JavaClass*>(invokingMethod.second)->getClassName()
+              << const_cast<JavaClass *>(invokingMethod.second)->getClassName()
               << "::" << methodName << "() " << methodDescriptor << "\n";
 #endif
 
-    JType* returnValue{};
+    JType *returnValue{};
     if (invokingMethod.first) {
         if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
             returnValue = cloneValue(execNative(
-                const_cast<JavaClass*>(invokingMethod.second)->getClassName(),
+                const_cast<JavaClass *>(invokingMethod.second)->getClassName(),
                 invokingMethod.second->getString(
                     invokingMethod.first->nameIndex),
                 invokingMethod.second->getString(
@@ -1979,10 +1973,10 @@ void CodeExecution::invokeSpecial(const JavaClass* jc,
                 cloneValue(execCode(invokingMethod.second, std::move(ext)));
         }
     } else if (IS_CLASS_INTERFACE(jc->raw.accessFlags)) {
-        JavaClass* javaLangObjectClass = yrt.ma->findJavaClass(
+        JavaClass *javaLangObjectClass = yrt.ma->findJavaClass(
             "java/lang/"
             "Object");
-        MethodInfo* javaLangObjectMethod =
+        MethodInfo *javaLangObjectMethod =
             javaLangObjectClass->getMethod(methodName, methodDescriptor);
         if (javaLangObjectMethod &&
             IS_METHOD_PUBLIC(javaLangObjectMethod->accessFlags) &&
@@ -2018,14 +2012,14 @@ void CodeExecution::invokeSpecial(const JavaClass* jc,
     }
 }
 
-void CodeExecution::invokeStatic(const JavaClass* jc,
-                                 const std::string& methodName,
-                                 const std::string& methodDescriptor) {
+void Interpreter::invokeStatic(const JavaClass *jc,
+                               const std::string &methodName,
+                               const std::string &methodDescriptor) {
     // Get instance method name and descriptor from CONSTANT_Methodref locating
     // by index and get interface method parameter and return value descriptor
-    yrt.ma->linkClassIfAbsent(const_cast<JavaClass*>(jc)->getClassName());
+    yrt.ma->linkClassIfAbsent(const_cast<JavaClass *>(jc)->getClassName());
     yrt.ma->initClassIfAbsent(*this,
-                              const_cast<JavaClass*>(jc)->getClassName());
+                              const_cast<JavaClass *>(jc)->getClassName());
 
     const auto invokingMethod = findMethod(jc, methodName, methodDescriptor);
 #ifdef YVM_DEBUG_SHOW_EXEC_FLOW
@@ -2033,14 +2027,14 @@ void CodeExecution::invokeStatic(const JavaClass* jc,
         std::cout << "-";
     }
     std::cout << "Execute "
-              << const_cast<JavaClass*>(invokingMethod.second)->getClassName()
+              << const_cast<JavaClass *>(invokingMethod.second)->getClassName()
               << "::" << methodName << "() " << methodDescriptor << "\n";
 #endif
     assert(IS_METHOD_STATIC(invokingMethod.first->accessFlags) == true);
     assert(IS_METHOD_ABSTRACT(invokingMethod.first->accessFlags) == false);
     assert("<init>" != methodName);
 
-    Frame* frame = new Frame;
+    Frame *frame = new Frame;
     auto ext = getCodeAttrCore(invokingMethod.first);
 
     if (frame->locals.size() < ext.maxLocal) {
@@ -2055,10 +2049,10 @@ void CodeExecution::invokeStatic(const JavaClass* jc,
     frames.push_back(frame);
     this->currentFrame = frame;
 
-    JType* returnValue{};
+    JType *returnValue{};
     if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
         returnValue = cloneValue(execNative(
-            const_cast<JavaClass*>(invokingMethod.second)->getClassName(),
+            const_cast<JavaClass *>(invokingMethod.second)->getClassName(),
             methodName, methodDescriptor));
     } else {
         returnValue =
@@ -2080,9 +2074,9 @@ void CodeExecution::invokeStatic(const JavaClass* jc,
     }
 }
 
-JType* CodeExecution::execNative(const std::string& className,
-                                 const std::string& methodName,
-                                 const std::string& methodDescriptor) {
+JType *Interpreter::execNative(const std::string &className,
+                               const std::string &methodName,
+                               const std::string &methodDescriptor) {
     std::string nativeMethod(className);
     nativeMethod.append(".");
     nativeMethod.append(methodName);

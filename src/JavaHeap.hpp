@@ -131,7 +131,7 @@ struct MonitorContainer : public Container<InternalMonitor> {
 // storage/access/deletion took place here.
 //--------------------------------------------------------------------------------
 class JavaHeap {
-    friend class CodeExecution;
+    friend class Interpreter;
     friend class ConcurrentGC;
 
 public:

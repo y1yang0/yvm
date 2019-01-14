@@ -12,7 +12,7 @@
 
 using namespace std;
 
-class CodeExecution;
+class Interpreter;
 class JavaClass;
 class ConcurrentGC;
 
@@ -34,12 +34,12 @@ public:
     bool loadJavaClass(const string& jcName);
     bool removeJavaClass(const string& jcName);
     void linkJavaClass(const string& jcName);
-    void initJavaClass(CodeExecution& exec, const string& jcName);
+    void initJavaClass(Interpreter& exec, const string& jcName);
 
 public:
     JavaClass* loadClassIfAbsent(const string& jcName);
     void linkClassIfAbsent(const string& jcName);
-    void initClassIfAbsent(CodeExecution& exec, const string& jcName);
+    void initClassIfAbsent(Interpreter& exec, const string& jcName);
 
 private:
     const string parseNameToPath(const string& name);

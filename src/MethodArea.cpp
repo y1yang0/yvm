@@ -190,7 +190,7 @@ void MethodArea::linkJavaClass(const string& jcName) {
     linkedClasses.insert(javaClass->getClassName());
 }
 
-void MethodArea::initJavaClass(CodeExecution& exec, const string& jcName) {
+void MethodArea::initJavaClass(Interpreter& exec, const string& jcName) {
     lock_guard<recursive_mutex> lockMA(maMutex);
     initedClasses.insert(jcName);
     exec.invokeByName(findJavaClass(jcName), "<clinit>", "()V");
@@ -221,7 +221,7 @@ void MethodArea::linkClassIfAbsent(const string& jcName) {
     }
 }
 
-void MethodArea::initClassIfAbsent(CodeExecution& exec, const string& jcName) {
+void MethodArea::initClassIfAbsent(Interpreter& exec, const string& jcName) {
     lock_guard<recursive_mutex> lockMA(maMutex);
 
     bool inited = false;
@@ -249,23 +249,18 @@ bool MethodArea::removeJavaClass(const string& jcName) {
 const string MethodArea::parseNameToPath(const string& name) {
     // convert java.util.ArrayList to /jdk/xxx/java/util/ArrayList.class
 
-    boost::filesystem::path part2FileName;
-    vector<string> pathNode;
-    boost::split(pathNode, name, boost::is_any_of("."),
-                 boost::token_compress_on);
-    for (auto& node : pathNode) {
-        part2FileName /= node;
-    }
-    part2FileName.concat(".class");  // directly appending .class suffix
-
-    for (const string& p : this->searchPaths) {
-        boost::filesystem::path part1FileName(p);
-        part1FileName /= part2FileName;
-        if (boost::filesystem::exists(part1FileName)) {
-            return part1FileName
-                .generic_string();  // Return string representation only if it's
-                                    // a valid file path
+    for (auto path : this->searchPaths) {
+        if (path.length() > 0 && path[path.length() - 1] != '/') {
+            path += '/';
         }
+        path += name + ".class";
+        fstream fin;
+        fin.open(path, ios::in);
+        if (fin) {
+            fin.close();
+            return path;  // Return only if it's a valid file path
+        }
+        fin.close();
     }
     return string("");
 }

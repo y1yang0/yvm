@@ -62,7 +62,7 @@ bool YVM::linkClass(const std::string& name) {
 }
 
 // Initialize given class.
-bool YVM::initClass(CodeExecution& exec, const std::string& name) {
+bool YVM::initClass(Interpreter& exec, const std::string& name) {
     if (!yrt.ma->findJavaClass(name)) {
         // It's not an logical endurable error, so we throw and linkage
         // exception to denote it;
@@ -87,7 +87,7 @@ void YVM::callMain(const std::string& name) {
         auto* jc = yrt.ma->loadClassIfAbsent(name);
         yrt.ma->linkClassIfAbsent(name);
         // For each execution thread, we have a code execution engine
-        CodeExecution exec{};
+        Interpreter exec{};
         yrt.ma->initClassIfAbsent(exec, name);
         exec.invokeByName(jc, "main", "([Ljava/lang/String;)V");
     });

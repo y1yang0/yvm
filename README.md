@@ -81,7 +81,7 @@ public:
     //链接jcName类，初始化static字段
     void linkJavaClass(const string& jcName);
     //初始化jcName，初始化静态字段，调用static{}
-    void initJavaClass(CodeExecution& exec, const string& jcName);
+    void initJavaClass(Interpreter& exec, const string& jcName);
 
 public:
     //辅助方法，如果不存在jcName则加载 
@@ -89,7 +89,7 @@ public:
     //如果未链接jcName则链接
     void linkClassIfAbsent(const string& jcName);
     //如果未初始化jcName则初始化
-    void initClassIfAbsent(CodeExecution& exec, const string& jcName);
+    void initClassIfAbsent(Interpreter& exec, const string& jcName);
 }
 ```
 假设磁盘存在一个`Test.class`文件，它会经历如下过程：
@@ -185,7 +185,7 @@ yrt.jheap->putFieldByName(testClass,"k","I",testInstance);
 
 </details>
 <details>
-<summary>Ⅰ. 关于JDK</summary>
+<summary> I. 关于JDK</summary>
 
 部分JDK类是JVM运行攸关的,但由于JDK比较复杂不便于初期开发,所以这里用重写过的JDK代替,源码参见[javaclass](./javaclass)目录,可以使用`compilejava.bat`进行编译，编译后`*.class`文件位于[bytecode](./bytecode).
 目前重写过的JDK类有:
@@ -199,6 +199,51 @@ yrt.jheap->putFieldByName(testClass,"k","I",testInstance);
 </details>
 
 [Wiki](https://github.com/racaljk/yvm/wiki)和源码中有很多详细的开发文档，如果想探索关于`YVM`的更多内容，请移步浏览.
+
+<details> 
+<summary> II. 源码结构 </summary>
+
+```bash
+racaljk@ubuntu:~/yvm/src$ tree .
+.
+├── AccessFlag.h            # 类，字段，方法的访问标志
+├── ClassFile.h             # .class字节码对应的结构体
+├── Interpreter.cpp         # 核心类。代码执行引擎
+├── Interpreter.hpp
+├── Concurrent.cpp          # 并发组件
+├── Concurrent.hpp
+├── Debug.cpp               # 调试组件
+├── Debug.h
+├── FileReader.h            # 读取.class文件
+├── Frame.h                 # 运行时栈帧
+├── GC.cpp                  # 垃圾回收
+├── GC.h
+├── Internal.h              # 虚拟机内部通用类型
+├── JavaClass.cpp           # 核心类。虚拟机中的类表示
+├── JavaClass.h
+├── JavaException.cpp       # 异常处理
+├── JavaException.h
+├── JavaHeap.cpp            # 核心类。虚拟机堆，管理对象
+├── JavaHeap.hpp
+├── JavaType.h              # 虚拟机中的Java类表示
+├── Main.cpp                # 命令行解析
+├── MethodArea.cpp          # 核心类。方法区，管理JavaClass
+├── MethodArea.h
+├── NativeMethod.cpp        # Java native方法实现
+├── NativeMethod.h
+├── ObjectMonitor.cpp       # synchronized语义实现
+├── ObjectMonitor.h
+├── Option.h                # 参数和配置
+├── RuntimeEnv.cpp          # 核心类。运行时结构定义
+├── RuntimeEnv.h
+├── Utils.cpp               # 工具组件
+├── Utils.h
+├── YVM.cpp                 # 虚拟机抽象。
+└── YVM.h
+
+0 directories, 34 files
+```
+</details>
 
 # License
 所有代码基于[MIT](./LICENSE)协议

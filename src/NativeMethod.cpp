@@ -189,7 +189,7 @@ JType* java_lang_thread_start(RuntimeEnv* env) {
         auto* frame = new Frame;
         frame->stack.push_back(runnableTask);
         frames.push_back(frame);
-        CodeExecution exec{frame};
+        Interpreter exec{frame};
 
         yrt.ma->initClassIfAbsent(exec, name);
         // Push object reference and since Runnable.run() has no parameter, so

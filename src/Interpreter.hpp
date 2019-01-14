@@ -1,5 +1,5 @@
-#ifndef YVM_CODEEXECUTION_H
-#define YVM_CODEEXECUTION_H
+#ifndef YVM_INTERPRETER_H
+#define YVM_INTERPRETER_H
 
 #include <typeinfo>
 #include "ClassFile.h"
@@ -25,12 +25,13 @@ struct CodeAttrCore {
     ATTR_Code::_exceptionTable* exceptionTable{};
 };
 
-class CodeExecution {
+class Interpreter {
 public:
-    CodeExecution() : currentFrame(nullptr) {}
-    CodeExecution(Frame* frame) : currentFrame(frame) {}
+    explicit Interpreter() : currentFrame(nullptr) {}
 
-    ~CodeExecution() { currentFrame = nullptr; }
+    explicit Interpreter(Frame* frame) : currentFrame(frame) {}
+
+    ~Interpreter() { currentFrame = nullptr; }
 
     void invokeByName(JavaClass* jc, const std::string& methodName,
                       const std::string& methodDescriptor);
@@ -116,7 +117,7 @@ private:
 };
 
 template <typename LoadType>
-void CodeExecution::load2Stack(u1 localIndex) {
+void Interpreter::load2Stack(u1 localIndex) {
     auto* pushingV = new LoadType;
     pushingV->val =
         dynamic_cast<LoadType*>(currentFrame->locals[localIndex])->val;
@@ -124,7 +125,7 @@ void CodeExecution::load2Stack(u1 localIndex) {
 }
 
 template <>
-inline void CodeExecution::load2Stack<JRef>(u1 localIndex) {
+inline void Interpreter::load2Stack<JRef>(u1 localIndex) {
     JType* pushingV{};
     if (typeid(*currentFrame->locals[localIndex]) == typeid(JObject)) {
         pushingV = new JObject;
@@ -145,7 +146,7 @@ inline void CodeExecution::load2Stack<JRef>(u1 localIndex) {
 }
 
 template <typename LoadType>
-void CodeExecution::loadArrayItem2Stack() {
+void Interpreter::loadArrayItem2Stack() {
     JInt* index = (JInt*)currentFrame->stack.back();
     currentFrame->stack.pop_back();
     auto* arrayref = (JArray*)currentFrame->stack.back();
@@ -167,7 +168,7 @@ void CodeExecution::loadArrayItem2Stack() {
 }
 
 template <>
-inline void CodeExecution::loadArrayItem2Stack<JRef>() {
+inline void Interpreter::loadArrayItem2Stack<JRef>() {
     auto* index = dynamic_cast<JInt*>(currentFrame->stack.back());
 
     currentFrame->stack.pop_back();
@@ -202,7 +203,7 @@ inline void CodeExecution::loadArrayItem2Stack<JRef>() {
 }
 
 template <typename StoreType>
-void CodeExecution::store2Local(u1 index) {
+void Interpreter::store2Local(u1 index) {
     auto* value = dynamic_cast<StoreType*>(currentFrame->stack.back());
     currentFrame->stack.pop_back();
     currentFrame->locals[index] = value;
@@ -212,14 +213,14 @@ void CodeExecution::store2Local(u1 index) {
 }
 
 template <>
-inline void CodeExecution::store2Local<JRef>(u1 index) {
+inline void Interpreter::store2Local<JRef>(u1 index) {
     JType* value = currentFrame->stack.back();
     currentFrame->stack.pop_back();
     currentFrame->locals[index] = value;
 }
 
 template <typename StoreType>
-void CodeExecution::storeArrayItem() {
+void Interpreter::storeArrayItem() {
     // store array item retriving from stack to array heap
     StoreType* value = dynamic_cast<StoreType*>(currentFrame->stack.back());
     currentFrame->stack.pop_back();
@@ -240,7 +241,7 @@ void CodeExecution::storeArrayItem() {
 }
 
 template <>
-inline void CodeExecution::storeArrayItem<JRef>() {
+inline void Interpreter::storeArrayItem<JRef>() {
     JType* value = currentFrame->stack.back();
     currentFrame->stack.pop_back();
     JInt* index = (JInt*)currentFrame->stack.back();
@@ -260,21 +261,21 @@ inline void CodeExecution::storeArrayItem<JRef>() {
 }
 
 template <typename ReturnType>
-ReturnType* CodeExecution::flowReturn() const {
+ReturnType* Interpreter::flowReturn() const {
     auto* value = dynamic_cast<ReturnType*>(currentFrame->stack.back());
     currentFrame->stack.pop_back();
     return value;
 }
 
 template <typename ReturnType>
-ReturnType* CodeExecution::currentStackPop() {
+ReturnType* Interpreter::currentStackPop() {
     auto* value = dynamic_cast<ReturnType*>(currentFrame->stack.back());
     currentFrame->stack.pop_back();
     return value;
 }
 
 template <typename ResultType, typename CallableObjectType>
-void CodeExecution::binaryArithmetic(CallableObjectType op) {
+void Interpreter::binaryArithmetic(CallableObjectType op) {
     auto* value2 = currentStackPop<ResultType>();
     auto* value1 = currentStackPop<ResultType>();
     auto* result = new ResultType;
@@ -285,14 +286,14 @@ void CodeExecution::binaryArithmetic(CallableObjectType op) {
 }
 
 template <typename ResultType, typename CallableObjectType>
-void CodeExecution::unaryArithmetic(CallableObjectType op) {
+void Interpreter::unaryArithmetic(CallableObjectType op) {
     auto* ival = currentStackPop<ResultType>();
     ival->val = op(ival->val);
     currentFrame->stack.push_back(ival);
 }
 
 template <typename Type1, typename Type2>
-void CodeExecution::typeCast() const {
+void Interpreter::typeCast() const {
     auto* value = dynamic_cast<Type1*>(currentFrame->stack.back());
     currentFrame->stack.pop_back();
     auto* result = new Type2;
@@ -301,4 +302,4 @@ void CodeExecution::typeCast() const {
     delete value;
 }
 
-#endif  // YVM_CODEEXECUTION_H
+#endif  // YVM_INTERPRETER_H

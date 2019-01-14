@@ -27,7 +27,7 @@ class JavaClass {
     friend struct YVM;
     friend class JavaHeap;
     friend class MethodArea;
-    friend class CodeExecution;
+    friend class Interpreter;
     friend class ConcurrentGC;
 
 public:
@@ -59,7 +59,6 @@ public:
 
     void parseClassFile();
 
-    vector<u2> getInterfacesIndex() const;
     MethodInfo* getMethod(const string& methodName,
                           const string& methodDescriptor) const;
 
@@ -75,6 +74,7 @@ private:
     TargetInfo* determineTargetType(u1 tag);
     ElementValue* readToElementValueStructure();
     Annotation readToAnnotationStructure();
+    vector<u2> getInterfacesIndex() const;
 
 private:
     ClassFile raw{};

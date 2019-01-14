@@ -1,8 +1,8 @@
 #ifndef YVM_YVM_H
 #define YVM_YVM_H
 
-#include "CodeExecution.hpp"
 #include "Concurrent.hpp"
+#include "Interpreter.hpp"
 #include "RuntimeEnv.h"
 
 extern RuntimeEnv yrt;
@@ -12,7 +12,7 @@ struct YVM {
 
     static bool loadClass(const std::string& name);
     static bool linkClass(const std::string& name);
-    static bool initClass(CodeExecution& exec, const std::string& name);
+    static bool initClass(Interpreter& exec, const std::string& name);
     static void callMain(const std::string& name);
     static void warmUp(const std::vector<std::string>& libPaths);
 

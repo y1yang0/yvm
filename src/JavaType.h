@@ -9,7 +9,7 @@
 class JavaClass;
 
 struct JType {
-    virtual ~JType() = default;     // reserved for polymorphism
+    virtual ~JType() = default;  // reserved for polymorphism
 };
 
 struct JVoid BASE_OF_JTYPE {};
@@ -53,11 +53,6 @@ struct JArray BASE_OF_JTYPE {
     int length = 0;          // Length of java array
     std::size_t offset = 0;  // Offset on java heap
 };
-
-#define IS_COMPUTATIONAL_TYPE_1(value) \
-    (typeid(*value) != typeid(JDouble) && typeid(*value) != typeid(JLong))
-#define IS_COMPUTATIONAL_TYPE_2(value) \
-    (typeid(*value) == typeid(JDouble) || typeid(*value) == typeid(JLong))
 
 #define IS_JINT(x) (typeid(*x) == typeid(JInt))
 #define IS_JLong(x) (typeid(*x) == typeid(JLong))

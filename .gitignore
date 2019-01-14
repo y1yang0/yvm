@@ -42,3 +42,4 @@ src/yvm.vcxproj.user
 /test/java
 /test/ydk
 /src/.vs
+/cmake-build-debug-llvm-clang
