@@ -15,16 +15,6 @@ struct MethodInfo;
 struct RuntimeEnv;
 extern RuntimeEnv yrt;
 
-struct CodeAttrCore {
-    bool valid = false;
-    u1* code{};
-    u4 codeLength{};
-    u2 maxStack{};
-    u2 maxLocal{};
-    u2 exceptionTableLength{};
-    ATTR_Code::_exceptionTable* exceptionTable{};
-};
-
 class Interpreter {
 public:
     explicit Interpreter() : frames(new JavaFrame) {}
@@ -50,7 +40,6 @@ private:
     void putStaticField(JavaClass* parsedJc, const std::string& fieldName,
                         const std::string& fieldDescriptor, JType* value);
 
-    CodeAttrCore getCodeAttrCore(const MethodInfo* m);
     bool checkInstanceof(const JavaClass* jc, u2 index, JType* objectref);
 
     std::tuple<JavaClass*, std::string, std::string>
@@ -63,14 +52,16 @@ private:
                                                        u2 index) const;
 
     JObject* execNew(const JavaClass* jc, u2 index);
-    JType* execByteCode(const JavaClass* jc, CodeAttrCore&& ext);
+    JType* execByteCode(const JavaClass* jc, u1* code, u4 codeLength,
+                        u2 exceptLen, ATTR_Code::ExceptionTable* exceptTab);
     JType* execNativeMethod(const std::string& className,
                             const std::string& methodName,
                             const std::string& methodDescriptor);
 
     void loadConstantPoolItem2Stack(const JavaClass* jc, u2 index);
 
-    bool handleException(const JavaClass* jc, const CodeAttrCore& ext,
+    bool handleException(const JavaClass* jc, u2 exceptLen,
+                         ATTR_Code::ExceptionTable* exceptTab,
                          const JObject* objectref, u4& op);
 
     void pushMethodArguments(std::vector<int>& parameter, bool isObjectMethod);

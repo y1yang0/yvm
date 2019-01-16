@@ -1,12 +1,12 @@
-#include "../misc/Debug.h"
 #include "../gc/GC.h"
+#include "../misc/Debug.h"
+#include "../misc/NativeMethod.h"
+#include "../misc/Option.h"
+#include "../misc/Utils.h"
 #include "../runtime/JavaClass.h"
 #include "../runtime/JavaHeap.hpp"
 #include "../runtime/MethodArea.h"
-#include "../misc/NativeMethod.h"
-#include "../misc/Option.h"
 #include "../runtime/RuntimeEnv.h"
-#include "../misc/Utils.h"
 #include "YVM.h"
 
 YVM::ExecutorThreadPool YVM::executor;

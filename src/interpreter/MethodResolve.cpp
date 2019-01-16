@@ -5,14 +5,13 @@
 // If C contains a declaration for an instance method m that overrides the
 // resolved method, then m is the method to be invoked.
 //--------------------------------------------------------------------------------
-std::pair<MethodInfo *, const JavaClass *> findInstanceMethod(
-    const JavaClass *jc, const std::string &methodName,
-    const std::string &methodDescriptor) {
+CallSite findInstanceMethod(const JavaClass *jc, const std::string &methodName,
+                            const std::string &methodDescriptor) {
     auto *methodInfo = jc->findMethod(methodName, methodDescriptor);
     if (methodInfo && !IS_METHOD_STATIC(methodInfo->accessFlags)) {
-        return std::make_pair(methodInfo, jc);
+        return CallSite::makeCallSite(jc, methodInfo);
     }
-    return std::make_pair(nullptr, nullptr);
+    return CallSite{};
 }
 
 //--------------------------------------------------------------------------------
@@ -23,17 +22,17 @@ std::pair<MethodInfo *, const JavaClass *> findInstanceMethod(
 // superclasses exist.If an overriding method is found, it is the method to be
 // invoked.
 //--------------------------------------------------------------------------------
-std::pair<MethodInfo *, const JavaClass *> findInstanceMethodOnSupers(
-    const JavaClass *jc, const std::string &methodName,
-    const std::string &methodDescriptor) {
+CallSite findInstanceMethodOnSupers(const JavaClass *jc,
+                                    const std::string &methodName,
+                                    const std::string &methodDescriptor) {
     if (!jc->hasSuperClass()) {
-        return std::make_pair(nullptr, nullptr);
+        return CallSite{};
     }
 
     JavaClass *superClass = yrt.ma->loadClassIfAbsent(jc->getSuperClassName());
     auto methodInfo = superClass->findMethod(methodName, methodDescriptor);
     if (methodInfo && !IS_METHOD_STATIC(methodInfo->accessFlags)) {
-        return std::make_pair(methodInfo, superClass);
+        return CallSite::makeCallSite(superClass, methodInfo);
     }
 
     return findInstanceMethodOnSupers(superClass, methodName, methodDescriptor);
@@ -43,29 +42,29 @@ std::pair<MethodInfo *, const JavaClass *> findInstanceMethodOnSupers(
 // instance method with the same name and descriptor as the resolved method,
 // then it is the method to be invoked.
 //--------------------------------------------------------------------------------
-std::pair<MethodInfo *, const JavaClass *> findJavaLangObjectMethod(
-    const JavaClass *jc, const std::string &methodName,
-    const std::string &methodDescriptor) {
+CallSite findJavaLangObjectMethod(const JavaClass *jc,
+                                  const std::string &methodName,
+                                  const std::string &methodDescriptor) {
     if (IS_CLASS_INTERFACE(jc->getAccessFlag())) {
-        JavaClass *jlo = yrt.ma->findJavaClass("java/lang/Object");
-        auto *jlom = jlo->findMethod(methodName, methodDescriptor);
+        JavaClass *jloc = yrt.ma->findJavaClass("java/lang/Object");
+        auto *jlom = jloc->findMethod(methodName, methodDescriptor);
         if (jlom && IS_METHOD_PUBLIC(jlom->accessFlags) &&
             !IS_METHOD_STATIC(jlom->accessFlags)) {
-            return std::make_pair(jlom, jlo);
+            return CallSite::makeCallSite(jloc, jlom);
         }
     }
-    return std::make_pair(nullptr, nullptr);
+    return CallSite{};
 }
 //--------------------------------------------------------------------------------
 // If there is exactly one maximally - specific method(5.4.3.3) in the
 // superinterfaces of C that matches the resolved method's name and descriptor
 // and is not abstract, then it is the method to be invoked.
 //--------------------------------------------------------------------------------
-std::pair<MethodInfo *, const JavaClass *> findMaximallySpecifiedMethod(
-    const JavaClass *jc, const std::string &methodName,
-    const std::string &methodDescriptor) {
+CallSite findMaximallySpecifiedMethod(const JavaClass *jc,
+                                      const std::string &methodName,
+                                      const std::string &methodDescriptor) {
     if (!jc->hasSuperClass()) {
-        return std::make_pair(nullptr, nullptr);
+        return CallSite{};
     }
     JavaClass *superClass = yrt.ma->loadClassIfAbsent(jc->getSuperClassName());
 
@@ -81,11 +80,11 @@ std::pair<MethodInfo *, const JavaClass *> findMaximallySpecifiedMethod(
             if (methodInfo && (!IS_METHOD_ABSTRACT(methodInfo->accessFlags) &&
                                !IS_METHOD_STATIC(methodInfo->accessFlags) &&
                                !IS_METHOD_PRIVATE(methodInfo->accessFlags))) {
-                return std::make_pair(methodInfo, interfaceClass);
+                return CallSite::makeCallSite(interfaceClass, methodInfo);
             }
             if (methodInfo && (!IS_METHOD_STATIC(methodInfo->accessFlags) &&
                                !IS_METHOD_PRIVATE(methodInfo->accessFlags))) {
-                return std::make_pair(methodInfo, interfaceClass);
+                return CallSite::makeCallSite(interfaceClass, methodInfo);
             }
         }
     }

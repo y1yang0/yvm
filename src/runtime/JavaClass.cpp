@@ -2,9 +2,9 @@
 #include <iostream>
 #include <vector>
 #include "../misc/Debug.h"
+#include "../vm/YVM.h"
 #include "JavaClass.h"
 #include "MethodArea.h"
-#include "../vm/YVM.h"
 
 #pragma warning(disable : 4715)
 
@@ -393,7 +393,7 @@ bool JavaClass::parseAttribute(AttributeInfo**(&attrs), u2 attributeCount) {
 
             attr->exceptionTableLength = reader.readget2();
             attr->exceptionTable =
-                new ATTR_Code::_exceptionTable[attr->exceptionTableLength];
+                new ATTR_Code::ExceptionTable[attr->exceptionTableLength];
             FOR_EACH(k, attr->exceptionTableLength) {
                 attr->exceptionTable[k].startPC = reader.readget2();
                 attr->exceptionTable[k].endPC = reader.readget2();

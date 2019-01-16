@@ -3,14 +3,14 @@
 #include <string>
 #include "../classfile/ClassFile.h"
 #include "../runtime/JavaClass.h"
+#include "CallSite.h"
 
 //--------------------------------------------------------------------------------
 // If C contains a declaration for an instance method m that overrides the
 // resolved method, then m is the method to be invoked.
 //--------------------------------------------------------------------------------
-std::pair<MethodInfo*, const JavaClass*> findInstanceMethod(
-    const JavaClass* jc, const std::string& methodName,
-    const std::string& methodDescriptor);
+CallSite findInstanceMethod(const JavaClass* jc, const std::string& methodName,
+                            const std::string& methodDescriptor);
 
 //--------------------------------------------------------------------------------
 // If C has a superclass, a search for a declaration of an instance
@@ -20,26 +20,26 @@ std::pair<MethodInfo*, const JavaClass*> findInstanceMethod(
 // superclasses exist.If an overriding method is found, it is the method to be
 // invoked.
 //--------------------------------------------------------------------------------
-std::pair<MethodInfo*, const JavaClass*> findInstanceMethodOnSupers(
-    const JavaClass* jc, const std::string& methodName,
-    const std::string& methodDescriptor);
+CallSite findInstanceMethodOnSupers(const JavaClass* jc,
+                                    const std::string& methodName,
+                                    const std::string& methodDescriptor);
 
 //--------------------------------------------------------------------------------
 // If C is an interface and the class Object contains a declaration of a public
 // instance method with the same name and descriptor as the resolved method,
 // then it is the method to be invoked.
 //--------------------------------------------------------------------------------
-std::pair<MethodInfo*, const JavaClass*> findMaximallySpecifiedMethod(
-    const JavaClass* jc, const std::string& methodName,
-    const std::string& methodDescriptor);
+CallSite findMaximallySpecifiedMethod(const JavaClass* jc,
+                                      const std::string& methodName,
+                                      const std::string& methodDescriptor);
 
 //--------------------------------------------------------------------------------
 // If there is exactly one maximally - specific method(5.4.3.3) in the
 // superinterfaces of C that matches the resolved method's name and descriptor
 // and is not abstract, then it is the method to be invoked.
 //--------------------------------------------------------------------------------
-std::pair<MethodInfo*, const JavaClass*> findJavaLangObjectMethod(
-    const JavaClass* jc, const std::string& methodName,
-    const std::string& methodDescriptor);
+CallSite findJavaLangObjectMethod(const JavaClass* jc,
+                                  const std::string& methodName,
+                                  const std::string& methodDescriptor);
 
 #endif  // !_METHODRESOLVE_H

@@ -193,7 +193,10 @@ void MethodArea::linkJavaClass(const string& jcName) {
 void MethodArea::initJavaClass(Interpreter& exec, const string& jcName) {
     lock_guard<recursive_mutex> lockMA(maMutex);
     initedClasses.insert(jcName);
-    exec.invokeByName(findJavaClass(jcName), "<clinit>", "()V");
+    auto* jc = findJavaClass(jcName);
+    if (jc->findMethod("<clinit>", "()V")) {
+        exec.invokeByName(jc, "<clinit>", "()V");
+    }
 }
 
 JavaClass* MethodArea::loadClassIfAbsent(const string& jcName) {

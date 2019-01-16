@@ -127,7 +127,7 @@ DEF_ATTR_START(Code) {
     u1* code;
     u2 exceptionTableLength;
 
-    struct _exceptionTable {
+    struct ExceptionTable {
         u2 startPC;
         u2 endPC;
         u2 handlerPC;
