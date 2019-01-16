@@ -1,10 +1,11 @@
-#include "AccessFlag.h"
-#include "ClassFile.h"
-#include "Debug.h"
+#include "../classfile/AccessFlag.h"
+#include "../classfile/ClassFile.h"
+#include "../misc/Debug.h"
+#include "../misc/Option.h"
+#include "../runtime/JavaClass.h"
+#include "../runtime/JavaHeap.hpp"
 #include "Interpreter.hpp"
-#include "JavaClass.h"
-#include "JavaHeap.hpp"
-#include "Option.h"
+#include "MethodResolve.h"
 
 #include <cassert>
 #include <cmath>
@@ -19,13 +20,36 @@
 #pragma warning(disable : 4715)
 #pragma warning(disable : 4244)
 
-JType *Interpreter::execCode(const JavaClass *jc, CodeAttrCore &&ext) {
+Interpreter::~Interpreter() { delete frames; }
+
+JType *Interpreter::execNativeMethod(const std::string &className,
+                                     const std::string &methodName,
+                                     const std::string &methodDescriptor) {
+    std::string nativeMethod(className);
+    nativeMethod.append(".");
+    nativeMethod.append(methodName);
+    nativeMethod.append(".");
+    nativeMethod.append(methodDescriptor);
+    if (yrt.nativeMethods.find(nativeMethod) != yrt.nativeMethods.end()) {
+        return ((*yrt.nativeMethods.find(nativeMethod)).second)(
+            &yrt, frames->top()->localSlots, frames->top()->maxLocal);
+    }
+
+    GC_SAFE_POINT
+    if (yrt.gc->shallGC()) {
+        yrt.gc->stopTheWorld();
+        yrt.gc->gc(frames, GCPolicy::GC_MARK_AND_SWEEP);
+    }
+    return nullptr;
+}
+
+JType *Interpreter::execByteCode(const JavaClass *jc, CodeAttrCore &&ext) {
     for (decltype(ext.codeLength) op = 0; op < ext.codeLength; op++) {
         // If callee propagates a unhandled exception, try to handle  it. When
         // we can not handle it, propagates it to upper and returns
         if (exception.hasUnhandledException()) {
             op--;
-            auto *throwableObject = currentStackPop<JObject>();
+            auto *throwableObject = frames->top()->pop<JObject>();
             if (throwableObject == nullptr) {
                 throw std::runtime_error("null pointer");
             }
@@ -36,11 +60,10 @@ JType *Interpreter::execCode(const JavaClass *jc, CodeAttrCore &&ext) {
             }
 
             if (handleException(jc, ext, throwableObject, op)) {
-                while (!currentFrame->stack.empty()) {
-                    auto *temp = currentStackPop<JType>();
-                    delete temp;
+                while (!frames->top()->emptyStack()) {
+                    frames->top()->pop<JType>();
                 }
-                currentFrame->stack.push_back(throwableObject);
+                frames->top()->pushException(throwableObject);
                 exception.sweepException();
             } else {
                 return throwableObject;
@@ -58,58 +81,57 @@ JType *Interpreter::execCode(const JavaClass *jc, CodeAttrCore &&ext) {
                 // DO NOTHING :-)
             } break;
             case op_aconst_null: {
-                JObject *obj = nullptr;
-                currentFrame->stack.push_back(obj);
+                frames->top()->push(nullptr);
             } break;
             case op_iconst_m1: {
-                currentFrame->stack.push_back(new JInt(-1));
+                frames->top()->push(new JInt(-1));
             } break;
             case op_iconst_0: {
-                currentFrame->stack.push_back(new JInt(0));
+                frames->top()->push(new JInt(0));
             } break;
             case op_iconst_1: {
-                currentFrame->stack.push_back(new JInt(1));
+                frames->top()->push(new JInt(1));
             } break;
             case op_iconst_2: {
-                currentFrame->stack.push_back(new JInt(2));
+                frames->top()->push(new JInt(2));
             } break;
             case op_iconst_3: {
-                currentFrame->stack.push_back(new JInt(3));
+                frames->top()->push(new JInt(3));
             } break;
             case op_iconst_4: {
-                currentFrame->stack.push_back(new JInt(4));
+                frames->top()->push(new JInt(4));
             } break;
             case op_iconst_5: {
-                currentFrame->stack.push_back(new JInt(5));
+                frames->top()->push(new JInt(5));
             } break;
             case op_lconst_0: {
-                currentFrame->stack.push_back(new JLong(0));
+                frames->top()->push(new JLong(0));
             } break;
             case op_lconst_1: {
-                currentFrame->stack.push_back(new JLong(1));
+                frames->top()->push(new JLong(1));
             } break;
             case op_fconst_0: {
-                currentFrame->stack.push_back(new JFloat(0.0f));
+                frames->top()->push(new JFloat(0.0f));
             } break;
             case op_fconst_1: {
-                currentFrame->stack.push_back(new JFloat(1.0f));
+                frames->top()->push(new JFloat(1.0f));
             } break;
             case op_fconst_2: {
-                currentFrame->stack.push_back(new JFloat(2.0f));
+                frames->top()->push(new JFloat(2.0f));
             } break;
             case op_dconst_0: {
-                currentFrame->stack.push_back(new JDouble(0.0));
+                frames->top()->push(new JDouble(0.0));
             } break;
             case op_dconst_1: {
-                currentFrame->stack.push_back(new JDouble(1.0));
+                frames->top()->push(new JDouble(1.0));
             } break;
             case op_bipush: {
                 const u1 byte = consumeU1(ext.code, op);
-                currentFrame->stack.push_back(new JInt(byte));
+                frames->top()->push(new JInt(byte));
             } break;
             case op_sipush: {
                 const u2 byte = consumeU2(ext.code, op);
-                currentFrame->stack.push_back(new JInt(byte));
+                frames->top()->push(new JInt(byte));
             } break;
             case op_ldc: {
                 const u1 index = consumeU1(ext.code, op);
@@ -128,7 +150,7 @@ JType *Interpreter::execCode(const JavaClass *jc, CodeAttrCore &&ext) {
                                    ->val;
                     JDouble *dval = new JDouble;
                     dval->val = val;
-                    currentFrame->stack.push_back(dval);
+                    frames->top()->push(dval);
                 } else if (typeid(*jc->raw.constPoolInfo[index]) ==
                            typeid(CONSTANT_Long)) {
                     auto val = dynamic_cast<CONSTANT_Long *>(
@@ -136,7 +158,7 @@ JType *Interpreter::execCode(const JavaClass *jc, CodeAttrCore &&ext) {
                                    ->val;
                     JLong *lval = new JLong;
                     lval->val = val;
-                    currentFrame->stack.push_back(lval);
+                    frames->top()->push(lval);
                 } else {
                     throw std::runtime_error(
                         "invalid symbolic reference index on "
@@ -145,361 +167,444 @@ JType *Interpreter::execCode(const JavaClass *jc, CodeAttrCore &&ext) {
             } break;
             case op_iload: {
                 const u1 index = consumeU1(ext.code, op);
-                load2Stack<JInt>(index);
+                frames->top()->load<JInt>(index);
             } break;
             case op_lload: {
                 const u1 index = consumeU1(ext.code, op);
-                load2Stack<JLong>(index);
+                frames->top()->load<JLong>(index);
             } break;
             case op_fload: {
                 const u1 index = consumeU1(ext.code, op);
-                load2Stack<JFloat>(index);
+                frames->top()->load<JFloat>(index);
             } break;
             case op_dload: {
                 const u1 index = consumeU1(ext.code, op);
-                load2Stack<JDouble>(index);
+                frames->top()->load<JDouble>(index);
             } break;
             case op_aload: {
                 const u1 index = consumeU1(ext.code, op);
-                load2Stack<JRef>(index);
+                frames->top()->load<JRef>(index);
             } break;
             case op_iload_0: {
-                load2Stack<JInt>(0);
+                frames->top()->load<JInt>(0);
             } break;
             case op_iload_1: {
-                load2Stack<JInt>(1);
+                frames->top()->load<JInt>(1);
             } break;
             case op_iload_2: {
-                load2Stack<JInt>(2);
+                frames->top()->load<JInt>(2);
             } break;
             case op_iload_3: {
-                load2Stack<JInt>(3);
+                frames->top()->load<JInt>(3);
             } break;
             case op_lload_0: {
-                load2Stack<JLong>(0);
+                frames->top()->load<JLong>(0);
             } break;
             case op_lload_1: {
-                load2Stack<JLong>(1);
+                frames->top()->load<JLong>(1);
             } break;
             case op_lload_2: {
-                load2Stack<JLong>(2);
+                frames->top()->load<JLong>(2);
             } break;
             case op_lload_3: {
-                load2Stack<JLong>(3);
+                frames->top()->load<JLong>(3);
             } break;
             case op_fload_0: {
-                load2Stack<JFloat>(0);
+                frames->top()->load<JFloat>(0);
             } break;
             case op_fload_1: {
-                load2Stack<JFloat>(1);
+                frames->top()->load<JFloat>(1);
             } break;
             case op_fload_2: {
-                load2Stack<JFloat>(2);
+                frames->top()->load<JFloat>(2);
             } break;
             case op_fload_3: {
-                load2Stack<JFloat>(3);
+                frames->top()->load<JFloat>(3);
             } break;
             case op_dload_0: {
-                load2Stack<JDouble>(0);
+                frames->top()->load<JDouble>(0);
             } break;
             case op_dload_1: {
-                load2Stack<JDouble>(1);
+                frames->top()->load<JDouble>(1);
             } break;
             case op_dload_2: {
-                load2Stack<JDouble>(2);
+                frames->top()->load<JDouble>(2);
             } break;
             case op_dload_3: {
-                load2Stack<JDouble>(3);
+                frames->top()->load<JDouble>(3);
             } break;
             case op_aload_0: {
-                load2Stack<JRef>(0);
+                frames->top()->load<JRef>(0);
             } break;
             case op_aload_1: {
-                load2Stack<JRef>(1);
+                frames->top()->load<JRef>(1);
             } break;
             case op_aload_2: {
-                load2Stack<JRef>(2);
+                frames->top()->load<JRef>(2);
             } break;
             case op_aload_3: {
-                load2Stack<JRef>(3);
+                frames->top()->load<JRef>(3);
             } break;
             case op_saload:
             case op_caload:
             case op_baload:
             case op_iaload: {
-                loadArrayItem2Stack<JInt>();
+                auto *index = frames->top()->pop<JInt>();
+                const auto *arrref = frames->top()->pop<JArray>();
+                if (!arrref) {
+                    throw std::runtime_error("nullpointerexception");
+                }
+                auto *elem = dynamic_cast<JInt *>(
+                    yrt.jheap->getElement(*arrref, index->val));
+                frames->top()->push(elem);
             } break;
             case op_laload: {
-                loadArrayItem2Stack<JLong>();
+                auto *index = frames->top()->pop<JInt>();
+                const auto *arrref = frames->top()->pop<JArray>();
+                if (!arrref) {
+                    throw std::runtime_error("nullpointerexception");
+                }
+                auto *elem = dynamic_cast<JLong *>(
+                    yrt.jheap->getElement(*arrref, index->val));
+                frames->top()->push(elem);
             } break;
             case op_faload: {
-                loadArrayItem2Stack<JFloat>();
+                auto *index = frames->top()->pop<JInt>();
+                const auto *arrref = frames->top()->pop<JArray>();
+                if (!arrref) {
+                    throw std::runtime_error("nullpointerexception");
+                }
+                auto *elem = dynamic_cast<JFloat *>(
+                    yrt.jheap->getElement(*arrref, index->val));
+                frames->top()->push(elem);
             } break;
             case op_daload: {
-                loadArrayItem2Stack<JDouble>();
+                auto *index = frames->top()->pop<JInt>();
+                const auto *arrref = frames->top()->pop<JArray>();
+                if (!arrref) {
+                    throw std::runtime_error("nullpointerexception");
+                }
+                auto *elem = dynamic_cast<JDouble *>(
+                    yrt.jheap->getElement(*arrref, index->val));
+                frames->top()->push(elem);
             } break;
             case op_aaload: {
-                loadArrayItem2Stack<JRef>();
+                auto *index = frames->top()->pop<JInt>();
+                const auto *arrref = frames->top()->pop<JArray>();
+                if (!arrref) {
+                    throw std::runtime_error("nullpointerexception");
+                }
+                auto *elem = dynamic_cast<JRef *>(
+                    yrt.jheap->getElement(*arrref, index->val));
+                frames->top()->push(elem);
             } break;
             case op_istore: {
                 const u1 index = consumeU1(ext.code, op);
-                store2Local<JInt>(index);
+                frames->top()->store<JInt>(index);
             } break;
             case op_lstore: {
                 const u1 index = consumeU1(ext.code, op);
-                store2Local<JLong>(index);
+                frames->top()->store<JLong>(index);
             } break;
             case op_fstore: {
                 const u1 index = consumeU1(ext.code, op);
-                store2Local<JFloat>(index);
+                frames->top()->store<JFloat>(index);
             } break;
             case op_dstore: {
                 const u1 index = consumeU1(ext.code, op);
-                store2Local<JDouble>(index);
+                frames->top()->store<JDouble>(index);
             } break;
             case op_astore: {
                 const u1 index = consumeU1(ext.code, op);
-                store2Local<JRef>(index);
+                frames->top()->store<JRef>(index);
             } break;
             case op_istore_0: {
-                store2Local<JInt>(0);
+                frames->top()->store<JInt>(0);
             } break;
             case op_istore_1: {
-                store2Local<JInt>(1);
+                frames->top()->store<JInt>(1);
             } break;
             case op_istore_2: {
-                store2Local<JInt>(2);
+                frames->top()->store<JInt>(2);
             } break;
             case op_istore_3: {
-                store2Local<JInt>(3);
+                frames->top()->store<JInt>(3);
             } break;
             case op_lstore_0: {
-                store2Local<JLong>(0);
+                frames->top()->store<JLong>(0);
             } break;
             case op_lstore_1: {
-                store2Local<JLong>(1);
+                frames->top()->store<JLong>(1);
             } break;
             case op_lstore_2: {
-                store2Local<JLong>(2);
+                frames->top()->store<JLong>(2);
             } break;
             case op_lstore_3: {
-                store2Local<JLong>(3);
+                frames->top()->store<JLong>(3);
             } break;
             case op_fstore_0: {
-                store2Local<JFloat>(0);
+                frames->top()->store<JFloat>(0);
             } break;
             case op_fstore_1: {
-                store2Local<JFloat>(1);
+                frames->top()->store<JFloat>(1);
             } break;
             case op_fstore_2: {
-                store2Local<JFloat>(2);
+                frames->top()->store<JFloat>(2);
             } break;
             case op_fstore_3: {
-                store2Local<JFloat>(3);
+                frames->top()->store<JFloat>(3);
             } break;
             case op_dstore_0: {
-                store2Local<JDouble>(0);
+                frames->top()->store<JDouble>(0);
             } break;
             case op_dstore_1: {
-                store2Local<JDouble>(1);
+                frames->top()->store<JDouble>(1);
             } break;
             case op_dstore_2: {
-                store2Local<JDouble>(2);
+                frames->top()->store<JDouble>(2);
             } break;
             case op_dstore_3: {
-                store2Local<JDouble>(3);
+                frames->top()->store<JDouble>(3);
             } break;
             case op_astore_0: {
-                store2Local<JRef>(0);
+                frames->top()->store<JRef>(0);
             } break;
             case op_astore_1: {
-                store2Local<JRef>(1);
+                frames->top()->store<JRef>(1);
             } break;
             case op_astore_2: {
-                store2Local<JRef>(2);
+                frames->top()->store<JRef>(2);
             } break;
             case op_astore_3: {
-                store2Local<JRef>(3);
+                frames->top()->store<JRef>(3);
             } break;
             case op_iastore: {
-                storeArrayItem<JInt>();
-            } break;
-            case op_lastore: {
-                storeArrayItem<JLong>();
-            } break;
-            case op_fastore: {
-                storeArrayItem<JFloat>();
-            } break;
-            case op_dastore: {
-                storeArrayItem<JDouble>();
-            } break;
-            case op_aastore: {
-                storeArrayItem<JRef>();
-            } break;
-            case op_bastore: {
-                JInt *value = currentStackPop<JInt>();
-                value->val = static_cast<int8_t>(value->val);
-
-                JInt *index = currentStackPop<JInt>();
-                JArray *arrayref = currentStackPop<JArray>();
-                if (arrayref == nullptr) {
+                auto *value = frames->top()->pop<JInt>();
+                auto *index = frames->top()->pop<JInt>();
+                auto *arrref = frames->top()->pop<JArray>();
+                if (arrref == nullptr) {
                     throw std::runtime_error("null pointer");
                 }
-                if (index->val > arrayref->length || index->val < 0) {
+                if (index->val > arrref->length || index->val < 0) {
                     throw std::runtime_error("array index out of bounds");
                 }
-                yrt.jheap->putElement(*arrayref, index->val, value);
+                yrt.jheap->putElement(*arrref, index->val, value);
 
-                delete index;
+            } break;
+            case op_lastore: {
+                auto *value = frames->top()->pop<JLong>();
+                auto *index = frames->top()->pop<JInt>();
+                auto *arrref = frames->top()->pop<JArray>();
+                if (arrref == nullptr) {
+                    throw std::runtime_error("null pointer");
+                }
+                if (index->val > arrref->length || index->val < 0) {
+                    throw std::runtime_error("array index out of bounds");
+                }
+                yrt.jheap->putElement(*arrref, index->val, value);
+
+            } break;
+            case op_fastore: {
+                auto *value = frames->top()->pop<JFloat>();
+                auto *index = frames->top()->pop<JInt>();
+                auto *arrref = frames->top()->pop<JArray>();
+                if (arrref == nullptr) {
+                    throw std::runtime_error("null pointer");
+                }
+                if (index->val > arrref->length || index->val < 0) {
+                    throw std::runtime_error("array index out of bounds");
+                }
+                yrt.jheap->putElement(*arrref, index->val, value);
+
+            } break;
+            case op_dastore: {
+                auto *value = frames->top()->pop<JDouble>();
+                auto *index = frames->top()->pop<JInt>();
+                auto *arrref = frames->top()->pop<JArray>();
+                if (arrref == nullptr) {
+                    throw std::runtime_error("null pointer");
+                }
+                if (index->val > arrref->length || index->val < 0) {
+                    throw std::runtime_error("array index out of bounds");
+                }
+                yrt.jheap->putElement(*arrref, index->val, value);
+
+            } break;
+            case op_aastore: {
+                auto *value = frames->top()->pop<JType>();
+                auto *index = frames->top()->pop<JInt>();
+                auto *arrref = frames->top()->pop<JArray>();
+                if (arrref == nullptr) {
+                    throw std::runtime_error("null pointer");
+                }
+                if (index->val > arrref->length || index->val < 0) {
+                    throw std::runtime_error("array index out of bounds");
+                }
+                yrt.jheap->putElement(*arrref, index->val, value);
+
+            } break;
+            case op_bastore: {
+                auto *value = frames->top()->pop<JInt>();
+                value->val = static_cast<int8_t>(value->val);
+                auto *index = frames->top()->pop<JInt>();
+                auto *arrref = frames->top()->pop<JArray>();
+
+                if (arrref == nullptr) {
+                    throw std::runtime_error("null pointer");
+                }
+                if (index->val > arrref->length || index->val < 0) {
+                    throw std::runtime_error("array index out of bounds");
+                }
+                yrt.jheap->putElement(*arrref, index->val, value);
+
             } break;
             case op_sastore:
             case op_castore: {
-                JInt *value = currentStackPop<JInt>();
+                auto *value = frames->top()->pop<JInt>();
                 value->val = static_cast<int16_t>(value->val);
 
-                JInt *index = currentStackPop<JInt>();
-                JArray *arrayref = currentStackPop<JArray>();
-                if (arrayref == nullptr) {
+                auto *index = frames->top()->pop<JInt>();
+                auto *arrref = frames->top()->pop<JArray>();
+                if (arrref == nullptr) {
                     throw std::runtime_error("null pointer");
                 }
-                if (index->val > arrayref->length || index->val < 0) {
+                if (index->val > arrref->length || index->val < 0) {
                     throw std::runtime_error("array index out of bounds");
                 }
-                yrt.jheap->putElement(*arrayref, index->val, value);
+                yrt.jheap->putElement(*arrref, index->val, value);
 
-                delete index;
             } break;
             case op_pop: {
-                delete currentStackPop<JType>();
+                frames->top()->pop<JType>();
             } break;
             case op_pop2: {
-                delete currentStackPop<JType>();
-                delete currentStackPop<JType>();
+                frames->top()->pop<JType>();
+                frames->top()->pop<JType>();
             } break;
             case op_dup: {
-                JType *value = currentStackPop<JType>();
+                JType *value = frames->top()->pop<JType>();
 
                 assert(typeid(*value) != typeid(JLong) &&
                        typeid(*value) != typeid(JDouble));
-                currentFrame->stack.push_back(value);
-                currentFrame->stack.push_back(cloneValue(value));
+                frames->top()->push(value);
+                frames->top()->push(cloneValue(value));
             } break;
             case op_dup_x1: {
-                JType *value1 = currentStackPop<JType>();
-                JType *value2 = currentStackPop<JType>();
+                JType *value1 = frames->top()->pop<JType>();
+                JType *value2 = frames->top()->pop<JType>();
 
                 assert(IS_COMPUTATIONAL_TYPE_1(value1));
                 assert(IS_COMPUTATIONAL_TYPE_1(value2));
 
-                currentFrame->stack.push_back(cloneValue(value1));
-                currentFrame->stack.push_back(value2);
-                currentFrame->stack.push_back(value1);
+                frames->top()->push(cloneValue(value1));
+                frames->top()->push(value2);
+                frames->top()->push(value1);
             } break;
             case op_dup_x2: {
-                JType *value1 = currentStackPop<JType>();
-                JType *value2 = currentStackPop<JType>();
-                JType *value3 = currentStackPop<JType>();
+                JType *value1 = frames->top()->pop<JType>();
+                JType *value2 = frames->top()->pop<JType>();
+                JType *value3 = frames->top()->pop<JType>();
 
                 if (IS_COMPUTATIONAL_TYPE_1(value1) &&
                     IS_COMPUTATIONAL_TYPE_1(value2) &&
                     IS_COMPUTATIONAL_TYPE_1(value3)) {
                     // use structure 1
-                    currentFrame->stack.push_back(cloneValue(value1));
-                    currentFrame->stack.push_back(value3);
-                    currentFrame->stack.push_back(value2);
-                    currentFrame->stack.push_back(value1);
+                    frames->top()->push(cloneValue(value1));
+                    frames->top()->push(value3);
+                    frames->top()->push(value2);
+                    frames->top()->push(value1);
                 } else if (IS_COMPUTATIONAL_TYPE_1(value1) &&
                            IS_COMPUTATIONAL_TYPE_2(value2)) {
                     // use structure 2
-                    currentFrame->stack.push_back(value3);
+                    frames->top()->push(value3);
 
-                    currentFrame->stack.push_back(cloneValue(value1));
-                    currentFrame->stack.push_back(value2);
-                    currentFrame->stack.push_back(value1);
+                    frames->top()->push(cloneValue(value1));
+                    frames->top()->push(value2);
+                    frames->top()->push(value1);
                 } else {
                     SHOULD_NOT_REACH_HERE
                 }
             } break;
             case op_dup2: {
-                JType *value1 = currentStackPop<JType>();
-                JType *value2 = currentStackPop<JType>();
+                JType *value1 = frames->top()->pop<JType>();
+                JType *value2 = frames->top()->pop<JType>();
 
                 if (IS_COMPUTATIONAL_TYPE_1(value1) &&
                     IS_COMPUTATIONAL_TYPE_1(value2)) {
                     // use structure 1
-                    currentFrame->stack.push_back(cloneValue(value2));
-                    currentFrame->stack.push_back(cloneValue(value1));
-                    currentFrame->stack.push_back(value2);
-                    currentFrame->stack.push_back(value1);
+                    frames->top()->push(cloneValue(value2));
+                    frames->top()->push(cloneValue(value1));
+                    frames->top()->push(value2);
+                    frames->top()->push(value1);
                 } else if (IS_COMPUTATIONAL_TYPE_2(value1)) {
                     // use structure 2
-                    currentFrame->stack.push_back(value2);
+                    frames->top()->push(value2);
 
-                    currentFrame->stack.push_back(cloneValue(value1));
-                    currentFrame->stack.push_back(value1);
+                    frames->top()->push(cloneValue(value1));
+                    frames->top()->push(value1);
                 } else {
                     SHOULD_NOT_REACH_HERE
                 }
             } break;
             case op_dup2_x1: {
-                JType *value1 = currentStackPop<JType>();
-                JType *value2 = currentStackPop<JType>();
-                JType *value3 = currentStackPop<JType>();
+                JType *value1 = frames->top()->pop<JType>();
+                JType *value2 = frames->top()->pop<JType>();
+                JType *value3 = frames->top()->pop<JType>();
 
                 if (IS_COMPUTATIONAL_TYPE_1(value1) &&
                     IS_COMPUTATIONAL_TYPE_1(value2) &&
                     IS_COMPUTATIONAL_TYPE_1(value3)) {
                     // use structure 1
-                    currentFrame->stack.push_back(cloneValue(value2));
-                    currentFrame->stack.push_back(cloneValue(value1));
-                    currentFrame->stack.push_back(value3);
-                    currentFrame->stack.push_back(value2);
-                    currentFrame->stack.push_back(value1);
+                    frames->top()->push(cloneValue(value2));
+                    frames->top()->push(cloneValue(value1));
+                    frames->top()->push(value3);
+                    frames->top()->push(value2);
+                    frames->top()->push(value1);
                 } else if (IS_COMPUTATIONAL_TYPE_2(value1) &&
                            IS_COMPUTATIONAL_TYPE_1(value2)) {
                     // use structure 2
-                    currentFrame->stack.push_back(value3);
+                    frames->top()->push(value3);
 
-                    currentFrame->stack.push_back(cloneValue(value1));
-                    currentFrame->stack.push_back(value2);
-                    currentFrame->stack.push_back(value1);
+                    frames->top()->push(cloneValue(value1));
+                    frames->top()->push(value2);
+                    frames->top()->push(value1);
                 } else {
                     SHOULD_NOT_REACH_HERE
                 }
             } break;
             case op_dup2_x2: {
-                JType *value1 = currentStackPop<JType>();
-                JType *value2 = currentStackPop<JType>();
-                JType *value3 = currentStackPop<JType>();
-                JType *value4 = currentStackPop<JType>();
+                JType *value1 = frames->top()->pop<JType>();
+                JType *value2 = frames->top()->pop<JType>();
+                JType *value3 = frames->top()->pop<JType>();
+                JType *value4 = frames->top()->pop<JType>();
                 if (IS_COMPUTATIONAL_TYPE_1(value1) &&
                     IS_COMPUTATIONAL_TYPE_1(value2) &&
                     IS_COMPUTATIONAL_TYPE_1(value3) &&
                     IS_COMPUTATIONAL_TYPE_1(value4)) {
                     // use structure 1
-                    currentFrame->stack.push_back(cloneValue(value2));
-                    currentFrame->stack.push_back(cloneValue(value1));
-                    currentFrame->stack.push_back(value4);
-                    currentFrame->stack.push_back(value3);
-                    currentFrame->stack.push_back(value2);
-                    currentFrame->stack.push_back(value1);
+                    frames->top()->push(cloneValue(value2));
+                    frames->top()->push(cloneValue(value1));
+                    frames->top()->push(value4);
+                    frames->top()->push(value3);
+                    frames->top()->push(value2);
+                    frames->top()->push(value1);
                 } else if (IS_COMPUTATIONAL_TYPE_2(value1) &&
                            IS_COMPUTATIONAL_TYPE_1(value2) &&
                            IS_COMPUTATIONAL_TYPE_1(value3)) {
                     // use structure 2
-                    currentFrame->stack.push_back(value4);
+                    frames->top()->push(value4);
 
-                    currentFrame->stack.push_back(cloneValue(value1));
-                    currentFrame->stack.push_back(value4);
-                    currentFrame->stack.push_back(value2);
-                    currentFrame->stack.push_back(value1);
+                    frames->top()->push(cloneValue(value1));
+                    frames->top()->push(value4);
+                    frames->top()->push(value2);
+                    frames->top()->push(value1);
                 } else {
                     SHOULD_NOT_REACH_HERE
                 }
             } break;
             case op_swap: {
-                JType *value1 = currentStackPop<JType>();
-                JType *value2 = currentStackPop<JType>();
+                JType *value1 = frames->top()->pop<JType>();
+                JType *value2 = frames->top()->pop<JType>();
 
                 assert(IS_COMPUTATIONAL_TYPE_1(value1));
                 assert(IS_COMPUTATIONAL_TYPE_1(value2));
@@ -664,18 +769,21 @@ JType *Interpreter::execCode(const JavaClass *jc, CodeAttrCore &&ext) {
                 const u1 index = ext.code[++op];
                 const int8_t count = ext.code[++op];
                 const int32_t extendedCount = count;
-                if (IS_JINT(currentFrame->locals[index])) {
-                    dynamic_cast<JInt *>(currentFrame->locals[index])->val +=
-                        extendedCount;
-                } else if (IS_JLong(currentFrame->locals[index])) {
-                    dynamic_cast<JLong *>(currentFrame->locals[index])->val +=
-                        extendedCount;
-                } else if (IS_JFloat(currentFrame->locals[index])) {
-                    dynamic_cast<JFloat *>(currentFrame->locals[index])->val +=
-                        extendedCount;
-                } else if (IS_JDouble(currentFrame->locals[index])) {
-                    dynamic_cast<JDouble *>(currentFrame->locals[index])->val +=
-                        extendedCount;
+                if (IS_JINT(frames->top()->getLocalVariable(index))) {
+                    dynamic_cast<JInt *>(frames->top()->getLocalVariable(index))
+                        ->val += extendedCount;
+                } else if (IS_JLong(frames->top()->getLocalVariable(index))) {
+                    dynamic_cast<JLong *>(
+                        frames->top()->getLocalVariable(index))
+                        ->val += extendedCount;
+                } else if (IS_JFloat(frames->top()->getLocalVariable(index))) {
+                    dynamic_cast<JFloat *>(
+                        frames->top()->getLocalVariable(index))
+                        ->val += extendedCount;
+                } else if (IS_JDouble(frames->top()->getLocalVariable(index))) {
+                    dynamic_cast<JDouble *>(
+                        frames->top()->getLocalVariable(index))
+                        ->val += extendedCount;
                 } else {
                     SHOULD_NOT_REACH_HERE
                 }
@@ -718,213 +826,202 @@ JType *Interpreter::execCode(const JavaClass *jc, CodeAttrCore &&ext) {
             } break;
             case op_i2c:
             case op_i2b: {
-                auto *value = currentStackPop<JInt>();
+                auto *value = frames->top()->pop<JInt>();
                 auto *result = new JInt;
                 result->val = (int8_t)(value->val);
-                currentFrame->stack.push_back(result);
-                delete value;
+                frames->top()->push(result);
+
             } break;
             case op_i2s: {
-                auto *value = currentStackPop<JInt>();
+                auto *value = frames->top()->pop<JInt>();
                 auto *result = new JInt;
                 result->val = (int16_t)(value->val);
-                currentFrame->stack.push_back(result);
-                delete value;
+                frames->top()->push(result);
+
             } break;
             case op_lcmp: {
-                auto *value2 = currentStackPop<JLong>();
-                auto *value1 = currentStackPop<JLong>();
+                auto *value2 = frames->top()->pop<JLong>();
+                auto *value1 = frames->top()->pop<JLong>();
                 if (value1->val > value2->val) {
                     auto *result = new JInt(1);
-                    currentFrame->stack.push_back(result);
+                    frames->top()->push(result);
                 } else if (value1->val == value2->val) {
                     auto *result = new JInt(0);
-                    currentFrame->stack.push_back(result);
+                    frames->top()->push(result);
                 } else {
                     auto *result = new JInt(-1);
-                    currentFrame->stack.push_back(result);
+                    frames->top()->push(result);
                 }
-                delete value1;
-                delete value2;
+
             } break;
             case op_fcmpg:
             case op_fcmpl: {
-                auto *value2 = currentStackPop<JFloat>();
-                auto *value1 = currentStackPop<JFloat>();
+                auto *value2 = frames->top()->pop<JFloat>();
+                auto *value1 = frames->top()->pop<JFloat>();
                 if (value1->val > value2->val) {
                     auto *result = new JInt(1);
-                    currentFrame->stack.push_back(result);
+                    frames->top()->push(result);
                 } else if (std::abs(value1->val - value2->val) < 0.000001) {
                     auto *result = new JInt(0);
-                    currentFrame->stack.push_back(result);
+                    frames->top()->push(result);
                 } else {
                     auto *result = new JInt(-1);
-                    currentFrame->stack.push_back(result);
+                    frames->top()->push(result);
                 }
-                delete value1;
-                delete value2;
+
             } break;
             case op_dcmpl:
             case op_dcmpg: {
-                auto *value2 = currentStackPop<JDouble>();
-                auto *value1 = currentStackPop<JDouble>();
+                auto *value2 = frames->top()->pop<JDouble>();
+                auto *value1 = frames->top()->pop<JDouble>();
                 if (value1->val > value2->val) {
                     auto *result = new JInt(1);
-                    currentFrame->stack.push_back(result);
+                    frames->top()->push(result);
                 } else if (std::abs(value1->val - value2->val) <
                            0.000000000001) {
                     auto *result = new JInt(0);
-                    currentFrame->stack.push_back(result);
+                    frames->top()->push(result);
                 } else {
                     auto *result = new JInt(-1);
-                    currentFrame->stack.push_back(result);
+                    frames->top()->push(result);
                 }
-                delete value1;
-                delete value2;
+
             } break;
             case op_ifeq: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto *value = currentStackPop<JInt>();
+                auto *value = frames->top()->pop<JInt>();
                 if (value->val == 0) {
                     op = currentOffset + branchindex;
                 }
-                delete value;
+
             } break;
             case op_ifne: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto *value = currentStackPop<JInt>();
+                auto *value = frames->top()->pop<JInt>();
                 if (value->val != 0) {
                     op = currentOffset + branchindex;
                 }
-                delete value;
+
             } break;
             case op_iflt: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto *value = currentStackPop<JInt>();
+                auto *value = frames->top()->pop<JInt>();
                 if (value->val < 0) {
                     op = currentOffset + branchindex;
                 }
-                delete value;
+
             } break;
             case op_ifge: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto *value = currentStackPop<JInt>();
+                auto *value = frames->top()->pop<JInt>();
                 if (value->val >= 0) {
                     op = currentOffset + branchindex;
                 }
-                delete value;
+
             } break;
             case op_ifgt: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto *value = currentStackPop<JInt>();
+                auto *value = frames->top()->pop<JInt>();
                 if (value->val > 0) {
                     op = currentOffset + branchindex;
                 }
-                delete value;
+
             } break;
             case op_ifle: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto *value = currentStackPop<JInt>();
+                auto *value = frames->top()->pop<JInt>();
                 if (value->val <= 0) {
                     op = currentOffset + branchindex;
                 }
-                delete value;
+
             } break;
             case op_if_icmpeq: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto *value2 = currentStackPop<JInt>();
-                auto *value1 = currentStackPop<JInt>();
+                auto *value2 = frames->top()->pop<JInt>();
+                auto *value1 = frames->top()->pop<JInt>();
                 if (value1->val == value2->val) {
                     op = currentOffset + branchindex;
                 }
-                delete value1;
-                delete value2;
+
             } break;
             case op_if_icmpne: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto *value2 = currentStackPop<JInt>();
-                auto *value1 = currentStackPop<JInt>();
+                auto *value2 = frames->top()->pop<JInt>();
+                auto *value1 = frames->top()->pop<JInt>();
                 if (value1->val != value2->val) {
                     op = currentOffset + branchindex;
                 }
-                delete value1;
-                delete value2;
+
             } break;
             case op_if_icmplt: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto *value2 = currentStackPop<JInt>();
-                auto *value1 = currentStackPop<JInt>();
+                auto *value2 = frames->top()->pop<JInt>();
+                auto *value1 = frames->top()->pop<JInt>();
                 if (value1->val < value2->val) {
                     op = currentOffset + branchindex;
                 }
-                delete value1;
-                delete value2;
+
             } break;
             case op_if_icmpge: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto *value2 = currentStackPop<JInt>();
-                auto *value1 = currentStackPop<JInt>();
+                auto *value2 = frames->top()->pop<JInt>();
+                auto *value1 = frames->top()->pop<JInt>();
                 if (value1->val >= value2->val) {
                     op = currentOffset + branchindex;
                 }
-                delete value1;
-                delete value2;
+
             } break;
             case op_if_icmpgt: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto *value2 = currentStackPop<JInt>();
-                auto *value1 = currentStackPop<JInt>();
+                auto *value2 = frames->top()->pop<JInt>();
+                auto *value1 = frames->top()->pop<JInt>();
                 if (value1->val > value2->val) {
                     op = currentOffset + branchindex;
                 }
-                delete value1;
-                delete value2;
+
             } break;
             case op_if_icmple: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto *value2 = currentStackPop<JInt>();
-                auto *value1 = currentStackPop<JInt>();
+                auto *value2 = frames->top()->pop<JInt>();
+                auto *value1 = frames->top()->pop<JInt>();
                 if (value1->val <= value2->val) {
                     op = currentOffset + branchindex;
                 }
-                delete value1;
-                delete value2;
+
             } break;
             case op_if_acmpeq: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto *value2 = currentStackPop<JObject>();
-                auto *value1 = currentStackPop<JObject>();
+                auto *value2 = frames->top()->pop<JObject>();
+                auto *value1 = frames->top()->pop<JObject>();
                 if (value1->offset == value2->offset &&
                     value1->jc == value2->jc) {
                     op = currentOffset + branchindex;
                 }
-                delete value1;
-                delete value2;
+
             } break;
             case op_if_acmpne: {
                 u4 currentOffset = op - 1;
                 int16_t branchindex = consumeU2(ext.code, op);
-                auto *value2 = currentStackPop<JObject>();
-                auto *value1 = currentStackPop<JObject>();
+                auto *value2 = frames->top()->pop<JObject>();
+                auto *value1 = frames->top()->pop<JObject>();
                 if (value1->offset != value2->offset ||
                     value1->jc != value2->jc) {
                     op = currentOffset + branchindex;
                 }
-                delete value1;
-                delete value2;
+
             } break;
             case op_goto: {
                 u4 currentOffset = op - 1;
@@ -950,13 +1047,13 @@ JType *Interpreter::execCode(const JavaClass *jc, CodeAttrCore &&ext) {
                     jumpOffset.push_back(consumeU4(ext.code, op));
                 }
 
-                auto *index = currentStackPop<JInt>();
+                auto *index = frames->top()->pop<JInt>();
                 if (index->val < low || index->val > high) {
                     op = currentOffset + defaultIndex;
                 } else {
                     op = currentOffset + jumpOffset[index->val - low];
                 }
-                delete index;
+
             } break;
             case op_lookupswitch: {
                 u4 currentOffset = op - 1;
@@ -970,29 +1067,28 @@ JType *Interpreter::execCode(const JavaClass *jc, CodeAttrCore &&ext) {
                     matchOffset.insert(std::make_pair(consumeU4(ext.code, op),
                                                       consumeU4(ext.code, op)));
                 }
-                auto *key = currentStackPop<JInt>();
+                auto *key = frames->top()->pop<JInt>();
                 auto res = matchOffset.find(key->val);
                 if (res != matchOffset.end()) {
                     op = currentOffset + (*res).second;
                 } else {
                     op = currentOffset + defaultIndex;
                 }
-                delete key;
             } break;
             case op_ireturn: {
-                return flowReturn<JInt>();
+                return cloneValue(frames->top()->pop<JInt>());
             } break;
             case op_lreturn: {
-                return flowReturn<JLong>();
+                return cloneValue(frames->top()->pop<JLong>());
             } break;
             case op_freturn: {
-                return flowReturn<JFloat>();
+                return cloneValue(frames->top()->pop<JFloat>());
             } break;
             case op_dreturn: {
-                return flowReturn<JDouble>();
+                return cloneValue(frames->top()->pop<JDouble>());
             } break;
             case op_areturn: {
-                return flowReturn<JType>();
+                return cloneValue(frames->top()->pop<JType>());
             } break;
             case op_return: {
                 return nullptr;
@@ -1003,11 +1099,11 @@ JType *Interpreter::execCode(const JavaClass *jc, CodeAttrCore &&ext) {
                 JType *field = cloneValue(getStaticField(
                     std::get<0>(symbolicRef), std::get<1>(symbolicRef),
                     std::get<2>(symbolicRef)));
-                currentFrame->stack.push_back(field);
+                frames->top()->push(field);
             } break;
             case op_putstatic: {
                 u2 index = consumeU2(ext.code, op);
-                JType *value = currentStackPop<JType>();
+                JType *value = frames->top()->pop<JType>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
                 putStaticField(std::get<0>(symbolicRef),
                                std::get<1>(symbolicRef),
@@ -1015,25 +1111,23 @@ JType *Interpreter::execCode(const JavaClass *jc, CodeAttrCore &&ext) {
             } break;
             case op_getfield: {
                 u2 index = consumeU2(ext.code, op);
-                JObject *objectref = currentStackPop<JObject>();
+                JObject *objectref = frames->top()->pop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
                 JType *field = cloneValue(yrt.jheap->getFieldByName(
                     std::get<0>(symbolicRef), std::get<1>(symbolicRef),
                     std::get<2>(symbolicRef), objectref));
-                currentFrame->stack.push_back(field);
+                frames->top()->push(field);
 
-                delete objectref;
             } break;
             case op_putfield: {
                 const u2 index = consumeU2(ext.code, op);
-                JType *value = currentStackPop<JType>();
-                JObject *objectref = currentStackPop<JObject>();
+                JType *value = frames->top()->pop<JType>();
+                JObject *objectref = frames->top()->pop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
                 yrt.jheap->putFieldByName(
                     std::get<0>(symbolicRef), std::get<1>(symbolicRef),
                     std::get<2>(symbolicRef), objectref, value);
 
-                delete objectref;
             } break;
             case op_invokevirtual: {
                 const u2 index = consumeU2(ext.code, op);
@@ -1136,24 +1230,24 @@ JType *Interpreter::execCode(const JavaClass *jc, CodeAttrCore &&ext) {
             case op_new: {
                 const u2 index = consumeU2(ext.code, op);
                 JObject *objectref = execNew(jc, index);
-                currentFrame->stack.push_back(objectref);
+                frames->top()->push(objectref);
             } break;
             case op_newarray: {
                 const u1 atype = ext.code[++op];
-                JInt *count = currentStackPop<JInt>();
+                JInt *count = frames->top()->pop<JInt>();
 
                 if (count->val < 0) {
                     throw std::runtime_error("negative array size");
                 }
                 JArray *arrayref = yrt.jheap->createPODArray(atype, count->val);
 
-                currentFrame->stack.push_back(arrayref);
-                delete count;
+                frames->top()->push(arrayref);
+
             } break;
             case op_anewarray: {
                 const u2 index = consumeU2(ext.code, op);
                 auto symbolicRef = parseClassSymbolicReference(jc, index);
-                JInt *count = currentStackPop<JInt>();
+                JInt *count = frames->top()->pop<JInt>();
 
                 if (count->val < 0) {
                     throw std::runtime_error("negative array size");
@@ -1161,23 +1255,22 @@ JType *Interpreter::execCode(const JavaClass *jc, CodeAttrCore &&ext) {
                 JArray *arrayref = yrt.jheap->createObjectArray(
                     *std::get<0>(symbolicRef), count->val);
 
-                currentFrame->stack.push_back(arrayref);
-                delete count;
+                frames->top()->push(arrayref);
+
             } break;
             case op_arraylength: {
-                JArray *arrayref = currentStackPop<JArray>();
+                JArray *arrayref = frames->top()->pop<JArray>();
 
                 if (arrayref == nullptr) {
                     throw std::runtime_error("null pointer\n");
                 }
                 JInt *length = new JInt;
                 length->val = arrayref->length;
-                currentFrame->stack.push_back(length);
+                frames->top()->push(length);
 
-                delete arrayref;
             } break;
             case op_athrow: {
-                auto *throwableObject = currentStackPop<JObject>();
+                auto *throwableObject = frames->top()->pop<JObject>();
                 if (throwableObject == nullptr) {
                     throw std::runtime_error("null pointer");
                 }
@@ -1188,11 +1281,10 @@ JType *Interpreter::execCode(const JavaClass *jc, CodeAttrCore &&ext) {
                 }
 
                 if (handleException(jc, ext, throwableObject, op)) {
-                    while (!currentFrame->stack.empty()) {
-                        auto *temp = currentStackPop<JType>();
-                        delete temp;
+                    while (!frames->top()->emptyStack()) {
+                        frames->top()->pop<JType>();
                     }
-                    currentFrame->stack.push_back(throwableObject);
+                    frames->top()->pushException(throwableObject);
                 } else /* Exception can not handled within method handlers */ {
                     exception.markException();
                     exception.setThrowExceptionInfo(throwableObject);
@@ -1204,18 +1296,18 @@ JType *Interpreter::execCode(const JavaClass *jc, CodeAttrCore &&ext) {
             } break;
             case op_instanceof: {
                 const u2 index = consumeU2(ext.code, op);
-                auto *objectref = currentStackPop<JObject>();
+                auto *objectref = frames->top()->pop<JObject>();
                 if (objectref == nullptr) {
-                    currentFrame->stack.push_back(new JInt(0));
+                    frames->top()->push(new JInt(0));
                 }
                 if (checkInstanceof(jc, index, objectref)) {
-                    currentFrame->stack.push_back(new JInt(1));
+                    frames->top()->push(new JInt(1));
                 } else {
-                    currentFrame->stack.push_back(new JInt(0));
+                    frames->top()->push(new JInt(0));
                 }
             } break;
             case op_monitorenter: {
-                JType *ref = currentStackPop<JType>();
+                JType *ref = frames->top()->pop<JType>();
 
                 if (ref == nullptr) {
                     throw std::runtime_error("null pointer");
@@ -1228,7 +1320,7 @@ JType *Interpreter::execCode(const JavaClass *jc, CodeAttrCore &&ext) {
                 yrt.jheap->findMonitor(ref)->enter(std::this_thread::get_id());
             } break;
             case op_monitorexit: {
-                JType *ref = currentStackPop<JType>();
+                JType *ref = frames->top()->pop<JType>();
 
                 if (ref == nullptr) {
                     throw std::runtime_error("null pointer");
@@ -1249,18 +1341,16 @@ JType *Interpreter::execCode(const JavaClass *jc, CodeAttrCore &&ext) {
             case op_ifnull: {
                 u4 currentOffset = op - 1;
                 int16_t branchIndex = consumeU2(ext.code, op);
-                JObject *value = currentStackPop<JObject>();
+                JObject *value = frames->top()->pop<JObject>();
                 if (value == nullptr) {
-                    delete value;
                     op = currentOffset + branchIndex;
                 }
             } break;
             case op_ifnonnull: {
                 u4 currentOffset = op - 1;
                 int16_t branchIndex = consumeU2(ext.code, op);
-                JObject *value = currentStackPop<JObject>();
+                JObject *value = frames->top()->pop<JObject>();
                 if (value != nullptr) {
-                    delete value;
                     op = currentOffset + branchIndex;
                 }
             } break;
@@ -1299,14 +1389,14 @@ void Interpreter::loadConstantPoolItem2Stack(const JavaClass *jc, u2 index) {
             dynamic_cast<CONSTANT_Integer *>(jc->raw.constPoolInfo[index])->val;
         JInt *ival = new JInt;
         ival->val = val;
-        currentFrame->stack.push_back(ival);
+        frames->top()->push(ival);
     } else if (typeid(*jc->raw.constPoolInfo[index]) ==
                typeid(CONSTANT_Float)) {
         auto val =
             dynamic_cast<CONSTANT_Float *>(jc->raw.constPoolInfo[index])->val;
         JFloat *fval = new JFloat;
         fval->val = val;
-        currentFrame->stack.push_back(fval);
+        frames->top()->push(fval);
     } else if (typeid(*jc->raw.constPoolInfo[index]) ==
                typeid(CONSTANT_String)) {
         auto val = jc->getString(
@@ -1319,7 +1409,7 @@ void Interpreter::loadConstantPoolItem2Stack(const JavaClass *jc, u2 index) {
         // java.lang.Object, we know that its first field was used to store
         // chars
         yrt.jheap->putFieldByOffset(*str, 0, value);
-        currentFrame->stack.push_back(str);
+        frames->top()->push(str);
     } else if (typeid(*jc->raw.constPoolInfo[index]) ==
                typeid(CONSTANT_Class)) {
         throw std::runtime_error("nonsupport region");
@@ -1662,94 +1752,49 @@ bool Interpreter::checkInstanceof(const JavaClass *jc, u2 index,
     }
 }
 
-std::pair<MethodInfo *, const JavaClass *> Interpreter::findMethod(
-    const JavaClass *jc, const std::string &methodName,
-    const std::string &methodDescriptor) {
-    // Find corresponding method at current object's class;
-    FOR_EACH(i, jc->raw.methodsCount) {
-        auto *methodInfo = jc->getMethod(methodName, methodDescriptor);
-        if (methodInfo) {
-            return std::make_pair(methodInfo, jc);
-        }
-    }
-    // Find corresponding method at object's super class unless it's an instance
-    // of
-    if (jc->raw.superClass != 0) {
-        JavaClass *superClass =
-            yrt.ma->loadClassIfAbsent(jc->getSuperClassName());
-        auto methodPair = findMethod(jc, methodName, methodDescriptor);
-        if (methodPair.first) {
-            return methodPair;
-        }
-    }
-    // Find corresponding method at object's all interfaces if at least one
-    // interface class existing
-    if (jc->raw.interfacesCount > 0) {
-        FOR_EACH(eachInterface, jc->raw.interfacesCount) {
-            const std::string &interfaceName = jc->getString(
-                dynamic_cast<CONSTANT_Class *>(
-                    jc->raw.constPoolInfo[jc->raw.interfaces[eachInterface]])
-                    ->nameIndex);
-            JavaClass *interfaceClass =
-                yrt.ma->loadClassIfAbsent(interfaceName);
-            auto *methodInfo =
-                interfaceClass->getMethod(methodName, methodDescriptor);
-            if (methodInfo && (!IS_METHOD_ABSTRACT(methodInfo->accessFlags) &&
-                               !IS_METHOD_STATIC(methodInfo->accessFlags) &&
-                               !IS_METHOD_PRIVATE(methodInfo->accessFlags))) {
-                return std::make_pair(methodInfo, interfaceClass);
-            }
-            if (methodInfo && (!IS_METHOD_STATIC(methodInfo->accessFlags) &&
-                               !IS_METHOD_PRIVATE(methodInfo->accessFlags))) {
-                return std::make_pair(methodInfo, interfaceClass);
+void Interpreter::pushMethodArguments(std::vector<int> &parameter,
+                                      bool isObjectMethod) {
+    if (parameter.size() > 0) {
+        for (int localIndex = parameter.size() - (isObjectMethod ? 0 : 1),
+                 paramIndex = parameter.size() - 1;
+             paramIndex >= 0; localIndex--, paramIndex--) {
+            if (parameter[paramIndex] == T_INT ||
+                parameter[paramIndex] == T_BOOLEAN ||
+                parameter[paramIndex] == T_CHAR ||
+                parameter[paramIndex] == T_BYTE ||
+                parameter[paramIndex] == T_SHORT) {
+                frames->top()->setLocalVariable(
+                    localIndex, frames->nextFrame()->pop<JInt>());
+            } else if (parameter[paramIndex] == T_FLOAT) {
+                frames->top()->setLocalVariable(
+                    localIndex, frames->nextFrame()->pop<JFloat>());
+            } else if (parameter[paramIndex] == T_DOUBLE) {
+                frames->top()->setLocalVariable(
+                    localIndex, frames->nextFrame()->pop<JDouble>());
+            } else if (parameter[paramIndex] == T_LONG) {
+                frames->top()->setLocalVariable(
+                    localIndex, frames->nextFrame()->pop<JLong>());
+            } else if (parameter[paramIndex] == T_EXTRA_ARRAY) {
+                frames->top()->setLocalVariable(
+                    localIndex, frames->nextFrame()->pop<JArray>());
+            } else if (parameter[paramIndex] == T_EXTRA_OBJECT) {
+                frames->top()->setLocalVariable(
+                    localIndex, frames->nextFrame()->pop<JObject>());
+            } else {
+                SHOULD_NOT_REACH_HERE;
             }
         }
     }
-    // Otherwise, failed to find corresponding method by given method name and
-    // method descriptor
-    return std::make_pair(nullptr, nullptr);
-}
-
-void Interpreter::pushMethodArguments(Frame *frame,
-                                      std::vector<int> &parameter) {
-    for (int64_t i = (int64_t)parameter.size() - 1; i >= 0; i--) {
-        if (parameter[i] == T_INT || parameter[i] == T_BOOLEAN ||
-            parameter[i] == T_CHAR || parameter[i] == T_BYTE ||
-            parameter[i] == T_SHORT) {
-            auto *v = currentStackPop<JInt>();
-            frame->locals.push_front(v);
-        } else if (parameter[i] == T_FLOAT) {
-            auto *v = currentStackPop<JFloat>();
-            frame->locals.push_front(v);
-        } else if (parameter[i] == T_DOUBLE) {
-            auto *v = currentStackPop<JDouble>();
-            frame->locals.push_front(nullptr);
-            frame->locals.push_front(v);
-        } else if (parameter[i] == T_LONG) {
-            auto *v = currentStackPop<JLong>();
-            frame->locals.push_front(nullptr);
-            frame->locals.push_front(v);
-        } else if (parameter[i] == T_EXTRA_ARRAY) {
-            auto *v = currentStackPop<JArray>();
-            frame->locals.push_front(v);
-        } else if (parameter[i] == T_EXTRA_OBJECT) {
-            auto *v = currentStackPop<JObject>();
-            frame->locals.push_front(v);
-        } else {
-            SHOULD_NOT_REACH_HERE;
-        }
+    if (isObjectMethod) {
+        frames->top()->setLocalVariable(0, frames->nextFrame()->pop<JObject>());
     }
 }
-
-JObject *Interpreter::pushMethodThisArgument(Frame *frame) {
-    auto *objectref = currentStackPop<JObject>();
-    frame->locals.push_front(objectref);
-    return objectref;
-}
-
+//--------------------------------------------------------------------------------
+// Invoke by given name, this method was be used internally
+//--------------------------------------------------------------------------------
 void Interpreter::invokeByName(JavaClass *jc, const std::string &methodName,
                                const std::string &methodDescriptor) {
-    const MethodInfo *m = jc->getMethod(methodName, methodDescriptor);
+    const MethodInfo *m = jc->findMethod(methodName, methodDescriptor);
     CodeAttrCore ext = getCodeAttrCore(m);
     const int returnType =
         std::get<0>(peelMethodParameterAndType(methodDescriptor));
@@ -1771,30 +1816,24 @@ void Interpreter::invokeByName(JavaClass *jc, const std::string &methodName,
 #endif
 
     // Actual method calling routine
-    Frame *frame = new Frame;
-    frame->locals.resize(ext.maxLocal);
-    frames.push_back(frame);
-    currentFrame = frames.back();
-
-    if (frame->locals.size() < ext.maxLocal) {
-        frame->locals.resize(ext.maxLocal);
-    }
+    frames->pushFrame(ext.maxLocal, ext.maxStack);
 
     JType *returnValue{};
     if (IS_METHOD_NATIVE(m->accessFlags)) {
         returnValue = cloneValue(
-            execNative(jc->getClassName(), methodName, methodDescriptor));
+            execNativeMethod(jc->getClassName(), methodName, methodDescriptor));
     } else {
-        returnValue = cloneValue(execCode(jc, std::move(ext)));
+        returnValue = cloneValue(execByteCode(jc, std::move(ext)));
     }
-    popFrame();
+    frames->popFrame();
 
-    // Since invokeByName() was merely used to call <clinit> and main method of
-    // running program, therefore, if an exception reached here, we don't need
-    // to push its value into frame  again (In fact there is no more frame), we
-    // just print stack trace inforamtion to notice user and return directly
+    // Since invokeByName() was merely used to call <clinit> and main method
+    // of running program, therefore, if an exception reached here, we don't
+    // need to push its value into frame  again (In fact there is no more
+    // frame), we just print stack trace inforamtion to notice user and
+    // return directly
     if (returnType != T_EXTRA_VOID) {
-        currentFrame->stack.push_back(returnValue);
+        frames->top()->push(returnValue);
     }
     if (exception.hasUnhandledException()) {
         exception.extendExceptionStackTrace(methodName);
@@ -1804,16 +1843,29 @@ void Interpreter::invokeByName(JavaClass *jc, const std::string &methodName,
     GC_SAFE_POINT
     if (yrt.gc->shallGC()) {
         yrt.gc->stopTheWorld();
-        yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
+        yrt.gc->gc(frames, GCPolicy::GC_MARK_AND_SWEEP);
     }
 }
-
+//--------------------------------------------------------------------------------
+// Invoke interface method
+//--------------------------------------------------------------------------------
 void Interpreter::invokeInterface(const JavaClass *jc,
                                   const std::string &methodName,
                                   const std::string &methodDescriptor) {
-    // Invoke interface method
+    auto invokingMethod = findInstanceMethod(jc, methodName, methodDescriptor);
+    if (!invokingMethod.first) {
+        invokingMethod =
+            findInstanceMethodOnSupers(jc, methodName, methodDescriptor);
+        if (!invokingMethod.first) {
+            invokingMethod =
+                findMaximallySpecifiedMethod(jc, methodName, methodDescriptor);
+            if (!invokingMethod.first) {
+                throw std::runtime_error("can not find method " + methodName +
+                                         " " + methodDescriptor);
+            }
+        }
+    }
 
-    const auto invokingMethod = findMethod(jc, methodName, methodDescriptor);
 #ifdef YVM_DEBUG_SHOW_EXEC_FLOW
     for (int i = 0; i < frames.size(); i++) {
         std::cout << "-";
@@ -1830,64 +1882,72 @@ void Interpreter::invokeInterface(const JavaClass *jc,
     auto parameterAndReturnType = peelMethodParameterAndType(methodDescriptor);
     const int returnType = std::get<0>(parameterAndReturnType);
     auto parameter = std::get<1>(parameterAndReturnType);
-    Frame *frame = new Frame;
-    pushMethodArguments(frame, parameter);
-    pushMethodThisArgument(frame);
 
     CodeAttrCore ext = getCodeAttrCore(invokingMethod.first);
-    frame->locals.resize(ext.maxLocal);
-    frames.push_back(frame);
-    this->currentFrame = frame;
-
-    if (frame->locals.size() < ext.maxLocal) {
-        frame->locals.resize(ext.maxLocal);
+    if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
+        ext.maxLocal = ext.maxStack = parameter.size() + 1;
     }
+    frames->pushFrame(ext.maxLocal, ext.maxStack);
+    pushMethodArguments(parameter, true);
 
     JType *returnValue{};
     if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
-        returnValue = cloneValue(execNative(
+        returnValue = cloneValue(execNativeMethod(
             const_cast<JavaClass *>(invokingMethod.second)->getClassName(),
             methodName, methodDescriptor));
     } else {
         returnValue =
-            cloneValue(execCode(invokingMethod.second, std::move(ext)));
+            cloneValue(execByteCode(invokingMethod.second, std::move(ext)));
     }
 
-    popFrame();
-    if (returnType != T_EXTRA_VOID || exception.hasUnhandledException()) {
-        currentFrame->stack.push_back(returnValue);
-        if (exception.hasUnhandledException()) {
-            exception.extendExceptionStackTrace(methodName);
+    frames->popFrame();
+
+    if (returnType != T_EXTRA_VOID) {
+        if (!exception.hasUnhandledException()) {
+            frames->top()->push(returnValue);
+        } else {
+            frames->top()->pushException(returnValue);
+            if (exception.hasUnhandledException()) {
+                exception.extendExceptionStackTrace(methodName);
+            }
         }
     }
 
     GC_SAFE_POINT
     if (yrt.gc->shallGC()) {
         yrt.gc->stopTheWorld();
-        yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
+        yrt.gc->gc(frames, GCPolicy::GC_MARK_AND_SWEEP);
     }
 }
 
+//--------------------------------------------------------------------------------
+// Invoke instance method; dispatch based on class
+//--------------------------------------------------------------------------------
 void Interpreter::invokeVirtual(const std::string &methodName,
                                 const std::string &methodDescriptor) {
     auto parameterAndReturnType = peelMethodParameterAndType(methodDescriptor);
     const int returnType = std::get<0>(parameterAndReturnType);
     auto parameter = std::get<1>(parameterAndReturnType);
 
-    Frame *frame = new Frame;
-    pushMethodArguments(frame, parameter);
-    auto *objectref = pushMethodThisArgument(frame);
-    frames.push_back(frame);
-    this->currentFrame = frame;
+    auto *thisRef =
+        (JObject *)frames->top()
+            ->stackSlots[frames->top()->stackTop - parameter.size() - 1];
 
     auto invokingMethod =
-        findMethod(objectref->jc, methodName, methodDescriptor);
-    auto ext = getCodeAttrCore(invokingMethod.first);
-
-    if (frame->locals.size() < ext.maxLocal) {
-        frame->locals.resize(ext.maxLocal);
+        findInstanceMethod(thisRef->jc, methodName, methodDescriptor);
+    if (!invokingMethod.first) {
+        invokingMethod = findInstanceMethodOnSupers(thisRef->jc, methodName,
+                                                    methodDescriptor);
+        if (!invokingMethod.first) {
+            invokingMethod = findMaximallySpecifiedMethod(
+                thisRef->jc, methodName, methodDescriptor);
+            if (!invokingMethod.first) {
+                throw std::runtime_error("can not find method " + methodName +
+                                         " " + methodDescriptor);
+            }
+        }
     }
-
+    auto ext = getCodeAttrCore(invokingMethod.first);
 #ifdef YVM_DEBUG_SHOW_EXEC_FLOW
     for (int i = 0; i < frames.size(); i++) {
         std::cout << "-";
@@ -1896,11 +1956,15 @@ void Interpreter::invokeVirtual(const std::string &methodName,
               << const_cast<JavaClass *>(invokingMethod.second)->getClassName()
               << "::" << methodName << "() " << methodDescriptor << "\n";
 #endif
-
+    if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
+        ext.maxLocal = ext.maxStack = parameter.size() + 1;
+    }
+    frames->pushFrame(ext.maxLocal, ext.maxStack);
+    pushMethodArguments(parameter, true);
     JType *returnValue{};
     if (invokingMethod.first) {
         if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
-            returnValue = cloneValue(execNative(
+            returnValue = cloneValue(execNativeMethod(
                 const_cast<JavaClass *>(invokingMethod.second)->getClassName(),
                 invokingMethod.second->getString(
                     invokingMethod.first->nameIndex),
@@ -1908,44 +1972,41 @@ void Interpreter::invokeVirtual(const std::string &methodName,
                     invokingMethod.first->descriptorIndex)));
         } else {
             returnValue =
-                cloneValue(execCode(invokingMethod.second, std::move(ext)));
+                cloneValue(execByteCode(invokingMethod.second, std::move(ext)));
         }
     } else {
         throw std::runtime_error("can not find method to call");
     }
+    frames->popFrame();
 
-    popFrame();
-    if (returnType != T_EXTRA_VOID || exception.hasUnhandledException()) {
-        currentFrame->stack.push_back(returnValue);
-        if (exception.hasUnhandledException()) {
-            exception.extendExceptionStackTrace(methodName);
+    if (returnType != T_EXTRA_VOID) {
+        if (!exception.hasUnhandledException()) {
+            frames->top()->push(returnValue);
+        } else {
+            frames->top()->pushException(returnValue);
+            if (exception.hasUnhandledException()) {
+                exception.extendExceptionStackTrace(methodName);
+            }
         }
     }
 
     GC_SAFE_POINT
     if (yrt.gc->shallGC()) {
         yrt.gc->stopTheWorld();
-        yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
+        yrt.gc->gc(frames, GCPolicy::GC_MARK_AND_SWEEP);
     }
 }
-
+//--------------------------------------------------------------------------------
+//  Invoke instance method; special handling for superclass, private,
+//  and instance initialization method invocations
+//--------------------------------------------------------------------------------
 void Interpreter::invokeSpecial(const JavaClass *jc,
                                 const std::string &methodName,
                                 const std::string &methodDescriptor) {
-    //  Invoke instance method; special handling for superclass, private,
-    //  and instance initialization method invocations
-
     auto parameterAndReturnType = peelMethodParameterAndType(methodDescriptor);
     const int returnType = std::get<0>(parameterAndReturnType);
     auto parameter = std::get<1>(parameterAndReturnType);
 
-    Frame *frame = new Frame;
-    pushMethodArguments(frame, parameter);
-    auto *objectref = pushMethodThisArgument(frame);
-    frames.push_back(frame);
-    this->currentFrame = frame;
-
-    const auto invokingMethod = findMethod(jc, methodName, methodDescriptor);
 #ifdef YVM_DEBUG_SHOW_EXEC_FLOW
     for (int i = 0; i < frames.size(); i++) {
         std::cout << "-";
@@ -1954,74 +2015,73 @@ void Interpreter::invokeSpecial(const JavaClass *jc,
               << const_cast<JavaClass *>(invokingMethod.second)->getClassName()
               << "::" << methodName << "() " << methodDescriptor << "\n";
 #endif
-
-    JType *returnValue{};
-    if (invokingMethod.first) {
-        if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
-            returnValue = cloneValue(execNative(
-                const_cast<JavaClass *>(invokingMethod.second)->getClassName(),
-                invokingMethod.second->getString(
-                    invokingMethod.first->nameIndex),
-                invokingMethod.second->getString(
-                    invokingMethod.first->descriptorIndex)));
-        } else {
-            auto ext = getCodeAttrCore(invokingMethod.first);
-            if (frame->locals.size() < ext.maxLocal) {
-                frame->locals.resize(ext.maxLocal);
-            }
-            returnValue =
-                cloneValue(execCode(invokingMethod.second, std::move(ext)));
-        }
-    } else if (IS_CLASS_INTERFACE(jc->raw.accessFlags)) {
-        JavaClass *javaLangObjectClass = yrt.ma->findJavaClass(
-            "java/lang/"
-            "Object");
-        MethodInfo *javaLangObjectMethod =
-            javaLangObjectClass->getMethod(methodName, methodDescriptor);
-        if (javaLangObjectMethod &&
-            IS_METHOD_PUBLIC(javaLangObjectMethod->accessFlags) &&
-            !IS_METHOD_STATIC(javaLangObjectMethod->accessFlags)) {
-            if (IS_METHOD_NATIVE(javaLangObjectMethod->accessFlags)) {
-                returnValue = cloneValue(
-                    execNative(javaLangObjectClass->getClassName(),
-                               javaLangObjectClass->getString(
-                                   javaLangObjectMethod->nameIndex),
-                               javaLangObjectClass->getString(
-                                   javaLangObjectMethod->descriptorIndex)));
-            } else {
-                auto ext = getCodeAttrCore(javaLangObjectMethod);
-                frame->locals.resize(ext.maxLocal);
-                returnValue =
-                    cloneValue(execCode(javaLangObjectClass, std::move(ext)));
+    auto invokingMethod = findInstanceMethod(jc, methodName, methodDescriptor);
+    if (!invokingMethod.first) {
+        invokingMethod =
+            findInstanceMethodOnSupers(jc, methodName, methodDescriptor);
+        if (!invokingMethod.first) {
+            invokingMethod =
+                findJavaLangObjectMethod(jc, methodName, methodDescriptor);
+            if (!invokingMethod.first) {
+                invokingMethod = findMaximallySpecifiedMethod(jc, methodName,
+                                                              methodDescriptor);
+                if (!invokingMethod.first) {
+                    throw std::runtime_error("can not find method " +
+                                             methodName + " " +
+                                             methodDescriptor);
+                }
             }
         }
     }
+    auto ext = getCodeAttrCore(invokingMethod.first);
+    if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
+        ext.maxLocal = ext.maxStack = parameter.size() + 1;
+    }
+    frames->pushFrame(ext.maxLocal, ext.maxStack);
+    pushMethodArguments(parameter, true);
+    JType *returnValue{};
 
-    popFrame();
-    if (returnType != T_EXTRA_VOID || exception.hasUnhandledException()) {
-        currentFrame->stack.push_back(returnValue);
-        if (exception.hasUnhandledException()) {
-            exception.extendExceptionStackTrace(methodName);
+    if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
+        returnValue = cloneValue(execNativeMethod(
+            const_cast<JavaClass *>(invokingMethod.second)->getClassName(),
+            invokingMethod.second->getString(invokingMethod.first->nameIndex),
+            invokingMethod.second->getString(
+                invokingMethod.first->descriptorIndex)));
+    } else {
+        returnValue =
+            cloneValue(execByteCode(invokingMethod.second, std::move(ext)));
+    }
+    frames->popFrame();
+    if (returnType != T_EXTRA_VOID) {
+        if (!exception.hasUnhandledException()) {
+            frames->top()->push(returnValue);
+        } else {
+            frames->top()->pushException(returnValue);
+            if (exception.hasUnhandledException()) {
+                exception.extendExceptionStackTrace(methodName);
+            }
         }
     }
 
     GC_SAFE_POINT
     if (yrt.gc->shallGC()) {
         yrt.gc->stopTheWorld();
-        yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
+        yrt.gc->gc(frames, GCPolicy::GC_MARK_AND_SWEEP);
     }
 }
 
 void Interpreter::invokeStatic(const JavaClass *jc,
                                const std::string &methodName,
                                const std::string &methodDescriptor) {
-    // Get instance method name and descriptor from CONSTANT_Methodref locating
-    // by index and get interface method parameter and return value descriptor
+    // Get instance method name and descriptor from CONSTANT_Methodref
+    // locating by index and get interface method parameter and return value
+    // descriptor
     yrt.ma->linkClassIfAbsent(const_cast<JavaClass *>(jc)->getClassName());
     yrt.ma->initClassIfAbsent(*this,
                               const_cast<JavaClass *>(jc)->getClassName());
 
-    const auto invokingMethod = findMethod(jc, methodName, methodDescriptor);
+    const auto invokingMethod =
+        std::make_pair(jc->findMethod(methodName, methodDescriptor), jc);
 #ifdef YVM_DEBUG_SHOW_EXEC_FLOW
     for (int i = 0; i < frames.size(); i++) {
         std::cout << "-";
@@ -2034,62 +2094,41 @@ void Interpreter::invokeStatic(const JavaClass *jc,
     assert(IS_METHOD_ABSTRACT(invokingMethod.first->accessFlags) == false);
     assert("<init>" != methodName);
 
-    Frame *frame = new Frame;
     auto ext = getCodeAttrCore(invokingMethod.first);
-
-    if (frame->locals.size() < ext.maxLocal) {
-        frame->locals.resize(ext.maxLocal);
-    }
 
     auto parameterAndReturnType = peelMethodParameterAndType(methodDescriptor);
     const int returnType = std::get<0>(parameterAndReturnType);
     auto parameter = std::get<1>(parameterAndReturnType);
-    pushMethodArguments(frame, parameter);
-
-    frames.push_back(frame);
-    this->currentFrame = frame;
-
+    if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
+        ext.maxLocal = ext.maxStack = parameter.size();
+    }
+    frames->pushFrame(ext.maxLocal, ext.maxStack);
+    pushMethodArguments(parameter, false);
     JType *returnValue{};
     if (IS_METHOD_NATIVE(invokingMethod.first->accessFlags)) {
-        returnValue = cloneValue(execNative(
+        returnValue = cloneValue(execNativeMethod(
             const_cast<JavaClass *>(invokingMethod.second)->getClassName(),
             methodName, methodDescriptor));
     } else {
         returnValue =
-            cloneValue(execCode(invokingMethod.second, std::move(ext)));
+            cloneValue(execByteCode(invokingMethod.second, std::move(ext)));
     }
-    popFrame();
 
-    if (returnType != T_EXTRA_VOID || exception.hasUnhandledException()) {
-        currentFrame->stack.push_back(returnValue);
-        if (exception.hasUnhandledException()) {
-            exception.extendExceptionStackTrace(methodName);
+    frames->popFrame();
+    if (returnType != T_EXTRA_VOID) {
+        if (!exception.hasUnhandledException()) {
+            frames->top()->push(returnValue);
+        } else {
+            frames->top()->pushException(returnValue);
+            if (exception.hasUnhandledException()) {
+                exception.extendExceptionStackTrace(methodName);
+            }
         }
     }
 
     GC_SAFE_POINT
     if (yrt.gc->shallGC()) {
         yrt.gc->stopTheWorld();
-        yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
+        yrt.gc->gc(frames, GCPolicy::GC_MARK_AND_SWEEP);
     }
-}
-
-JType *Interpreter::execNative(const std::string &className,
-                               const std::string &methodName,
-                               const std::string &methodDescriptor) {
-    std::string nativeMethod(className);
-    nativeMethod.append(".");
-    nativeMethod.append(methodName);
-    nativeMethod.append(".");
-    nativeMethod.append(methodDescriptor);
-    if (yrt.nativeMethods.find(nativeMethod) != yrt.nativeMethods.end()) {
-        return ((*yrt.nativeMethods.find(nativeMethod)).second)(&yrt);
-    }
-
-    GC_SAFE_POINT
-    if (yrt.gc->shallGC()) {
-        yrt.gc->stopTheWorld();
-        yrt.gc->gc(GCPolicy::GC_MARK_AND_SWEEP);
-    }
-    return nullptr;
 }

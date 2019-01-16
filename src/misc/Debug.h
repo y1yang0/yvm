@@ -6,7 +6,7 @@
 #include <iostream>
 #include <string>
 #include <utility>
-#include "JavaClass.h"
+#include "../runtime/JavaClass.h"
 
 class JavaClass;
 

@@ -4,10 +4,10 @@
 #include <map>
 #include <mutex>
 #include <vector>
-#include "GC.h"
+#include "../gc/GC.h"
 #include "JavaType.h"
 #include "ObjectMonitor.h"
-#include "Utils.h"
+#include "../misc/Utils.h"
 
 using namespace std;
 

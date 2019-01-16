@@ -1,6 +1,6 @@
-#include "AccessFlag.h"
+#include "../classfile/AccessFlag.h"
 #include "Debug.h"
-#include "JavaType.h"
+#include "../runtime/JavaType.h"
 
 void Inspector::printConstantPool(const JavaClass& jc) {
     using namespace std;

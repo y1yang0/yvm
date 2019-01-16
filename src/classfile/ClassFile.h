@@ -1,8 +1,8 @@
 #ifndef YVM_RAWCLASSFILE_H
 #define YVM_RAWCLASSFILE_H
 
-#include "Internal.h"
-#include "Utils.h"
+#include "../interpreter/Internal.h"
+#include "../misc/Utils.h"
 
 //--------------------------------------------------------------------------------
 // constant tags

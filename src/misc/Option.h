@@ -5,7 +5,7 @@
 // denote the default threshold value of garbage collector. GC was started when
 // the memory allocation was beyond this value.
 //--------------------------------------------------------------------------------
-#define YVM_GC_THRESHOLD_VALUE (1024 * 1024)
+#define YVM_GC_THRESHOLD_VALUE (1024 * 1024 * 10)
 
 //--------------------------------------------------------------------------------
 // show new spawning thread name

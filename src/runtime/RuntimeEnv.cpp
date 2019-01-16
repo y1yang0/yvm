@@ -1,14 +1,11 @@
-#include "Frame.h"
-#include "GC.h"
+#include "../gc/GC.h"
 #include "JavaHeap.hpp"
 #include "MethodArea.h"
 #include "RuntimeEnv.h"
 
 RuntimeEnv yrt;
-thread_local StackFrames frames;
 
-RuntimeEnv::RuntimeEnv() {
-    ma = nullptr;
+RuntimeEnv::RuntimeEnv():ma(nullptr) {
     jheap = new JavaHeap;
     gc = new ConcurrentGC;
 }

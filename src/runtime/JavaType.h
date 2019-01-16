@@ -12,9 +12,9 @@ struct JType {
     virtual ~JType() = default;  // reserved for polymorphism
 };
 
-struct JVoid BASE_OF_JTYPE {};
+using JRef = JType;
 
-typedef JVoid JRef;
+struct JVoid BASE_OF_JTYPE {};
 
 struct JDouble BASE_OF_JTYPE {
     explicit JDouble() = default;

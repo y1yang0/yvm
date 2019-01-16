@@ -1,4 +1,4 @@
-#include "AccessFlag.h"
+#include "../classfile/AccessFlag.h"
 #include "JavaClass.h"
 #include "MethodArea.h"
 

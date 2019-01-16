@@ -1,11 +1,11 @@
 #include <atomic>
 #include "Concurrent.hpp"
 #include "GC.h"
-#include "JavaClass.h"
-#include "JavaHeap.hpp"
-#include "JavaType.h"
-#include "MethodArea.h"
-#include "YVM.h"
+#include "../runtime/JavaClass.h"
+#include "../runtime/JavaHeap.hpp"
+#include "../runtime/JavaType.h"
+#include "../runtime/MethodArea.h"
+#include "../vm/YVM.h"
 
 using namespace std;
 
@@ -43,8 +43,9 @@ void ConcurrentGC::GCThreadPool::runPendingWork() {
     }
 }
 
-void ConcurrentGC::gc(GCPolicy policy) {
+void ConcurrentGC::gc(JavaFrame* frames, GCPolicy policy) {
     lock_guard<mutex> lock(overMemoryThresholdMtx);
+    this->frames = frames;
     if (!overMemoryThreshold) {
         return;
     }
@@ -148,50 +149,49 @@ void ConcurrentGC::sweep() {
 
 void ConcurrentGC::markAndSweep() {
     vector<future<void>> stackMarkFuture, localMarkFuture;
-    for (auto frame = frames.cbegin(); frame != frames.cend(); ++frame) {
-        stackMarkFuture.push_back(gcThreadPool.submit([this, frame]() -> void {
-            for (auto stackSlot = (*frame)->stack.cbegin();
-                 stackSlot != (*frame)->stack.cend(); ++stackSlot) {
-                this->mark(*stackSlot);
+    auto* temp = frames->top();
+    while (temp != nullptr) {
+        stackMarkFuture.push_back(gcThreadPool.submit([this, temp]() -> void {
+            for (int i = 0; i < temp->maxStack; i++) {
+                this->mark(temp->stackSlots[i]);
             }
         }));
 
-        localMarkFuture.push_back(gcThreadPool.submit([this, frame]() -> void {
-            for (auto localSlot = (*frame)->locals.cbegin();
-                 localSlot != (*frame)->locals.cend(); ++localSlot) {
-                this->mark(*localSlot);
+        localMarkFuture.push_back(gcThreadPool.submit([this, temp]() -> void {
+            for (int i = 0; i < temp->maxLocal; i++) {
+                this->mark(temp->localSlots[i]);
             }
         }));
+        temp = temp->next;
     }
 
     future<void> staticFieldsFuture = gcThreadPool.submit([this]() -> void {
         for (auto c : yrt.ma->classTable) {
-            for_each(
-                c.second->sfield.cbegin(), c.second->sfield.cend(),
-                [this](const pair<size_t, JType*>& offset) {
-                    if (typeid(*offset.second) == typeid(JObject)) {
-                        {
-                            lock_guard<SpinLock> lock(objSpin);
-                            objectBitmap.insert(offset.first);
-                        }
-                    } else if (typeid(*offset.second) == typeid(JArray)) {
-                        {
-                            lock_guard<SpinLock> lock(arrSpin);
-                            arrayBitmap.insert(offset.first);
-                        }
-                    }
-                });
+            for_each(c.second->sfield.cbegin(), c.second->sfield.cend(),
+                     [this](const pair<size_t, JType*>& offset) {
+                         if (typeid(*offset.second) == typeid(JObject)) {
+                             {
+                                 lock_guard<SpinLock> lock(objSpin);
+                                 objectBitmap.insert(offset.first);
+                             }
+                         } else if (typeid(*offset.second) == typeid(JArray)) {
+                             {
+                                 lock_guard<SpinLock> lock(arrSpin);
+                                 arrayBitmap.insert(offset.first);
+                             }
+                         }
+                     });
         }
     });
 
     staticFieldsFuture.get();
-    if (!frames.empty()) {
-        for (auto& sk : stackMarkFuture) {
-            sk.get();
-        }
-        for (auto& lv : localMarkFuture) {
-            lv.get();
-        }
+
+    for (auto& sk : stackMarkFuture) {
+        sk.get();
     }
+    for (auto& lv : localMarkFuture) {
+        lv.get();
+    }
+
     sweep();
 }

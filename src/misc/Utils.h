@@ -2,9 +2,10 @@
 #define YVM_PARSEUTIL_H
 
 #include <string>
-#include "Internal.h"
-#include "JavaType.h"
-#include "RuntimeEnv.h"
+#include <vector>
+#include "../interpreter/Internal.h"
+#include "../runtime/JavaType.h"
+#include "../runtime/RuntimeEnv.h"
 
 //--------------------------------------------------------------------------------
 // Utilities that widely used in all components
@@ -28,7 +29,7 @@ bool hasInheritanceRelationship(const JavaClass* source,
                                 const JavaClass* super);
 void registerNativeMethod(const char* className, const char* name,
                           const char* descriptor,
-                          JType* (*func)(RuntimeEnv* env));
+                          JType* (*func)(RuntimeEnv*, JType**,int));
 
 inline u1 consumeU1(const u1* code, u4& opidx) {
     const u1 byte = code[++opidx];

@@ -2,7 +2,7 @@
 #define YVM_FILEREADER_H
 
 #include <fstream>
-#include "Internal.h"
+#include "../interpreter/Internal.h"
 
 // get big-endian integer representation
 #define getu4(buf)                                                           \

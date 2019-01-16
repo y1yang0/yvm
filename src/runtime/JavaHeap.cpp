@@ -1,9 +1,9 @@
-#include "AccessFlag.h"
+#include "../classfile/AccessFlag.h"
 #include "JavaClass.h"
 #include "JavaHeap.hpp"
 #include "JavaType.h"
-#include "NativeMethod.h"
-#include "Utils.h"
+#include "../misc/NativeMethod.h"
+#include "../misc/Utils.h"
 
 #pragma warning(disable : 4715)
 

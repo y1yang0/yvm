@@ -1,9 +1,9 @@
 #ifndef YVM_YVM_H
 #define YVM_YVM_H
 
-#include "Concurrent.hpp"
-#include "Interpreter.hpp"
-#include "RuntimeEnv.h"
+#include "../gc/Concurrent.hpp"
+#include "../interpreter/Interpreter.hpp"
+#include "../runtime/RuntimeEnv.h"
 
 extern RuntimeEnv yrt;
 

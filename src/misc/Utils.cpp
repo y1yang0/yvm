@@ -1,5 +1,5 @@
-#include "JavaClass.h"
-#include "RuntimeEnv.h"
+#include "../runtime/JavaClass.h"
+#include "../runtime/RuntimeEnv.h"
 #include "Utils.h"
 
 std::string javastring2stdtring(JObject* objectref) {
@@ -70,7 +70,7 @@ bool hasInheritanceRelationship(const JavaClass* source,
 
 void registerNativeMethod(const char* className, const char* name,
                           const char* descriptor,
-                          JType* (*func)(RuntimeEnv* env)) {
+                          JType* (*func)(RuntimeEnv*, JType**,int)) {
     std::string methodName(className);
     methodName.append(".");
     methodName.append(name);
@@ -78,7 +78,6 @@ void registerNativeMethod(const char* className, const char* name,
     methodName.append(descriptor);
     yrt.nativeMethods.insert(std::make_pair(methodName, func));
 }
-
 
 JType* determineBasicType(const std::string& type) {
     if (IS_FIELD_INT(type) || IS_FIELD_BYTE(type) || IS_FIELD_CHAR(type) ||

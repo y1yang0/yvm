@@ -1,12 +1,12 @@
 #ifndef YVM_JAVACLASS_H
 #define YVM_JAVACLASS_H
 
-#include "ClassFile.h"
-#include "FileReader.h"
-#include "Internal.h"
+#include "../classfile/ClassFile.h"
+#include "../classfile/FileReader.h"
+#include "../interpreter/Internal.h"
+#include "../vm/YVM.h"
 #include "JavaType.h"
 #include "MethodArea.h"
-#include "YVM.h"
 
 #define JAVA_9_MAJOR 53
 #define JAVA_8_MAJOR 52
@@ -55,14 +55,25 @@ public:
                                    ->nameIndex);
     }
 
+    const string getInterfaceClassName(u2 index) const {
+        return getString(dynamic_cast<CONSTANT_Class*>(
+                             raw.constPoolInfo[raw.interfaces[index]])
+                             ->nameIndex);
+    }
+
     bool hasSuperClass() const { return raw.superClass != 0; }
 
-    void parseClassFile();
+    bool hasInterface() const { return raw.interfacesCount != 0; }
 
-    MethodInfo* getMethod(const string& methodName,
-                          const string& methodDescriptor) const;
+    u2 getInterfaceCount() const { return raw.interfacesCount; }
+
+    u2 getAccessFlag() const { return raw.accessFlags; }
+
+    MethodInfo* findMethod(const string& methodName,
+                           const string& methodDescriptor) const;
 
 private:
+    void parseClassFile();
     bool parseConstantPool(u2 cpCount);
     bool parseInterface(u2 interfaceCount);
     bool parseField(u2 fieldCount);

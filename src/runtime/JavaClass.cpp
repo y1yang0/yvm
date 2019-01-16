@@ -1,10 +1,10 @@
 #include <cassert>
 #include <iostream>
 #include <vector>
-#include "Debug.h"
+#include "../misc/Debug.h"
 #include "JavaClass.h"
 #include "MethodArea.h"
-#include "YVM.h"
+#include "../vm/YVM.h"
 
 #pragma warning(disable : 4715)
 
@@ -34,8 +34,8 @@ vector<u2> JavaClass::getInterfacesIndex() const {
     return v;
 }
 
-MethodInfo* JavaClass::getMethod(const string& methodName,
-                                 const string& methodDescriptor) const {
+MethodInfo* JavaClass::findMethod(const string& methodName,
+                                  const string& methodDescriptor) const {
     FOR_EACH(i, raw.methodsCount) {
         assert(typeid(*raw.constPoolInfo[raw.methods[i].nameIndex]) ==
                typeid(CONSTANT_Utf8));

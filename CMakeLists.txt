@@ -15,10 +15,10 @@ find_package(Boost COMPONENTS system filesystem program_options)
 
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
-    set(SOURCE_FILES src/Main.cpp src/MethodArea.cpp src/Frame.h src/ClassFile.h src/AccessFlag.h src/RuntimeEnv.cpp src/NativeMethod.h
-            src/Interpreter.cpp src/Debug.cpp src/JavaClass.cpp src/JavaHeap.cpp src/JavaHeap.hpp src/Interpreter.hpp
-            src/NativeMethod.cpp src/YVM.cpp src/Utils.h src/Utils.cpp src/JavaException.h src/JavaException.cpp src/ObjectMonitor.h 
-            src/ObjectMonitor.cpp src/GC.h src/GC.cpp src/Option.h src/Concurrent.hpp src/Concurrent.cpp src/Internal.h)
+    set(SOURCE_FILES src/vm/Main.cpp src/runtime/MethodArea.cpp src/runtime/JavaFrame.hpp src/runtime/JavaFrame.cpp src/classfile/ClassFile.h src/classfile/AccessFlag.h src/runtime/RuntimeEnv.cpp src/misc/NativeMethod.h
+            src/interpreter/Interpreter.cpp src/misc/Debug.cpp src/runtime/JavaClass.cpp src/runtime/JavaHeap.cpp src/runtime/JavaHeap.hpp src/interpreter/Interpreter.hpp src/interpreter/MethodResolve.cpp
+            src/misc/NativeMethod.cpp src/vm/YVM.cpp src/misc/Utils.h src/misc/Utils.cpp src/runtime/JavaException.h src/runtime/JavaException.cpp src/runtime/ObjectMonitor.h
+            src/runtime/ObjectMonitor.cpp src/gc/GC.h src/gc/GC.cpp src/misc/Option.h src/gc/Concurrent.hpp src/gc/Concurrent.cpp src/interpreter/Internal.h)
     add_executable(yvm ${SOURCE_FILES})
     link_directories(... ${Boost_LIBRARY_DIRS})
     target_link_libraries(yvm ${Boost_LIBRARIES})

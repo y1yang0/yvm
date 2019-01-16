@@ -1,12 +1,12 @@
-#include "Debug.h"
-#include "GC.h"
-#include "JavaClass.h"
-#include "JavaHeap.hpp"
-#include "MethodArea.h"
-#include "NativeMethod.h"
-#include "Option.h"
-#include "RuntimeEnv.h"
-#include "Utils.h"
+#include "../misc/Debug.h"
+#include "../gc/GC.h"
+#include "../runtime/JavaClass.h"
+#include "../runtime/JavaHeap.hpp"
+#include "../runtime/MethodArea.h"
+#include "../misc/NativeMethod.h"
+#include "../misc/Option.h"
+#include "../runtime/RuntimeEnv.h"
+#include "../misc/Utils.h"
 #include "YVM.h"
 
 YVM::ExecutorThreadPool YVM::executor;
@@ -87,7 +87,7 @@ void YVM::callMain(const std::string& name) {
         auto* jc = yrt.ma->loadClassIfAbsent(name);
         yrt.ma->linkClassIfAbsent(name);
         // For each execution thread, we have a code execution engine
-        Interpreter exec{};
+        Interpreter exec;
         yrt.ma->initClassIfAbsent(exec, name);
         exec.invokeByName(jc, "main", "([Ljava/lang/String;)V");
     });
@@ -113,11 +113,11 @@ void YVM::callMain(const std::string& name) {
 void YVM::warmUp(const std::vector<std::string>& libPaths) {
     int p = sizeof nativeFunctionTable / sizeof nativeFunctionTable[0];
     for (int i = 0; i < p; i++) {
-        registerNativeMethod(nativeFunctionTable[i][0],
-                             nativeFunctionTable[i][1],
-                             nativeFunctionTable[i][2],
-                             reinterpret_cast<JType* (*)(RuntimeEnv*)>(
-                                 const_cast<char*>(nativeFunctionTable[i][3])));
+        registerNativeMethod(
+            nativeFunctionTable[i][0], nativeFunctionTable[i][1],
+            nativeFunctionTable[i][2],
+            reinterpret_cast<JType* (*)(RuntimeEnv*, JType**, int)>(
+                const_cast<char*>(nativeFunctionTable[i][3])));
     }
 
     yrt.ma = new MethodArea(libPaths);

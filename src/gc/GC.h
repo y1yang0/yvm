@@ -4,8 +4,8 @@
 #include <memory>
 #include <unordered_set>
 #include "Concurrent.hpp"
-#include "Option.h"
-#include "RuntimeEnv.h"
+#include "../misc/Option.h"
+#include "../runtime/RuntimeEnv.h"
 
 using namespace std;
 
@@ -24,7 +24,7 @@ public:
         overMemoryThreshold = true;
     }
     void stopTheWorld();
-    void gc(GCPolicy policy = GCPolicy::GC_MARK_AND_SWEEP);
+    void gc(JavaFrame* frames, GCPolicy policy = GCPolicy::GC_MARK_AND_SWEEP);
 
     void terminateGC() { gcThreadPool.finalize(); }
 
@@ -63,7 +63,7 @@ private:
         mutex sleepMtx;
         condition_variable sleepCnd;
     };
-
+    JavaFrame* frames;
     GCThreadPool gcThreadPool;
 };
 

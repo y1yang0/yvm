@@ -1,6 +1,6 @@
 #include <boost/program_options.hpp>
 #include <iostream>
-#include "Option.h"
+#include "../misc/Option.h"
 #include "YVM.h"
 
 int main(int argc, char* argv[]) {
