@@ -1,28 +1,27 @@
  <p align="center"><img height="60%" width="80%" src="./public/moonight.png"></p>
 
-[中文](https://github.com/racaljk/yvm/blob/master/README.md) | [English](https://github.com/racaljk/yvm/blob/master/README.EN.md)
+[中文](https://github.com/racaljk/yvm/blob/master/README.ZH.md) | [English](https://github.com/racaljk/yvm/blob/master/README.md)
 | [![Build Status](https://travis-ci.org/racaljk/yvm.svg?branch=master)](https://travis-ci.org/racaljk/yvm) | [![Codacy Badge](https://api.codacy.com/project/badge/Grade/233025ae523846109922307106d634ab)](https://www.codacy.com/app/racaljk/yvm?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=racaljk/yvm&amp;utm_campaign=Badge_Grade) | ![](https://img.shields.io/badge/compiler-MSVC2017-brightgreen.svg) | ![](https://img.shields.io/badge/compiler-gcc7.0-brightgreen.svg)
 
-YVM是用C++写的一个Java虚拟机，现在支持Java大部分功能，以及一个基于标记清除算法的并发垃圾回收器. 不过还有很多bug等待修复。
-感兴趣的朋友pull request/fork/star吧。
 
-# 已支持语言特性
-高级特性逐步支持中，可以开Issue提议或者直接PR
-+ Java基本算术运算，流程控制语句，面向对象。
-+ [RTTI](./javaclass/ydk/test/InstanceofTest.java)
-+ [字符串拼接(+,+=符号重载)](./javaclass/ydk/test/StringConcatenation.java)
-+ [异常处理(可输出stacktrace)](./javaclass/ydk/test/ThrowExceptionTest.java)
-+ [创建异步线程](./javaclass/ydk/test/CreateAsyncThreadsTest.java)
-+ [Synchronized(支持对象锁)](./javaclass/ydk/test/SynchronizedBlockTest.java)
-+ [垃圾回收(标记清除算法)](./javaclass/ydk/test/GCTest.java)
+This is a homemade Java virtual machine written in c++, it supports most Java language features and includes a mark-sweep-based concurrent garbage collector. The main components of this VM are conforming to [Java Virtual Machine Specification 8](https://docs.oracle.com/javase/specs/jvms/se8/jvms8.pdf). It is runnable and various language features will add into this VM progressively. I don't have enough time to write a full coverage unit tests to ensure that all aspects of yvm work well, so if you find any bugs, you can open an [Issue](https://github.com/racaljk/yvm/issues/new) or fix up in place and pull request directly.
 
-# 构建和运行
-+ 先决条件
-  + [Boost](https://www.boost.org/)(>=1.65) 请在`CMakeLists.txt`中手动配置Boost库位置
-  + CMake(>=3.5)
+# Available language features
+Advanced language features will support later, you can also PR to contribute your awesome code.
++ Java arithmetic, flow control, object-oriented programming(virtual method, inherit,etc.)
++ [Runtime type identification](./javaclass/ydk/test/InstanceofTest.java)
++ [String concatenation](./javaclass/ydk/test/StringConcatenation.java)
++ [Exception handling](./javaclass/ydk/test/ThrowExceptionTest.java)
++ [Async native threads](./javaclass/ydk/test/CreateAsyncThreadsTest.java)
++ [Synchronized block with object lock](./javaclass/ydk/test/SynchronizedBlockTest.java)
++ [Garbage Collection(With mark-and-sweep policy)](./javaclass/ydk/test/GCTest.java)
+
+# Build and run
++ Prerequisite
+  + [Boost](https://www.boost.org/)(>=1.65) Please set Boost root directory in `CMakeLists.txt` manually if automatic cmake detecting failed
   + C++14
-  + gcc/msvc/mingw均可
-+ 老生常谈
+  + gcc/msvc/mingw
++ Stereotype
 ```bash
 $ cd yvm
 $ cmake .
@@ -32,90 +31,88 @@ $ make test
 ```bash
 $ ./yvm --help
 Usage:
-    --help                List help documentations and usages.
-    --runtime arg         Attach java runtime libraries where yvm would lookup 
+  --help                List help documentations and usages.
+  --runtime arg         Attach java runtime libraries where yvm would lookup 
                         classes at
-    --run arg             Program which would be executed soon
+  --run arg             Program which would be executed soon
 You must specify the "runtime" flag to tell yvm where it could find jdk classes, and also program name is required.
 $ ./yvm --runtime=C:\Users\Cthulhu\Desktop\yvm\bytecode ydk.test.QuickSort
 ```
 
-# 运行效果
+# Running snapshots
 + helloworld
 ![](./public/hw.png)
 ![](./public/helloworld.png)
-+ 快速排序
++ quick sort
 ![](./public/quicksort_java.png)
 ![](./public/quicksort_console.png)
-+ 异常调用栈轨迹
++ print stack trace when exception occurred
 ![](./public/stj.png)
 ![](./public/stc.png)
-+ 原生多线程
++ native multithreading
 ![](./public/without_synchronized_java.png)
 ![](./public/without_synchronized_console.png)
-+ Synchronized保护下的多线程
++ multithreading with synchronized(){}
 ![](./public/synchronized_java.png)
 ![](./public/synchronized_console.png)
-+ 垃圾回收
++ Garbage Collection
 ![](./public/gc_java.png)
 ![](./public/gc_sampling_2.png)
 
-# 开发文档
+# Developing and hacking
 <details>
-  <summary>1. 从字节码到对象</summary>
+<summary>1. From bytecode to an object </summary>
 
-`MethodArea`负责管理字节码到JavaClass的完整生命周期。`MethodArea`的方法是自解释的：
+`MethodArea` used to handle a complete lifecycle of JavaClass, its APIs are self-explanatory:
 ```cpp
 class MethodArea {
 public:
-    // 方法区需要从运行时目录中搜索相关的*.class文件
+    // Pass runtime libraries paths to tell virutal machine searches 
+    // where to lookup dependent classes
     MethodArea(const vector<string>& libPaths);
     ~MethodArea();
 
-    // 查看一个类是否存在
+    // check whether it already exists or absents
     JavaClass* findJavaClass(const string& jcName);
-    //加载jcName类
+    // load class which specified by jcName
     bool loadJavaClass(const string& jcName);
-    //移除jcName（该方法用于垃圾回收器）
+    // remove class which specified by jcName（Used for gc only）
     bool removeJavaClass(const string& jcName);
-    //链接jcName类，初始化static字段
+    // link class which specified by jcName，initialize its fields
     void linkJavaClass(const string& jcName);
-    //初始化jcName，初始化静态字段，调用static{}
+    // initialize class specified by jcName，call the static{} block
     void initJavaClass(Interpreter& exec, const string& jcName);
 
 public:
-    //辅助方法，如果不存在jcName则加载 
+    //auxiliary functions
     JavaClass* loadClassIfAbsent(const string& jcName);
-    //如果未链接jcName则链接
     void linkClassIfAbsent(const string& jcName);
-    //如果未初始化jcName则初始化
     void initClassIfAbsent(Interpreter& exec, const string& jcName);
 }
 ```
-假设磁盘存在一个`Test.class`文件，它会经历如下过程：
+For example, we have a bytecode file named `Test.class`，it would be available for jvm only if the following steps finished：
 
-`Test.class[磁盘中]`-> `loadJavaClass("Test.class")[内存中]` -> `linkJavaClass("Test.class")`->`initJavaClass("Test.class")`
+`Test.class[in the disk]`-> `loadJavaClass("Test.class")[in memory]` -> `linkJavaClass("Test.class")`->`initJavaClass("Test.class")`
 
-现在虚拟机就可以使用这个JavaClass创建对应的对象了：
+Now we can create corresponding objects as soon as above steps accomplished：
 ```cpp
-// yrt 是全局运行时对象，ma表示方法区模块,jheap表示堆模块
+// yrt is a global runtime variable，ma stands for MethodArea module,jheap stands for JavaHeap module
 JavaClass* testClass = yrt.ma->findJavaClass("Test.class");
 JObject* testInstance = yrt.jheap->createObject(*testClass);
 ```
 </details>
-
 <details>
-<summary>2.1 对象内部构造</summary>
+<summary>2.1 Inside the object</summary>
 
-虚拟机执行时栈上存放的都是JObject,它的结构如下：
+jvm stack only holds basic numeric data and object/array reference, which we call the JObject/JArray, they have the following structure:
 ```cpp
 struct JObject {
     std::size_t offset = 0; 
     const JavaClass* jc{}; 
 };
 ```
-`offset`唯一代表一个对象，所有在堆上面的操作都需要这个offset。`jc`指向对象的Class表示。
-堆中的对象是按照<offset,fields>方式进行存放的：
+`offset` stands for an object，all operations of object in heap required this `offset`。`jc` references to the JavaClass。
+Every object in heap constructed with <offset, fields> pair
 ```
 [1]  ->  [field_a, field_b, field_c]
 [2]  ->  []
@@ -123,9 +120,9 @@ struct JObject {
 [4]  ->  [field_a]
 [..] ->  [...]
 ```
-只要我们持有offset，就可以查找/添加/删除对应的field
+If we get the object's offset, we can do anything of that indirectly.
 
-数组几乎和上面类似,只是多了长度，少了Class指针
+Array is almost the same as object, it has a length field instead of jc since it's unnecessary for array to hold a meta class reference.
 ```cpp
 struct JArray {
     int length = 0;
@@ -139,111 +136,118 @@ struct JArray {
 ```
 </details>
 <details>
-<summary>2.2 从对象创建到消亡</summary>
+<summary>2.2 From object creation to extinction</summary>
 
-上面提到，对象持有一个offset和jc，其中jc表示的JavaClass是由`MethodArea`负责管理的，offset则是由`JavaHeap`负责管理。`JavaHeap`提供了大量API，这里选取的是最重要的:
+As above mentioned, a JObject holds`offset` and `jc`. `MethodArea` has responsible to manage `JavaClass` which referenced by `jc`, another `offset` field referenced to `JObject`, which in control of `JavaHeap`. `JavaHeap` provides a large number of self-explanatory APIs:
 ```cpp
 class JavaHeap {
 public:
-    //创建对象和数组
+    // create and object/array
     JObject* createObject(const JavaClass& javaClass);
     JArray* createObjectArray(const JavaClass& jc, int length);
 
-    //获取对象字段
+    // get/set field
     auto getFieldByName(const JavaClass* jc, const string& name,
                         const string& descriptor, JObject* object);
-    //设置对象字段
     void putFieldByName(const JavaClass* jc, const string& name,
                         const string& descriptor, JObject* object,
                         JType* value);
-    //设置数组元素
+    // get/set specific element in the array
     void putElement(const JArray& array, size_t index, JType* value);
-    //获取数组元素
     auto getElement(const JArray& array, size_t index);
     
-    //移除对象和数组
+    // remove an array/object from heap
     void removeArray(size_t offset;
     void removeObject(size_t offset);
 };
 ```
-还是`Test.class`那个例子，假设对应的`Test.java`构造如下:
+Back to the above example again, assume its corresponding Java class structure is as follows:
 ```java
 public class Test{
     public int k;
     private String hello;
 }
 ```
-在第一步我们已经获取到了Test类在虚拟机中的类表示以及对象表示,现在就可以对类的字段进行操作了：
+In the first step, we've already got `testClass`, now we can do more things via it:
 ```cpp
 const JavaClass* testClass = yrt.ma->findJavaClass("Test.class");
 JObject* testInstance = yrt.jheap->createObject(*testClass);
-//获取hello字段
+// get the field hello
 JObject*  helloField = yrt.jheap->getFieldByName(testClass,"hello","Ljava/lang/String;",testInstance);
-//设置k字段
+//set the field k
 yrt.jheap->putFieldByName(testClass,"k","I",testInstance);
 ```
-
 </details>
 <details>
-<summary> I. 关于JDK</summary>
+<summary>Ⅰ. About JDK</summary>
 
-部分JDK类是JVM运行攸关的,但由于JDK比较复杂不便于初期开发,所以这里用重写过的JDK代替,源码参见[javaclass](./javaclass)目录,可以使用`compilejava.bat`进行编译，编译后`*.class`文件位于[bytecode](./bytecode).
-目前重写过的JDK类有:
+Any java virtual machines can not run a Java program without Java libraries. As you may know, some opcodes like `ldc`,`monitorenter/monitorexit`,`athrow` are internally requiring our virtual machine to operate JDK classes(`java.lang.Class`,`java.lang.String`,`java.lang.Throwable`,etc). Hence, I have to rewrite some [JDK classes](./javaclass) for building a runnable VM , because original JDK classes are so complicated that it's inconvenient for early developing.
+Rewrote JDK classes are as follows:
 + `java.lang.String`
 + `java.lang.StringBuilder`
 + `java.lang.Throwable`
 + `java.lang.Math(::random())`
 + `java.lang.Runnable`
 + `java.lang.Thread`
-+ 
 </details>
 
-[Wiki](https://github.com/racaljk/yvm/wiki)和源码中有很多详细的开发文档，如果想探索关于`YVM`的更多内容，请移步浏览.
-
 <details> 
-<summary> II. 源码结构 </summary>
+<summary> II. Structure of source code </summary>
 
 ```bash
 racaljk@ubuntu:~/yvm/src$ tree .
 .
-├── AccessFlag.h            # 类，字段，方法的访问标志
-├── ClassFile.h             # .class字节码对应的结构体
-├── Interpreter.cpp         # 核心类。代码执行引擎
-├── Interpreter.hpp
-├── Concurrent.cpp          # 并发组件
-├── Concurrent.hpp
-├── Debug.cpp               # 调试组件
-├── Debug.h
-├── FileReader.h            # 读取.class文件
-├── Frame.h                 # 运行时栈帧
-├── GC.cpp                  # 垃圾回收
-├── GC.h
-├── Internal.h              # 虚拟机内部通用类型
-├── JavaClass.cpp           # 核心类。虚拟机中的类表示
-├── JavaClass.h
-├── JavaException.cpp       # 异常处理
-├── JavaException.h
-├── JavaHeap.cpp            # 核心类。虚拟机堆，管理对象
-├── JavaHeap.hpp
-├── JavaType.h              # 虚拟机中的Java类表示
-├── Main.cpp                # 命令行解析
-├── MethodArea.cpp          # 核心类。方法区，管理JavaClass
-├── MethodArea.h
-├── NativeMethod.cpp        # Java native方法实现
-├── NativeMethod.h
-├── ObjectMonitor.cpp       # synchronized语义实现
-├── ObjectMonitor.h
-├── Option.h                # 参数和配置
-├── RuntimeEnv.cpp          # 核心类。运行时结构定义
-├── RuntimeEnv.h
-├── Utils.cpp               # 工具组件
-├── Utils.h
-├── YVM.cpp                 # 虚拟机抽象。
-└── YVM.h
+├── classfile               
+│   ├── AccessFlag.h        # Access flag of class, method, field
+│   ├── ClassFile.h         # Corresponding structures for .class file
+│   └── FileReader.h        # Read .class file
+├── gc
+│   ├── Concurrent.cpp      # Concurrency utilities
+│   ├── Concurrent.hpp
+│   ├── GC.cpp              # Garbage collector
+│   └── GC.h
+├── interpreter
+│   ├── CallSite.cpp        # Call site to denote a concrete calling
+│   ├── CallSite.h
+│   ├── Internal.h          # Types that widely used within internal vm
+│   ├── Interpreter.cpp     # Interprete opcode
+│   ├── Interpreter.hpp
+│   ├── MethodResolve.cpp   # Resolve calling memthod
+│   └── MethodResolve.h
+├── misc
+│   ├── Debug.cpp            # Debuggin utilities
+│   ├── Debug.h
+│   ├── NativeMethod.cpp    # Implementations of java native methods
+│   ├── NativeMethod.h
+│   ├── Option.h            # VM arguments and options
+│   ├── Utils.cpp           # Tools and utilities
+│   └── Utils.h
+├── runtime
+│   ├── JavaClass.cpp       # Representation of java class
+│   ├── JavaClass.h
+│   ├── JavaException.cpp   # Exception handling
+│   ├── JavaException.h
+│   ├── JavaFrame.cpp       # Runtime frame
+│   ├── JavaFrame.hpp
+│   ├── JavaHeap.cpp        # Runtime heap, used to manage objects and arrays
+│   ├── JavaHeap.hpp
+│   ├── JavaType.h          # Java primitive types and reference type definitions
+│   ├── MethodArea.cpp      # Method area has responsible to manage JavaClass objects
+│   ├── MethodArea.h
+│   ├── ObjectMonitor.cpp   # synchronized syntax implementation
+│   ├── ObjectMonitor.h
+│   ├── RuntimeEnv.cpp      # Definitions of runtime structures
+│   └── RuntimeEnv.h
+└── vm
+    ├── Main.cpp             # Parse command line arguments
+    ├── YVM.cpp              # Abstraction of virtual machine
+    └── YVM.h
 
-0 directories, 34 files
+6 directories, 39 files
 ```
 </details>
 
+For more development documentations, see its [Wiki](https://github.com/racaljk/yvm/wiki) or source code comments(recommend), which contains various contents with regard to its structures, usages, and design principles, etc.  
+
 # License
-所有代码基于[MIT](./LICENSE)协议
+Code licensed under the MIT License.

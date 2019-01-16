@@ -116,6 +116,13 @@ struct AttributeInfo {
     virtual ~AttributeInfo() = default;
 };
 
+struct ExceptionTable {
+    u2 startPC;
+    u2 endPC;
+    u2 handlerPC;
+    u2 catchType;
+};
+
 #define DEF_ATTR_START(name) struct ATTR_##name : public AttributeInfo
 
 DEF_ATTR_START(ConstantValue) { u2 constantValueIndex; };
@@ -127,12 +134,7 @@ DEF_ATTR_START(Code) {
     u1* code;
     u2 exceptionTableLength;
 
-    struct ExceptionTable {
-        u2 startPC;
-        u2 endPC;
-        u2 handlerPC;
-        u2 catchType;
-    } * exceptionTable;
+    ExceptionTable * exceptionTable;
 
     u2 attributeCount;
     AttributeInfo** attributes;

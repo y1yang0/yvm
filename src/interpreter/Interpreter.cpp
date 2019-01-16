@@ -13,6 +13,8 @@
 #include <functional>
 #include <iostream>
 
+using namespace std;
+
 #define IS_COMPUTATIONAL_TYPE_1(value) \
     (typeid(*value) != typeid(JDouble) && typeid(*value) != typeid(JLong))
 #define IS_COMPUTATIONAL_TYPE_2(value) \
@@ -23,10 +25,10 @@
 
 Interpreter::~Interpreter() { delete frames; }
 
-JType *Interpreter::execNativeMethod(const std::string &className,
-                                     const std::string &methodName,
-                                     const std::string &methodDescriptor) {
-    std::string nativeMethod(className);
+JType *Interpreter::execNativeMethod(const string &className,
+                                     const string &methodName,
+                                     const string &methodDescriptor) {
+    string nativeMethod(className);
     nativeMethod.append(".");
     nativeMethod.append(methodName);
     nativeMethod.append(".");
@@ -45,8 +47,7 @@ JType *Interpreter::execNativeMethod(const std::string &className,
 }
 
 JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
-                                 u2 exceptLen,
-                                 ATTR_Code::ExceptionTable *exceptTab) {
+                                 u2 exceptLen, ExceptionTable *exceptTab) {
     for (decltype(codeLength) op = 0; op < codeLength; op++) {
         // If callee propagates a unhandled exception, try to handle  it. When
         // we can not handle it, propagates it to upper and returns
@@ -54,12 +55,12 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
             op--;
             auto *throwobj = frames->top()->pop<JObject>();
             if (throwobj == nullptr) {
-                throw std::runtime_error("null pointer");
+                throw runtime_error("null pointer");
             }
             if (!hasInheritanceRelationship(
                     throwobj->jc,
                     yrt.ma->loadClassIfAbsent("java/lang/Throwable"))) {
-                throw std::runtime_error("it's not a throwable object");
+                throw runtime_error("it's not a throwable object");
             }
 
             if (handleException(jc, exceptLen, exceptTab, throwobj, op)) {
@@ -74,7 +75,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
         }
 #ifdef YVM_DEBUG_SHOW_BYTECODE
         for (int i = 0; i < frames.size(); i++) {
-            std::cout << "-";
+            cout << "-";
         }
         Inspector::printOpcode(code, op);
 #endif
@@ -163,7 +164,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                     lval->val = val;
                     frames->top()->push(lval);
                 } else {
-                    throw std::runtime_error(
+                    throw runtime_error(
                         "invalid symbolic reference index on "
                         "constant pool");
                 }
@@ -255,7 +256,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 auto *index = frames->top()->pop<JInt>();
                 const auto *arrref = frames->top()->pop<JArray>();
                 if (!arrref) {
-                    throw std::runtime_error("nullpointerexception");
+                    throw runtime_error("nullpointerexception");
                 }
                 auto *elem = dynamic_cast<JInt *>(
                     yrt.jheap->getElement(*arrref, index->val));
@@ -265,7 +266,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 auto *index = frames->top()->pop<JInt>();
                 const auto *arrref = frames->top()->pop<JArray>();
                 if (!arrref) {
-                    throw std::runtime_error("nullpointerexception");
+                    throw runtime_error("nullpointerexception");
                 }
                 auto *elem = dynamic_cast<JLong *>(
                     yrt.jheap->getElement(*arrref, index->val));
@@ -275,7 +276,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 auto *index = frames->top()->pop<JInt>();
                 const auto *arrref = frames->top()->pop<JArray>();
                 if (!arrref) {
-                    throw std::runtime_error("nullpointerexception");
+                    throw runtime_error("nullpointerexception");
                 }
                 auto *elem = dynamic_cast<JFloat *>(
                     yrt.jheap->getElement(*arrref, index->val));
@@ -285,7 +286,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 auto *index = frames->top()->pop<JInt>();
                 const auto *arrref = frames->top()->pop<JArray>();
                 if (!arrref) {
-                    throw std::runtime_error("nullpointerexception");
+                    throw runtime_error("nullpointerexception");
                 }
                 auto *elem = dynamic_cast<JDouble *>(
                     yrt.jheap->getElement(*arrref, index->val));
@@ -295,7 +296,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 auto *index = frames->top()->pop<JInt>();
                 const auto *arrref = frames->top()->pop<JArray>();
                 if (!arrref) {
-                    throw std::runtime_error("nullpointerexception");
+                    throw runtime_error("nullpointerexception");
                 }
                 auto *elem = dynamic_cast<JRef *>(
                     yrt.jheap->getElement(*arrref, index->val));
@@ -386,10 +387,10 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 auto *index = frames->top()->pop<JInt>();
                 auto *arrref = frames->top()->pop<JArray>();
                 if (arrref == nullptr) {
-                    throw std::runtime_error("null pointer");
+                    throw runtime_error("null pointer");
                 }
                 if (index->val > arrref->length || index->val < 0) {
-                    throw std::runtime_error("array index out of bounds");
+                    throw runtime_error("array index out of bounds");
                 }
                 yrt.jheap->putElement(*arrref, index->val, value);
 
@@ -399,10 +400,10 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 auto *index = frames->top()->pop<JInt>();
                 auto *arrref = frames->top()->pop<JArray>();
                 if (arrref == nullptr) {
-                    throw std::runtime_error("null pointer");
+                    throw runtime_error("null pointer");
                 }
                 if (index->val > arrref->length || index->val < 0) {
-                    throw std::runtime_error("array index out of bounds");
+                    throw runtime_error("array index out of bounds");
                 }
                 yrt.jheap->putElement(*arrref, index->val, value);
 
@@ -412,10 +413,10 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 auto *index = frames->top()->pop<JInt>();
                 auto *arrref = frames->top()->pop<JArray>();
                 if (arrref == nullptr) {
-                    throw std::runtime_error("null pointer");
+                    throw runtime_error("null pointer");
                 }
                 if (index->val > arrref->length || index->val < 0) {
-                    throw std::runtime_error("array index out of bounds");
+                    throw runtime_error("array index out of bounds");
                 }
                 yrt.jheap->putElement(*arrref, index->val, value);
 
@@ -425,10 +426,10 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 auto *index = frames->top()->pop<JInt>();
                 auto *arrref = frames->top()->pop<JArray>();
                 if (arrref == nullptr) {
-                    throw std::runtime_error("null pointer");
+                    throw runtime_error("null pointer");
                 }
                 if (index->val > arrref->length || index->val < 0) {
-                    throw std::runtime_error("array index out of bounds");
+                    throw runtime_error("array index out of bounds");
                 }
                 yrt.jheap->putElement(*arrref, index->val, value);
 
@@ -438,10 +439,10 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 auto *index = frames->top()->pop<JInt>();
                 auto *arrref = frames->top()->pop<JArray>();
                 if (arrref == nullptr) {
-                    throw std::runtime_error("null pointer");
+                    throw runtime_error("null pointer");
                 }
                 if (index->val > arrref->length || index->val < 0) {
-                    throw std::runtime_error("array index out of bounds");
+                    throw runtime_error("array index out of bounds");
                 }
                 yrt.jheap->putElement(*arrref, index->val, value);
 
@@ -453,10 +454,10 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 auto *arrref = frames->top()->pop<JArray>();
 
                 if (arrref == nullptr) {
-                    throw std::runtime_error("null pointer");
+                    throw runtime_error("null pointer");
                 }
                 if (index->val > arrref->length || index->val < 0) {
-                    throw std::runtime_error("array index out of bounds");
+                    throw runtime_error("array index out of bounds");
                 }
                 yrt.jheap->putElement(*arrref, index->val, value);
 
@@ -469,10 +470,10 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 auto *index = frames->top()->pop<JInt>();
                 auto *arrref = frames->top()->pop<JArray>();
                 if (arrref == nullptr) {
-                    throw std::runtime_error("null pointer");
+                    throw runtime_error("null pointer");
                 }
                 if (index->val > arrref->length || index->val < 0) {
-                    throw std::runtime_error("array index out of bounds");
+                    throw runtime_error("array index out of bounds");
                 }
                 yrt.jheap->putElement(*arrref, index->val, value);
 
@@ -613,7 +614,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 assert(IS_COMPUTATIONAL_TYPE_1(value2));
                 if (typeid(*value1) == typeid(JInt) &&
                     typeid(*value2) == typeid(JInt)) {
-                    std::swap(value1, value2);
+                    swap(value1, value2);
                 } else if (typeid(*value1) == typeid(JInt) &&
                            typeid(*value2) == typeid(JFloat)) {
                     const int32_t temp = dynamic_cast<JInt *>(value1)->val;
@@ -630,65 +631,65 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                         static_cast<int32_t>(temp);
                 } else if (typeid(*value1) == typeid(JFloat) &&
                            typeid(*value2) == typeid(JFloat)) {
-                    std::swap(value1, value2);
+                    swap(value1, value2);
                 } else {
                     SHOULD_NOT_REACH_HERE
                 }
             } break;
             case op_iadd: {
-                binaryArithmetic<JInt>(std::plus<>());
+                binaryArithmetic<JInt>(plus<>());
             } break;
             case op_ladd: {
-                binaryArithmetic<JLong>(std::plus<>());
+                binaryArithmetic<JLong>(plus<>());
             } break;
             case op_fadd: {
-                binaryArithmetic<JFloat>(std::plus<>());
+                binaryArithmetic<JFloat>(plus<>());
             } break;
             case op_dadd: {
-                binaryArithmetic<JDouble>(std::plus<>());
+                binaryArithmetic<JDouble>(plus<>());
             } break;
             case op_isub: {
-                binaryArithmetic<JInt>(std::minus<>());
+                binaryArithmetic<JInt>(minus<>());
             } break;
             case op_lsub: {
-                binaryArithmetic<JLong>(std::minus<>());
+                binaryArithmetic<JLong>(minus<>());
             } break;
             case op_fsub: {
-                binaryArithmetic<JFloat>(std::minus<>());
+                binaryArithmetic<JFloat>(minus<>());
             } break;
             case op_dsub: {
-                binaryArithmetic<JDouble>(std::minus<>());
+                binaryArithmetic<JDouble>(minus<>());
             } break;
             case op_imul: {
-                binaryArithmetic<JInt>(std::multiplies<>());
+                binaryArithmetic<JInt>(multiplies<>());
             } break;
             case op_lmul: {
-                binaryArithmetic<JLong>(std::multiplies<>());
+                binaryArithmetic<JLong>(multiplies<>());
             } break;
             case op_fmul: {
-                binaryArithmetic<JFloat>(std::multiplies<>());
+                binaryArithmetic<JFloat>(multiplies<>());
             } break;
             case op_dmul: {
-                binaryArithmetic<JDouble>(std::multiplies<>());
+                binaryArithmetic<JDouble>(multiplies<>());
             } break;
             case op_idiv: {
-                binaryArithmetic<JInt>(std::divides<>());
+                binaryArithmetic<JInt>(divides<>());
             } break;
             case op_ldiv: {
-                binaryArithmetic<JLong>(std::divides<>());
+                binaryArithmetic<JLong>(divides<>());
             } break;
             case op_fdiv: {
-                binaryArithmetic<JFloat>(std::divides<>());
+                binaryArithmetic<JFloat>(divides<>());
             } break;
             case op_ddiv: {
-                binaryArithmetic<JDouble>(std::divides<>());
+                binaryArithmetic<JDouble>(divides<>());
 
             } break;
             case op_irem: {
-                binaryArithmetic<JInt>(std::modulus<>());
+                binaryArithmetic<JInt>(modulus<>());
             } break;
             case op_lrem: {
-                binaryArithmetic<JLong>(std::modulus<>());
+                binaryArithmetic<JLong>(modulus<>());
             } break;
             case op_frem: {
                 binaryArithmetic<JFloat>(std::fmod<float, float>);
@@ -697,35 +698,35 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 binaryArithmetic<JFloat>(std::fmod<double, double>);
             } break;
             case op_ineg: {
-                unaryArithmetic<JInt>(std::negate<>());
+                unaryArithmetic<JInt>(negate<>());
             } break;
             case op_lneg: {
-                unaryArithmetic<JLong>(std::negate<>());
+                unaryArithmetic<JLong>(negate<>());
             } break;
             case op_fneg: {
-                unaryArithmetic<JFloat>(std::negate<>());
+                unaryArithmetic<JFloat>(negate<>());
             } break;
             case op_dneg: {
-                unaryArithmetic<JDouble>(std::negate<>());
+                unaryArithmetic<JDouble>(negate<>());
             } break;
             case op_ishl: {
                 binaryArithmetic<JInt>([](int32_t a, int32_t b) -> int32_t {
-                    return a * std::pow(2, b & 0x1f);
+                    return a * pow(2, b & 0x1f);
                 });
             } break;
             case op_lshl: {
                 binaryArithmetic<JLong>([](int64_t a, int64_t b) -> int64_t {
-                    return a * std::pow(2, b & 0x3f);
+                    return a * pow(2, b & 0x3f);
                 });
             } break;
             case op_ishr: {
                 binaryArithmetic<JInt>([](int32_t a, int32_t b) -> int32_t {
-                    return std::floor(a / std::pow(2, b & 0x1f));
+                    return floor(a / pow(2, b & 0x1f));
                 });
             } break;
             case op_lshr: {
                 binaryArithmetic<JLong>([](int64_t a, int64_t b) -> int64_t {
-                    return std::floor(a / std::pow(2, b & 0x3f));
+                    return floor(a / pow(2, b & 0x3f));
                 });
             } break;
             case op_iushr: {
@@ -735,7 +736,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                     } else if (a < 0) {
                         return (a >> (b & 0x1f)) + (2 << ~(b & 0x1f));
                     } else {
-                        throw std::runtime_error("0 is not handled");
+                        throw runtime_error("0 is not handled");
                     }
                 });
             } break;
@@ -746,27 +747,27 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                     } else if (a < 0) {
                         return (a >> (b & 0x1f)) + (2L << ~(b & 0x3f));
                     } else {
-                        throw std::runtime_error("0 is not handled");
+                        throw runtime_error("0 is not handled");
                     }
                 });
             } break;
             case op_iand: {
-                binaryArithmetic<JInt>(std::bit_and<>());
+                binaryArithmetic<JInt>(bit_and<>());
             } break;
             case op_land: {
-                binaryArithmetic<JLong>(std::bit_and<>());
+                binaryArithmetic<JLong>(bit_and<>());
             } break;
             case op_ior: {
-                binaryArithmetic<JInt>(std::bit_or<>());
+                binaryArithmetic<JInt>(bit_or<>());
             } break;
             case op_lor: {
-                binaryArithmetic<JLong>(std::bit_or<>());
+                binaryArithmetic<JLong>(bit_or<>());
             } break;
             case op_ixor: {
-                binaryArithmetic<JInt>(std::bit_xor<>());
+                binaryArithmetic<JInt>(bit_xor<>());
             } break;
             case op_lxor: {
-                binaryArithmetic<JLong>(std::bit_xor<>());
+                binaryArithmetic<JLong>(bit_xor<>());
             } break;
             case op_iinc: {
                 const u1 index = code[++op];
@@ -864,7 +865,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 if (value1->val > value2->val) {
                     auto *result = new JInt(1);
                     frames->top()->push(result);
-                } else if (std::abs(value1->val - value2->val) < 0.000001) {
+                } else if (abs(value1->val - value2->val) < 0.000001) {
                     auto *result = new JInt(0);
                     frames->top()->push(result);
                 } else {
@@ -880,8 +881,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 if (value1->val > value2->val) {
                     auto *result = new JInt(1);
                     frames->top()->push(result);
-                } else if (std::abs(value1->val - value2->val) <
-                           0.000000000001) {
+                } else if (abs(value1->val - value2->val) < 0.000000000001) {
                     auto *result = new JInt(0);
                     frames->top()->push(result);
                 } else {
@@ -1032,10 +1032,10 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 op = currentOffset + branchindex;
             } break;
             case op_jsr: {
-                throw std::runtime_error("unsupported opcode [jsr]");
+                throw runtime_error("unsupported opcode [jsr]");
             } break;
             case op_ret: {
-                throw std::runtime_error("unsupported opcode [ret]");
+                throw runtime_error("unsupported opcode [ret]");
             } break;
             case op_tableswitch: {
                 u4 currentOffset = op - 1;
@@ -1045,7 +1045,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 int32_t defaultIndex = consumeU4(code, op);
                 int32_t low = consumeU4(code, op);
                 int32_t high = consumeU4(code, op);
-                std::vector<int32_t> jumpOffset;
+                vector<int32_t> jumpOffset;
                 FOR_EACH(i, high - low + 1) {
                     jumpOffset.push_back(consumeU4(code, op));
                 }
@@ -1065,10 +1065,10 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 op++;  // 3 bytes padding
                 int32_t defaultIndex = consumeU4(code, op);
                 int32_t npair = consumeU4(code, op);
-                std::map<int32_t, int32_t> matchOffset;
+                map<int32_t, int32_t> matchOffset;
                 FOR_EACH(i, npair) {
-                    matchOffset.insert(std::make_pair(consumeU4(code, op),
-                                                      consumeU4(code, op)));
+                    matchOffset.insert(
+                        make_pair(consumeU4(code, op), consumeU4(code, op)));
                 }
                 auto *key = frames->top()->pop<JInt>();
                 auto res = matchOffset.find(key->val);
@@ -1099,26 +1099,25 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
             case op_getstatic: {
                 const u2 index = consumeU2(code, op);
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
-                JType *field = cloneValue(getStaticField(
-                    std::get<0>(symbolicRef), std::get<1>(symbolicRef),
-                    std::get<2>(symbolicRef)));
+                JType *field = cloneValue(getStaticField(get<0>(symbolicRef),
+                                                         get<1>(symbolicRef),
+                                                         get<2>(symbolicRef)));
                 frames->top()->push(field);
             } break;
             case op_putstatic: {
                 u2 index = consumeU2(code, op);
                 JType *value = frames->top()->pop<JType>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
-                putStaticField(std::get<0>(symbolicRef),
-                               std::get<1>(symbolicRef),
-                               std::get<2>(symbolicRef), value);
+                putStaticField(get<0>(symbolicRef), get<1>(symbolicRef),
+                               get<2>(symbolicRef), value);
             } break;
             case op_getfield: {
                 u2 index = consumeU2(code, op);
                 JObject *objectref = frames->top()->pop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
                 JType *field = cloneValue(yrt.jheap->getFieldByName(
-                    std::get<0>(symbolicRef), std::get<1>(symbolicRef),
-                    std::get<2>(symbolicRef), objectref));
+                    get<0>(symbolicRef), get<1>(symbolicRef),
+                    get<2>(symbolicRef), objectref));
                 frames->top()->push(field);
 
             } break;
@@ -1128,8 +1127,8 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 JObject *objectref = frames->top()->pop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
                 yrt.jheap->putFieldByName(
-                    std::get<0>(symbolicRef), std::get<1>(symbolicRef),
-                    std::get<2>(symbolicRef), objectref, value);
+                    get<0>(symbolicRef), get<1>(symbolicRef),
+                    get<2>(symbolicRef), objectref, value);
 
             } break;
             case op_invokevirtual: {
@@ -1139,16 +1138,15 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
 
                 auto symbolicRef = parseMethodSymbolicReference(jc, index);
 
-                if (std::get<1>(symbolicRef) == "<init>") {
-                    std::runtime_error(
+                if (get<1>(symbolicRef) == "<init>") {
+                    runtime_error(
                         "invoking method should not be instance "
                         "initialization method\n");
                 }
                 if (!IS_SIGNATURE_POLYMORPHIC_METHOD(
-                        std::get<0>(symbolicRef)->getClassName(),
-                        std::get<1>(symbolicRef))) {
-                    invokeVirtual(std::get<1>(symbolicRef),
-                                  std::get<2>(symbolicRef));
+                        get<0>(symbolicRef)->getClassName(),
+                        get<1>(symbolicRef))) {
+                    invokeVirtual(get<1>(symbolicRef), get<2>(symbolicRef));
                 } else {
                     // TODO:TO BE IMPLEMENTED
                 }
@@ -1156,7 +1154,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
             } break;
             case op_invokespecial: {
                 const u2 index = consumeU2(code, op);
-                std::tuple<JavaClass *, std::string, std::string> symbolicRef;
+                tuple<JavaClass *, string, string> symbolicRef;
 
                 if (typeid(*jc->raw.constPoolInfo[index]) ==
                     typeid(CONSTANT_InterfaceMethodref)) {
@@ -1171,8 +1169,8 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
 
                 // If all of the following are true, let C be the direct
                 // superclass of the current class :
-                JavaClass *symbolicRefClass = std::get<0>(symbolicRef);
-                if ("<init>" != std::get<1>(symbolicRef)) {
+                JavaClass *symbolicRefClass = get<0>(symbolicRef);
+                if ("<init>" != get<1>(symbolicRef)) {
                     if (!IS_CLASS_INTERFACE(
                             symbolicRefClass->raw.accessFlags)) {
                         if (symbolicRefClass->getClassName() ==
@@ -1180,17 +1178,16 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                             if (IS_CLASS_SUPER(jc->raw.accessFlags)) {
                                 invokeSpecial(yrt.ma->findJavaClass(
                                                   jc->getSuperClassName()),
-                                              std::get<1>(symbolicRef),
-                                              std::get<2>(symbolicRef));
+                                              get<1>(symbolicRef),
+                                              get<2>(symbolicRef));
                                 break;
                             }
                         }
                     }
                 }
                 // Otherwise let C be the symbolic reference class
-                invokeSpecial(std::get<0>(symbolicRef),
-                              std::get<1>(symbolicRef),
-                              std::get<2>(symbolicRef));
+                invokeSpecial(get<0>(symbolicRef), get<1>(symbolicRef),
+                              get<2>(symbolicRef));
             } break;
             case op_invokestatic: {
                 // Invoke a class (static) method
@@ -1200,15 +1197,13 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                     typeid(CONSTANT_InterfaceMethodref)) {
                     auto symbolicRef =
                         parseInterfaceMethodSymbolicReference(jc, index);
-                    invokeStatic(std::get<0>(symbolicRef),
-                                 std::get<1>(symbolicRef),
-                                 std::get<2>(symbolicRef));
+                    invokeStatic(get<0>(symbolicRef), get<1>(symbolicRef),
+                                 get<2>(symbolicRef));
                 } else if (typeid(*jc->raw.constPoolInfo[index]) ==
                            typeid(CONSTANT_Methodref)) {
                     auto symbolicRef = parseMethodSymbolicReference(jc, index);
-                    invokeStatic(std::get<0>(symbolicRef),
-                                 std::get<1>(symbolicRef),
-                                 std::get<2>(symbolicRef));
+                    invokeStatic(get<0>(symbolicRef), get<1>(symbolicRef),
+                                 get<2>(symbolicRef));
                 } else {
                     SHOULD_NOT_REACH_HERE
                 }
@@ -1222,13 +1217,12 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                     typeid(CONSTANT_InterfaceMethodref)) {
                     auto symbolicRef =
                         parseInterfaceMethodSymbolicReference(jc, index);
-                    invokeInterface(std::get<0>(symbolicRef),
-                                    std::get<1>(symbolicRef),
-                                    std::get<2>(symbolicRef));
+                    invokeInterface(get<0>(symbolicRef), get<1>(symbolicRef),
+                                    get<2>(symbolicRef));
                 }
             } break;
             case op_invokedynamic: {
-                throw std::runtime_error("unsupported opcode [invokedynamic]");
+                throw runtime_error("unsupported opcode [invokedynamic]");
             } break;
             case op_new: {
                 const u2 index = consumeU2(code, op);
@@ -1240,7 +1234,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 JInt *count = frames->top()->pop<JInt>();
 
                 if (count->val < 0) {
-                    throw std::runtime_error("negative array size");
+                    throw runtime_error("negative array size");
                 }
                 JArray *arrayref = yrt.jheap->createPODArray(atype, count->val);
 
@@ -1253,10 +1247,10 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 JInt *count = frames->top()->pop<JInt>();
 
                 if (count->val < 0) {
-                    throw std::runtime_error("negative array size");
+                    throw runtime_error("negative array size");
                 }
                 JArray *arrayref = yrt.jheap->createObjectArray(
-                    *std::get<0>(symbolicRef), count->val);
+                    *get<0>(symbolicRef), count->val);
 
                 frames->top()->push(arrayref);
 
@@ -1265,7 +1259,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 JArray *arrayref = frames->top()->pop<JArray>();
 
                 if (arrayref == nullptr) {
-                    throw std::runtime_error("null pointer\n");
+                    throw runtime_error("null pointer\n");
                 }
                 JInt *length = new JInt;
                 length->val = arrayref->length;
@@ -1275,12 +1269,12 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
             case op_athrow: {
                 auto *throwobj = frames->top()->pop<JObject>();
                 if (throwobj == nullptr) {
-                    throw std::runtime_error("null pointer");
+                    throw runtime_error("null pointer");
                 }
                 if (!hasInheritanceRelationship(
                         throwobj->jc,
                         yrt.ma->loadClassIfAbsent("java/lang/Throwable"))) {
-                    throw std::runtime_error("it's not a throwable object");
+                    throw runtime_error("it's not a throwable object");
                 }
 
                 if (handleException(jc, exceptLen, exceptTab, throwobj, op)) {
@@ -1295,7 +1289,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 }
             } break;
             case op_checkcast: {
-                throw std::runtime_error("unsupported opcode [checkcast]");
+                throw runtime_error("unsupported opcode [checkcast]");
             } break;
             case op_instanceof: {
                 const u2 index = consumeU2(code, op);
@@ -1313,20 +1307,20 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 JType *ref = frames->top()->pop<JType>();
 
                 if (ref == nullptr) {
-                    throw std::runtime_error("null pointer");
+                    throw runtime_error("null pointer");
                 }
 
                 if (!yrt.jheap->hasMonitor(ref)) {
                     dynamic_cast<JObject *>(ref)->offset =
                         yrt.jheap->createMonitor();
                 }
-                yrt.jheap->findMonitor(ref)->enter(std::this_thread::get_id());
+                yrt.jheap->findMonitor(ref)->enter(this_thread::get_id());
             } break;
             case op_monitorexit: {
                 JType *ref = frames->top()->pop<JType>();
 
                 if (ref == nullptr) {
-                    throw std::runtime_error("null pointer");
+                    throw runtime_error("null pointer");
                 }
                 if (!yrt.jheap->hasMonitor(ref)) {
                     dynamic_cast<JObject *>(ref)->offset =
@@ -1336,10 +1330,10 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
 
             } break;
             case op_wide: {
-                throw std::runtime_error("unsupported opcode [wide]");
+                throw runtime_error("unsupported opcode [wide]");
             } break;
             case op_multianewarray: {
-                throw std::runtime_error("unsupported opcode [multianewarray]");
+                throw runtime_error("unsupported opcode [multianewarray]");
             } break;
             case op_ifnull: {
                 u4 currentOffset = op - 1;
@@ -1363,29 +1357,28 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 op = currentOffset + branchIndex;
             } break;
             case op_jsr_w: {
-                throw std::runtime_error("unsupported opcode [jsr_w]");
+                throw runtime_error("unsupported opcode [jsr_w]");
             } break;
             case op_breakpoint:
             case op_impdep1:
             case op_impdep2: {
                 // Reserved opcodde
-                std::cerr
-                    << "Are you a dot.class hacker? Or you were entered a "
-                       "strange region.";
-                std::exit(EXIT_FAILURE);
+                cerr << "Are you a dot.class hacker? Or you were entered a "
+                        "strange region.";
+                exit(EXIT_FAILURE);
             } break;
             default:
-                std::cerr
-                    << "The YVM can not recognize this opcode. Bytecode file "
-                       "was be corrupted.";
-                std::exit(EXIT_FAILURE);
+                cerr << "The YVM can not recognize this opcode. Bytecode file "
+                        "was be corrupted.";
+                exit(EXIT_FAILURE);
         }
     }
     return nullptr;
 }
-
+//--------------------------------------------------------------------------------
 //  This function does "ldc" opcode jc type of JavaClass, which indicate where
 //  to resolve
+//--------------------------------------------------------------------------------
 void Interpreter::loadConstantPoolItem2Stack(const JavaClass *jc, u2 index) {
     if (typeid(*jc->raw.constPoolInfo[index]) == typeid(CONSTANT_Integer)) {
         auto val =
@@ -1415,25 +1408,25 @@ void Interpreter::loadConstantPoolItem2Stack(const JavaClass *jc, u2 index) {
         frames->top()->push(str);
     } else if (typeid(*jc->raw.constPoolInfo[index]) ==
                typeid(CONSTANT_Class)) {
-        throw std::runtime_error("nonsupport region");
+        throw runtime_error("nonsupport region");
     } else if (typeid(*jc->raw.constPoolInfo[index]) ==
                typeid(CONSTANT_MethodType)) {
-        throw std::runtime_error("nonsupport region");
+        throw runtime_error("nonsupport region");
     } else if (typeid(*jc->raw.constPoolInfo[index]) ==
                typeid(CONSTANT_MethodHandle)) {
-        throw std::runtime_error("nonsupport region");
+        throw runtime_error("nonsupport region");
     } else {
-        throw std::runtime_error(
+        throw runtime_error(
             "invalid symbolic reference index on constant "
             "pool");
     }
 }
 
 bool Interpreter::handleException(const JavaClass *jc, u2 exceptLen,
-                                  ATTR_Code::ExceptionTable *exceptTab,
+                                  ExceptionTable *exceptTab,
                                   const JObject *objectref, u4 &op) {
     FOR_EACH(i, exceptLen) {
-        const std::string &catchTypeName =
+        const string &catchTypeName =
             jc->getString(dynamic_cast<CONSTANT_Class *>(
                               jc->raw.constPoolInfo[exceptTab[i].catchType])
                               ->nameIndex);
@@ -1457,16 +1450,16 @@ bool Interpreter::handleException(const JavaClass *jc, u2 exceptLen,
     return false;
 }
 
-std::tuple<JavaClass *, std::string, std::string>
-Interpreter::parseFieldSymbolicReference(const JavaClass *jc, u2 index) const {
-    const std::string &symbolicReferenceFieldName = jc->getString(
+tuple<JavaClass *, string, string> Interpreter::parseFieldSymbolicReference(
+    const JavaClass *jc, u2 index) const {
+    const string &symbolicReferenceFieldName = jc->getString(
         dynamic_cast<CONSTANT_NameAndType *>(
             jc->raw.constPoolInfo[dynamic_cast<CONSTANT_Fieldref *>(
                                       jc->raw.constPoolInfo[index])
                                       ->nameAndTypeIndex])
             ->nameIndex);
 
-    const std::string &symbolicReferenceFieldDescriptor = jc->getString(
+    const string &symbolicReferenceFieldDescriptor = jc->getString(
         dynamic_cast<CONSTANT_NameAndType *>(
             jc->raw.constPoolInfo[dynamic_cast<CONSTANT_Fieldref *>(
                                       jc->raw.constPoolInfo[index])
@@ -1482,28 +1475,26 @@ Interpreter::parseFieldSymbolicReference(const JavaClass *jc, u2 index) const {
 
     yrt.ma->linkClassIfAbsent(symbolicReferenceClass->getClassName());
 
-    return std::make_tuple(symbolicReferenceClass, symbolicReferenceFieldName,
-                           symbolicReferenceFieldDescriptor);
+    return make_tuple(symbolicReferenceClass, symbolicReferenceFieldName,
+                      symbolicReferenceFieldDescriptor);
 }
 
-std::tuple<JavaClass *, std::string, std::string>
+tuple<JavaClass *, string, string>
 Interpreter::parseInterfaceMethodSymbolicReference(const JavaClass *jc,
                                                    u2 index) const {
-    const std::string &symbolicReferenceInterfaceMethodName = jc->getString(
+    const string &symbolicReferenceInterfaceMethodName = jc->getString(
         dynamic_cast<CONSTANT_NameAndType *>(
             jc->raw.constPoolInfo[dynamic_cast<CONSTANT_InterfaceMethodref *>(
                                       jc->raw.constPoolInfo[index])
                                       ->nameAndTypeIndex])
             ->nameIndex);
 
-    const std::string &symbolicReferenceInterfaceMethodDescriptor =
-        jc->getString(
-            dynamic_cast<CONSTANT_NameAndType *>(
-                jc->raw
-                    .constPoolInfo[dynamic_cast<CONSTANT_InterfaceMethodref *>(
-                                       jc->raw.constPoolInfo[index])
-                                       ->nameAndTypeIndex])
-                ->descriptorIndex);
+    const string &symbolicReferenceInterfaceMethodDescriptor = jc->getString(
+        dynamic_cast<CONSTANT_NameAndType *>(
+            jc->raw.constPoolInfo[dynamic_cast<CONSTANT_InterfaceMethodref *>(
+                                      jc->raw.constPoolInfo[index])
+                                      ->nameAndTypeIndex])
+            ->descriptorIndex);
 
     JavaClass *symbolicReferenceInterfaceMethodClass =
         yrt.ma->loadClassIfAbsent(jc->getString(
@@ -1516,21 +1507,21 @@ Interpreter::parseInterfaceMethodSymbolicReference(const JavaClass *jc,
     yrt.ma->linkClassIfAbsent(
         symbolicReferenceInterfaceMethodClass->getClassName());
 
-    return std::make_tuple(symbolicReferenceInterfaceMethodClass,
-                           symbolicReferenceInterfaceMethodName,
-                           symbolicReferenceInterfaceMethodDescriptor);
+    return make_tuple(symbolicReferenceInterfaceMethodClass,
+                      symbolicReferenceInterfaceMethodName,
+                      symbolicReferenceInterfaceMethodDescriptor);
 }
 
-std::tuple<JavaClass *, std::string, std::string>
-Interpreter::parseMethodSymbolicReference(const JavaClass *jc, u2 index) const {
-    const std::string &symbolicReferenceMethodName = jc->getString(
+tuple<JavaClass *, string, string> Interpreter::parseMethodSymbolicReference(
+    const JavaClass *jc, u2 index) const {
+    const string &symbolicReferenceMethodName = jc->getString(
         dynamic_cast<CONSTANT_NameAndType *>(
             jc->raw.constPoolInfo[dynamic_cast<CONSTANT_Methodref *>(
                                       jc->raw.constPoolInfo[index])
                                       ->nameAndTypeIndex])
             ->nameIndex);
 
-    const std::string &symbolicReferenceMethodDescriptor = jc->getString(
+    const string &symbolicReferenceMethodDescriptor = jc->getString(
         dynamic_cast<CONSTANT_NameAndType *>(
             jc->raw.constPoolInfo[dynamic_cast<CONSTANT_Methodref *>(
                                       jc->raw.constPoolInfo[index])
@@ -1546,34 +1537,32 @@ Interpreter::parseMethodSymbolicReference(const JavaClass *jc, u2 index) const {
                 ->nameIndex));
     yrt.ma->linkClassIfAbsent(symbolicReferenceMethodClass->getClassName());
 
-    return std::make_tuple(symbolicReferenceMethodClass,
-                           symbolicReferenceMethodName,
-                           symbolicReferenceMethodDescriptor);
+    return make_tuple(symbolicReferenceMethodClass, symbolicReferenceMethodName,
+                      symbolicReferenceMethodDescriptor);
 }
 
-std::tuple<JavaClass *> Interpreter::parseClassSymbolicReference(
-    const JavaClass *jc, u2 index) const {
-    const std::string &ref = jc->getString(
+tuple<JavaClass *> Interpreter::parseClassSymbolicReference(const JavaClass *jc,
+                                                            u2 index) const {
+    const string &ref = jc->getString(
         dynamic_cast<CONSTANT_Class *>(jc->raw.constPoolInfo[index])
             ->nameIndex);
-    std::string str{ref};
+    string str{ref};
     if (ref[0] == '[') {
         str = peelArrayComponentTypeFrom(ref);
     }
-    return std::make_tuple(yrt.ma->loadClassIfAbsent(str));
+    return make_tuple(yrt.ma->loadClassIfAbsent(str));
 }
 
-JType *Interpreter::getStaticField(JavaClass *parsedJc,
-                                   const std::string &fieldName,
-                                   const std::string &fieldDescriptor) {
+JType *Interpreter::getStaticField(JavaClass *parsedJc, const string &fieldName,
+                                   const string &fieldDescriptor) {
     yrt.ma->linkClassIfAbsent(parsedJc->getClassName());
     yrt.ma->initClassIfAbsent(*this, parsedJc->getClassName());
 
     FOR_EACH(i, parsedJc->raw.fieldsCount) {
         if (IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {
-            const std::string &n =
+            const string &n =
                 parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
-            const std::string &d =
+            const string &d =
                 parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
             if (n == fieldName && d == fieldDescriptor) {
                 return parsedJc->sfield.find(i)->second;
@@ -1588,18 +1577,16 @@ JType *Interpreter::getStaticField(JavaClass *parsedJc,
     return nullptr;
 }
 
-void Interpreter::putStaticField(JavaClass *parsedJc,
-                                 const std::string &fieldName,
-                                 const std::string &fieldDescriptor,
-                                 JType *value) {
+void Interpreter::putStaticField(JavaClass *parsedJc, const string &fieldName,
+                                 const string &fieldDescriptor, JType *value) {
     yrt.ma->linkClassIfAbsent(parsedJc->getClassName());
     yrt.ma->initClassIfAbsent(*this, parsedJc->getClassName());
 
     FOR_EACH(i, parsedJc->raw.fieldsCount) {
         if (IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {
-            const std::string &n =
+            const string &n =
                 parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
-            const std::string &d =
+            const string &d =
                 parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
             if (n == fieldName && d == fieldDescriptor) {
                 parsedJc->sfield.find(i)->second = value;
@@ -1619,11 +1606,11 @@ JObject *Interpreter::execNew(const JavaClass *jc, u2 index) {
                               const_cast<JavaClass *>(jc)->getClassName());
 
     if (typeid(*jc->raw.constPoolInfo[index]) != typeid(CONSTANT_Class)) {
-        throw std::runtime_error(
+        throw runtime_error(
             "operand index of new is not a class or "
             "interface\n");
     }
-    std::string className = jc->getString(
+    string className = jc->getString(
         dynamic_cast<CONSTANT_Class *>(jc->raw.constPoolInfo[index])
             ->nameIndex);
     JavaClass *newClass = yrt.ma->loadClassIfAbsent(className);
@@ -1632,7 +1619,7 @@ JObject *Interpreter::execNew(const JavaClass *jc, u2 index) {
 
 bool Interpreter::checkInstanceof(const JavaClass *jc, u2 index,
                                   JType *objectref) {
-    std::string TclassName =
+    string TclassName =
         (char *)dynamic_cast<CONSTANT_Utf8 *>(
             jc->raw.constPoolInfo[dynamic_cast<CONSTANT_Class *>(
                                       jc->raw.constPoolInfo[index])
@@ -1643,7 +1630,7 @@ bool Interpreter::checkInstanceof(const JavaClass *jc, u2 index,
     constexpr short TYPE_INTERFACE = 3;
 
     short tType = 0;
-    if (TclassName.find('[') != std::string::npos) {
+    if (TclassName.find('[') != string::npos) {
         tType = TYPE_ARRAY;
     } else {
         if (IS_CLASS_INTERFACE(
@@ -1671,7 +1658,7 @@ bool Interpreter::checkInstanceof(const JavaClass *jc, u2 index,
                 auto &&interfaceIdxs = dynamic_cast<JObject *>(objectref)
                                            ->jc->getInterfacesIndex();
                 FOR_EACH(i, interfaceIdxs.size()) {
-                    std::string interfaceName =
+                    string interfaceName =
                         dynamic_cast<JObject *>(objectref)->jc->getString(
                             dynamic_cast<CONSTANT_Class *>(
                                 dynamic_cast<JObject *>(objectref)
@@ -1720,7 +1707,7 @@ bool Interpreter::checkInstanceof(const JavaClass *jc, u2 index,
                 }
             }
         } else if (tType == TYPE_ARRAY) {
-            throw std::runtime_error("to be continue\n");
+            throw runtime_error("to be continue\n");
         } else {
             SHOULD_NOT_REACH_HERE
         }
@@ -1729,7 +1716,7 @@ bool Interpreter::checkInstanceof(const JavaClass *jc, u2 index,
     }
 }
 
-void Interpreter::pushMethodArguments(std::vector<int> &parameter,
+void Interpreter::pushMethodArguments(vector<int> &parameter,
                                       bool isObjectMethod) {
     if (parameter.size() > 0) {
         for (int localIndex = parameter.size() - (isObjectMethod ? 0 : 1),
@@ -1769,30 +1756,16 @@ void Interpreter::pushMethodArguments(std::vector<int> &parameter,
 //--------------------------------------------------------------------------------
 // Invoke by given name, this method was be used internally
 //--------------------------------------------------------------------------------
-void Interpreter::invokeByName(JavaClass *jc, const std::string &methodName,
-                               const std::string &methodDescriptor) {
+void Interpreter::invokeByName(JavaClass *jc, const string &methodName,
+                               const string &methodDescriptor) {
+    const int returnType = get<0>(peelMethodParameterAndType(methodDescriptor));
+
     MethodInfo *m = jc->findMethod(methodName, methodDescriptor);
     CallSite csite = CallSite::makeCallSite(jc, m);
-    const int returnType =
-        std::get<0>(peelMethodParameterAndType(methodDescriptor));
-
     if (!csite.isCallable()) {
-#ifdef YVM_DEBUG_SHOW_EXEC_FLOW
-        std::cout << "Method " << jc->getClassName() << "::" << methodName
-                  << "() not found!\n";
-#endif
         return;
     }
 
-#ifdef YVM_DEBUG_SHOW_EXEC_FLOW
-    for (int i = 0; i < frames.size(); i++) {
-        std::cout << "-";
-    }
-    std::cout << "Execute " << jc->getClassName() << "::" << methodName << "() "
-              << methodDescriptor << "\n";
-#endif
-
-    // Actual method calling routine
     frames->pushFrame(csite.maxLocal, csite.maxStack);
 
     JType *returnValue{};
@@ -1800,15 +1773,15 @@ void Interpreter::invokeByName(JavaClass *jc, const std::string &methodName,
         returnValue = cloneValue(
             execNativeMethod(jc->getClassName(), methodName, methodDescriptor));
     } else {
-        returnValue = cloneValue(execByteCode(jc, csite.code, csite.codeLength,
-                                              csite.exceptionLen,
-                                              csite.exception));
+        returnValue =
+            cloneValue(execByteCode(jc, csite.code, csite.codeLength,
+                                    csite.exceptionLen, csite.exception));
     }
     frames->popFrame();
 
     // Since invokeByName() was merely used to call <clinit> and main method
     // of running program, therefore, if an exception reached here, we don't
-    // need to push its value into frame  again (In fact there is no more
+    // need to push its value into upper frame  again (In fact there is no more
     // frame), we just print stack trace inforamtion to notice user and
     // return directly
     if (returnType != T_EXTRA_VOID) {
@@ -1828,12 +1801,11 @@ void Interpreter::invokeByName(JavaClass *jc, const std::string &methodName,
 //--------------------------------------------------------------------------------
 // Invoke interface method
 //--------------------------------------------------------------------------------
-void Interpreter::invokeInterface(const JavaClass *jc,
-                                  const std::string &methodName,
-                                  const std::string &methodDescriptor) {
+void Interpreter::invokeInterface(const JavaClass *jc, const string &methodName,
+                                  const string &methodDescriptor) {
     auto parameterAndReturnType = peelMethodParameterAndType(methodDescriptor);
-    const int returnType = std::get<0>(parameterAndReturnType);
-    auto parameter = std::get<1>(parameterAndReturnType);
+    const int returnType = get<0>(parameterAndReturnType);
+    auto parameter = get<1>(parameterAndReturnType);
 
     auto csite = findInstanceMethod(jc, methodName, methodDescriptor);
     if (!csite.isCallable()) {
@@ -1842,20 +1814,11 @@ void Interpreter::invokeInterface(const JavaClass *jc,
             csite =
                 findMaximallySpecifiedMethod(jc, methodName, methodDescriptor);
             if (!csite.isCallable()) {
-                throw std::runtime_error("can not find method " + methodName +
-                                         " " + methodDescriptor);
+                throw runtime_error("can not find method " + methodName + " " +
+                                    methodDescriptor);
             }
         }
     }
-
-#ifdef YVM_DEBUG_SHOW_EXEC_FLOW
-    for (int i = 0; i < frames.size(); i++) {
-        std::cout << "-";
-    }
-    std::cout << "Execute "
-              << const_cast<JavaClass *>(invokingMethod.second)->getClassName()
-              << "::" << methodName << "() " << methodDescriptor << "\n";
-#endif
 
     if (IS_METHOD_NATIVE(csite.accessFlags)) {
         csite.maxLocal = csite.maxStack = parameter.size() + 1;
@@ -1868,11 +1831,10 @@ void Interpreter::invokeInterface(const JavaClass *jc,
         returnValue = cloneValue(execNativeMethod(
             csite.jc->getClassName(), methodName, methodDescriptor));
     } else {
-        returnValue = cloneValue(
-            execByteCode(csite.jc, csite.code, csite.codeLength,
-                         csite.exceptionLen, csite.exception));
+        returnValue =
+            cloneValue(execByteCode(csite.jc, csite.code, csite.codeLength,
+                                    csite.exceptionLen, csite.exception));
     }
-
     frames->popFrame();
 
     if (returnType != T_EXTRA_VOID) {
@@ -1896,11 +1858,11 @@ void Interpreter::invokeInterface(const JavaClass *jc,
 //--------------------------------------------------------------------------------
 // Invoke instance method; dispatch based on class
 //--------------------------------------------------------------------------------
-void Interpreter::invokeVirtual(const std::string &methodName,
-                                const std::string &methodDescriptor) {
+void Interpreter::invokeVirtual(const string &methodName,
+                                const string &methodDescriptor) {
     auto parameterAndReturnType = peelMethodParameterAndType(methodDescriptor);
-    const int returnType = std::get<0>(parameterAndReturnType);
-    auto parameter = std::get<1>(parameterAndReturnType);
+    const int returnType = get<0>(parameterAndReturnType);
+    auto parameter = get<1>(parameterAndReturnType);
 
     auto *thisRef =
         (JObject *)frames->top()
@@ -1914,22 +1876,16 @@ void Interpreter::invokeVirtual(const std::string &methodName,
             csite = findMaximallySpecifiedMethod(thisRef->jc, methodName,
                                                  methodDescriptor);
             if (!csite.isCallable()) {
-                throw std::runtime_error("can not find method " + methodName +
-                                         " " + methodDescriptor);
+                throw runtime_error("can not find method " + methodName + " " +
+                                    methodDescriptor);
             }
         }
     }
-#ifdef YVM_DEBUG_SHOW_EXEC_FLOW
-    for (int i = 0; i < frames.size(); i++) {
-        std::cout << "-";
-    }
-    std::cout << "Execute "
-              << const_cast<JavaClass *>(invokingMethod.second)->getClassName()
-              << "::" << methodName << "() " << methodDescriptor << "\n";
-#endif
+
     if (IS_METHOD_NATIVE(csite.accessFlags)) {
         csite.maxLocal = csite.maxStack = parameter.size() + 1;
     }
+
     frames->pushFrame(csite.maxLocal, csite.maxStack);
     pushMethodArguments(parameter, true);
     JType *returnValue{};
@@ -1938,12 +1894,12 @@ void Interpreter::invokeVirtual(const std::string &methodName,
             returnValue = cloneValue(execNativeMethod(
                 csite.jc->getClassName(), methodName, methodDescriptor));
         } else {
-            returnValue = cloneValue(
-                execByteCode(csite.jc, csite.code, csite.codeLength,
-                             csite.exceptionLen, csite.exception));
+            returnValue =
+                cloneValue(execByteCode(csite.jc, csite.code, csite.codeLength,
+                                        csite.exceptionLen, csite.exception));
         }
     } else {
-        throw std::runtime_error("can not find method to call");
+        throw runtime_error("can not find method to call");
     }
     frames->popFrame();
 
@@ -1968,21 +1924,12 @@ void Interpreter::invokeVirtual(const std::string &methodName,
 //  Invoke instance method; special handling for superclass, private,
 //  and instance initialization method invocations
 //--------------------------------------------------------------------------------
-void Interpreter::invokeSpecial(const JavaClass *jc,
-                                const std::string &methodName,
-                                const std::string &methodDescriptor) {
+void Interpreter::invokeSpecial(const JavaClass *jc, const string &methodName,
+                                const string &methodDescriptor) {
     auto parameterAndReturnType = peelMethodParameterAndType(methodDescriptor);
-    const int returnType = std::get<0>(parameterAndReturnType);
-    auto parameter = std::get<1>(parameterAndReturnType);
+    const int returnType = get<0>(parameterAndReturnType);
+    auto parameter = get<1>(parameterAndReturnType);
 
-#ifdef YVM_DEBUG_SHOW_EXEC_FLOW
-    for (int i = 0; i < frames.size(); i++) {
-        std::cout << "-";
-    }
-    std::cout << "Execute "
-              << const_cast<JavaClass *>(invokingMethod.second)->getClassName()
-              << "::" << methodName << "() " << methodDescriptor << "\n";
-#endif
     auto csite = findInstanceMethod(jc, methodName, methodDescriptor);
     if (!csite.isCallable()) {
         csite = findInstanceMethodOnSupers(jc, methodName, methodDescriptor);
@@ -1992,9 +1939,8 @@ void Interpreter::invokeSpecial(const JavaClass *jc,
                 csite = findMaximallySpecifiedMethod(jc, methodName,
                                                      methodDescriptor);
                 if (!csite.isCallable()) {
-                    throw std::runtime_error("can not find method " +
-                                             methodName + " " +
-                                             methodDescriptor);
+                    throw runtime_error("can not find method " + methodName +
+                                        " " + methodDescriptor);
                 }
             }
         }
@@ -2010,9 +1956,9 @@ void Interpreter::invokeSpecial(const JavaClass *jc,
         returnValue = cloneValue(execNativeMethod(
             csite.jc->getClassName(), methodName, methodDescriptor));
     } else {
-        returnValue = cloneValue(
-            execByteCode(csite.jc, csite.code, csite.codeLength,
-                         csite.exceptionLen, csite.exception));
+        returnValue =
+            cloneValue(execByteCode(csite.jc, csite.code, csite.codeLength,
+                                    csite.exceptionLen, csite.exception));
     }
     frames->popFrame();
     if (returnType != T_EXTRA_VOID) {
@@ -2033,33 +1979,29 @@ void Interpreter::invokeSpecial(const JavaClass *jc,
     }
 }
 
-void Interpreter::invokeStatic(const JavaClass *jc,
-                               const std::string &methodName,
-                               const std::string &methodDescriptor) {
+void Interpreter::invokeStatic(const JavaClass *jc, const string &methodName,
+                               const string &methodDescriptor) {
     // Get instance method name and descriptor from CONSTANT_Methodref
     // locating by index and get interface method parameter and return value
     // descriptor
     yrt.ma->linkClassIfAbsent(const_cast<JavaClass *>(jc)->getClassName());
     yrt.ma->initClassIfAbsent(*this,
                               const_cast<JavaClass *>(jc)->getClassName());
+
+    auto parameterAndReturnType = peelMethodParameterAndType(methodDescriptor);
+    const int returnType = get<0>(parameterAndReturnType);
+    auto parameter = get<1>(parameterAndReturnType);
+
     auto csite = CallSite::makeCallSite(
         jc, jc->findMethod(methodName, methodDescriptor));
-
-#ifdef YVM_DEBUG_SHOW_EXEC_FLOW
-    for (int i = 0; i < frames.size(); i++) {
-        std::cout << "-";
+    if (!csite.isCallable()) {
+        throw runtime_error("can not find method " + methodName + " " +
+                            methodDescriptor);
     }
-    std::cout << "Execute "
-              << const_cast<JavaClass *>(invokingMethod.second)->getClassName()
-              << "::" << methodName << "() " << methodDescriptor << "\n";
-#endif
     assert(IS_METHOD_STATIC(csite.accessFlags) == true);
     assert(IS_METHOD_ABSTRACT(csite.accessFlags) == false);
     assert("<init>" != methodName);
 
-    auto parameterAndReturnType = peelMethodParameterAndType(methodDescriptor);
-    const int returnType = std::get<0>(parameterAndReturnType);
-    auto parameter = std::get<1>(parameterAndReturnType);
     if (IS_METHOD_NATIVE(csite.accessFlags)) {
         csite.maxLocal = csite.maxStack = parameter.size();
     }
@@ -2070,12 +2012,12 @@ void Interpreter::invokeStatic(const JavaClass *jc,
         returnValue = cloneValue(execNativeMethod(
             csite.jc->getClassName(), methodName, methodDescriptor));
     } else {
-        returnValue = cloneValue(
-            execByteCode(csite.jc, csite.code, csite.codeLength,
-                         csite.exceptionLen, csite.exception));
+        returnValue =
+            cloneValue(execByteCode(csite.jc, csite.code, csite.codeLength,
+                                    csite.exceptionLen, csite.exception));
     }
-
     frames->popFrame();
+
     if (returnType != T_EXTRA_VOID) {
         frames->top()->push(returnValue);
     }

@@ -53,7 +53,7 @@ private:
 
     JObject* execNew(const JavaClass* jc, u2 index);
     JType* execByteCode(const JavaClass* jc, u1* code, u4 codeLength,
-                        u2 exceptLen, ATTR_Code::ExceptionTable* exceptTab);
+                        u2 exceptLen, ExceptionTable* exceptTab);
     JType* execNativeMethod(const std::string& className,
                             const std::string& methodName,
                             const std::string& methodDescriptor);
@@ -61,8 +61,8 @@ private:
     void loadConstantPoolItem2Stack(const JavaClass* jc, u2 index);
 
     bool handleException(const JavaClass* jc, u2 exceptLen,
-                         ATTR_Code::ExceptionTable* exceptTab,
-                         const JObject* objectref, u4& op);
+                         ExceptionTable* exceptTab, const JObject* objectref,
+                         u4& op);
 
     void pushMethodArguments(std::vector<int>& parameter, bool isObjectMethod);
 

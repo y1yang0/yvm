@@ -17,7 +17,7 @@ struct CallSite {
     u2 maxStack;
     u2 maxLocal;
     u2 exceptionLen;
-    ATTR_Code::ExceptionTable* exception;
+    ExceptionTable* exception;
     bool callable;
 };
 

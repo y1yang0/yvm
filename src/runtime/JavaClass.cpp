@@ -393,7 +393,7 @@ bool JavaClass::parseAttribute(AttributeInfo**(&attrs), u2 attributeCount) {
 
             attr->exceptionTableLength = reader.readget2();
             attr->exceptionTable =
-                new ATTR_Code::ExceptionTable[attr->exceptionTableLength];
+                new ExceptionTable[attr->exceptionTableLength];
             FOR_EACH(k, attr->exceptionTableLength) {
                 attr->exceptionTable[k].startPC = reader.readget2();
                 attr->exceptionTable[k].endPC = reader.readget2();

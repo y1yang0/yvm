@@ -22,7 +22,6 @@
 // descriptor
 //--------------------------------------------------------------------------------
 #undef YVM_DEBUG_SHOW_BYTECODE
-#undef YVM_DEBUG_SHOW_EXEC_FLOW
 
 //--------------------------------------------------------------------------------
 // output *.class parsing result, which contains constant pool table, fields,

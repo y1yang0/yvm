@@ -16,7 +16,7 @@ CallSite CallSite::makeCallSite(const JavaClass* jc, MethodInfo* m) {
             cs.maxLocal = dynamic_cast<ATTR_Code*>(m->attributes[i])->maxLocals;
             cs.maxStack = dynamic_cast<ATTR_Code*>(m->attributes[i])->maxStack;
             cs.exceptionLen = dynamic_cast<ATTR_Code*>(m->attributes[i])
-                                          ->exceptionTableLength;
+                                  ->exceptionTableLength;
             cs.exception =
                 dynamic_cast<ATTR_Code*>(m->attributes[i])->exceptionTable;
             break;
