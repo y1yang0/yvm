@@ -63,7 +63,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, CodeAttrCore &&ext) {
                 while (!frames->top()->emptyStack()) {
                     frames->top()->pop<JType>();
                 }
-                frames->top()->pushException(throwableObject);
+                frames->top()->push(throwableObject);
                 exception.sweepException();
             } else {
                 return throwableObject;
@@ -1284,7 +1284,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, CodeAttrCore &&ext) {
                     while (!frames->top()->emptyStack()) {
                         frames->top()->pop<JType>();
                     }
-                    frames->top()->pushException(throwableObject);
+                    frames->top()->push(throwableObject);
                 } else /* Exception can not handled within method handlers */ {
                     exception.markException();
                     exception.setThrowExceptionInfo(throwableObject);
@@ -1903,13 +1903,13 @@ void Interpreter::invokeInterface(const JavaClass *jc,
     frames->popFrame();
 
     if (returnType != T_EXTRA_VOID) {
-        if (!exception.hasUnhandledException()) {
-            frames->top()->push(returnValue);
-        } else {
-            frames->top()->pushException(returnValue);
-            if (exception.hasUnhandledException()) {
-                exception.extendExceptionStackTrace(methodName);
-            }
+        frames->top()->push(returnValue);
+    }
+    if (exception.hasUnhandledException()) {
+        frames->top()->grow(1);
+        frames->top()->push(returnValue);
+        if (exception.hasUnhandledException()) {
+            exception.extendExceptionStackTrace(methodName);
         }
     }
 
@@ -1980,13 +1980,13 @@ void Interpreter::invokeVirtual(const std::string &methodName,
     frames->popFrame();
 
     if (returnType != T_EXTRA_VOID) {
-        if (!exception.hasUnhandledException()) {
-            frames->top()->push(returnValue);
-        } else {
-            frames->top()->pushException(returnValue);
-            if (exception.hasUnhandledException()) {
-                exception.extendExceptionStackTrace(methodName);
-            }
+        frames->top()->push(returnValue);
+    }
+    if (exception.hasUnhandledException()) {
+        frames->top()->grow(1);
+        frames->top()->push(returnValue);
+        if (exception.hasUnhandledException()) {
+            exception.extendExceptionStackTrace(methodName);
         }
     }
 
@@ -2053,13 +2053,13 @@ void Interpreter::invokeSpecial(const JavaClass *jc,
     }
     frames->popFrame();
     if (returnType != T_EXTRA_VOID) {
-        if (!exception.hasUnhandledException()) {
-            frames->top()->push(returnValue);
-        } else {
-            frames->top()->pushException(returnValue);
-            if (exception.hasUnhandledException()) {
-                exception.extendExceptionStackTrace(methodName);
-            }
+        frames->top()->push(returnValue);
+    }
+    if (exception.hasUnhandledException()) {
+        frames->top()->grow(1);
+        frames->top()->push(returnValue);
+        if (exception.hasUnhandledException()) {
+            exception.extendExceptionStackTrace(methodName);
         }
     }
 
@@ -2116,13 +2116,13 @@ void Interpreter::invokeStatic(const JavaClass *jc,
 
     frames->popFrame();
     if (returnType != T_EXTRA_VOID) {
-        if (!exception.hasUnhandledException()) {
-            frames->top()->push(returnValue);
-        } else {
-            frames->top()->pushException(returnValue);
-            if (exception.hasUnhandledException()) {
-                exception.extendExceptionStackTrace(methodName);
-            }
+        frames->top()->push(returnValue);
+    }
+    if (exception.hasUnhandledException()) {
+        frames->top()->grow(1);
+        frames->top()->push(returnValue);
+        if (exception.hasUnhandledException()) {
+            exception.extendExceptionStackTrace(methodName);
         }
     }
 

@@ -61,10 +61,13 @@ void Slots::dump() {
     }
 }
 
-// Pop last exception object
-
-JType* Slots::popException() {
-    auto* e = exceptions.back();
-    exceptions.pop_back();
-    return e;
+void Slots::grow(int size) {
+    JType** newStack = new JType*[size + maxStack];
+    memset(newStack, 0, sizeof(JType*) * (size + maxStack));
+    for (int i = 0; i < maxStack; i++) {
+        newStack[i] = stackSlots[i];
+    }
+    delete[] stackSlots;
+    this->stackSlots = newStack;
+    (int)this->maxStack = maxStack + size;
 }

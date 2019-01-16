@@ -5,8 +5,8 @@
 #include <list>
 #include "../gc/Concurrent.hpp"
 #include "../interpreter/Internal.h"
-#include "JavaType.h"
 #include "../misc/Utils.h"
+#include "JavaType.h"
 
 using namespace std;
 
@@ -49,11 +49,9 @@ public:
     // Dump current frame to stdout
     void dump();
 
-    // Push new execption object
-    void pushException(JType* var) { exceptions.push_back(var); }
-
-    // Pop last exception object
-    JType* popException();
+    // Reallocate stack slots size accorrding to argument, this can be used when
+    // an exception occurred
+    void grow(int size);
 
 private:
     std::list<JType*> exceptions;
