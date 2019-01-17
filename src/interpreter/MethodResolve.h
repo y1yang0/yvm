@@ -42,4 +42,16 @@ CallSite findJavaLangObjectMethod(const JavaClass* jc,
                                   const std::string& methodName,
                                   const std::string& methodDescriptor);
 
+std::tuple<JavaClass*, std::string, std::string> parseFieldSymbolicReference(
+    const JavaClass* jc, u2 index);
+
+std::tuple<JavaClass*, std::string, std::string>
+parseInterfaceMethodSymbolicReference(const JavaClass* jc, u2 index);
+
+std::tuple<JavaClass*, std::string, std::string> parseMethodSymbolicReference(
+    const JavaClass* jc, u2 index);
+
+std::tuple<JavaClass*> parseClassSymbolicReference(const JavaClass* jc,
+                                                   u2 index);
+
 #endif  // !_METHODRESOLVE_H

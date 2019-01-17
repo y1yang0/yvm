@@ -42,15 +42,6 @@ private:
 
     bool checkInstanceof(const JavaClass* jc, u2 index, JType* objectref);
 
-    std::tuple<JavaClass*, std::string, std::string>
-    parseFieldSymbolicReference(const JavaClass* jc, u2 index) const;
-    std::tuple<JavaClass*, std::string, std::string>
-    parseInterfaceMethodSymbolicReference(const JavaClass* jc, u2 index) const;
-    std::tuple<JavaClass*, std::string, std::string>
-    parseMethodSymbolicReference(const JavaClass* jc, u2 index) const;
-    std::tuple<JavaClass*> parseClassSymbolicReference(const JavaClass* jc,
-                                                       u2 index) const;
-
     JObject* execNew(const JavaClass* jc, u2 index);
     JType* execByteCode(const JavaClass* jc, u1* code, u4 codeLength,
                         u2 exceptLen, ExceptionTable* exceptTab);

@@ -4,6 +4,7 @@
 #include "../classfile/ClassFile.h"
 #include "../classfile/FileReader.h"
 #include "../interpreter/Internal.h"
+#include "../misc/Utils.h"
 #include "../vm/YVM.h"
 #include "JavaType.h"
 #include "MethodArea.h"
@@ -33,21 +34,25 @@ class JavaClass {
 public:
     explicit JavaClass(const string& classFilePath);
     ~JavaClass();
-    JavaClass(const JavaClass& rhs) { this->raw = rhs.raw; }
+    JavaClass(const JavaClass& rhs);
 
 public:
-    const string getString(u2 index) const {
+    forceinline ConstantPoolInfo* getConstPoolItem(u2 index) const {
+        return raw.constPoolInfo[index];
+    }
+
+    forceinline const string getString(u2 index) const {
         return reinterpret_cast<const char*>(
             dynamic_cast<CONSTANT_Utf8*>(raw.constPoolInfo[index])->bytes);
     }
 
-    const string getClassName() const {
+    forceinline const string getClassName() const {
         return getString(
             dynamic_cast<CONSTANT_Class*>(raw.constPoolInfo[raw.thisClass])
                 ->nameIndex);
     }
 
-    const string getSuperClassName() const {
+    forceinline const string getSuperClassName() const {
         return raw.superClass == 0
                    ? ""
                    : getString(dynamic_cast<CONSTANT_Class*>(
@@ -55,19 +60,19 @@ public:
                                    ->nameIndex);
     }
 
-    const string getInterfaceClassName(u2 index) const {
+    forceinline const string getInterfaceClassName(u2 index) const {
         return getString(dynamic_cast<CONSTANT_Class*>(
                              raw.constPoolInfo[raw.interfaces[index]])
                              ->nameIndex);
     }
 
-    bool hasSuperClass() const { return raw.superClass != 0; }
+    forceinline bool hasSuperClass() const { return raw.superClass != 0; }
 
-    bool hasInterface() const { return raw.interfacesCount != 0; }
+    forceinline bool hasInterface() const { return raw.interfacesCount != 0; }
 
-    u2 getInterfaceCount() const { return raw.interfacesCount; }
+    forceinline u2 getInterfaceCount() const { return raw.interfacesCount; }
 
-    u2 getAccessFlag() const { return raw.accessFlags; }
+    forceinline u2 getAccessFlag() const { return raw.accessFlags; }
 
     MethodInfo* findMethod(const string& methodName,
                            const string& methodDescriptor) const;

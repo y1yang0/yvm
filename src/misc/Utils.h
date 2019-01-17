@@ -1,6 +1,7 @@
 #ifndef YVM_PARSEUTIL_H
 #define YVM_PARSEUTIL_H
 
+#include <cassert>
 #include <string>
 #include <vector>
 #include "../interpreter/Internal.h"
@@ -8,13 +9,31 @@
 #include "../runtime/RuntimeEnv.h"
 
 //--------------------------------------------------------------------------------
+// Force the compiler to inline decorated functions
+//--------------------------------------------------------------------------------
+#ifdef _MSC_VER_
+#define forceinline __forceinline
+#elif (defined __GNUC__) || (defined __clang__)
+#define forceinline __inline__ __attribute__((always_inline))
+#else
+#define forceinline
+#endif
+
+#if (defined __GNUC__) || (defined __clang__)
+#define likely(x) __builtin_expect((x), 1)
+#define unlikely(x) __builtin_expect((x), 0)
+#else
+#define likely(x) (x)
+#define unlikely(x) (x)
+#endif
+//--------------------------------------------------------------------------------
 // Utilities that widely used in all components
 //--------------------------------------------------------------------------------
 #define FOR_EACH(iter, var) for (decltype(var) iter = 0; iter < var; iter++)
-#define SHOULD_NOT_REACH_HERE                                            \
-    static_assert(true,                                                  \
-                  "Program should not reach here, it's a vital logical " \
-                  "error\n");
+#define SHOULD_NOT_REACH_HERE                                     \
+    assert(true,                                                  \
+           "Program should not reach here, it's a vital logical " \
+           "error\n");
 
 //--------------------------------------------------------------------------------
 // Convert java.lang.String object to a stl string
@@ -96,7 +115,7 @@ std::string peelClassNameFrom(const std::string& descriptor);
 
 std::string peelArrayComponentTypeFrom(const std::string& descriptor);
 
-std::tuple<int, std::vector<int>> peelMethodParameterAndType(
+std::tuple<int, std::vector<int> > peelMethodParameterAndType(
     const std::string& descriptor);
 
 #endif  // YVM_PARSEUTIL_H

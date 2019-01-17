@@ -23,6 +23,8 @@ JavaClass::~JavaClass() {
     }
 }
 
+JavaClass::JavaClass(const JavaClass& rhs) { this->raw = rhs.raw; }
+
 vector<u2> JavaClass::getInterfacesIndex() const {
     if (raw.interfacesCount == 0) return vector<u2>();
     vector<u2> v;
