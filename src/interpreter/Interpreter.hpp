@@ -14,7 +14,7 @@
 struct MethodInfo;
 struct RuntimeEnv;
 extern RuntimeEnv yrt;
-
+using std::string;
 class Interpreter {
 public:
     explicit Interpreter() : frames(new JavaFrame) {}
@@ -23,31 +23,29 @@ public:
 
     ~Interpreter();
 
-    void invokeByName(JavaClass* jc, const std::string& methodName,
-                      const std::string& methodDescriptor);
-    void invokeInterface(const JavaClass* jc, const std::string& methodName,
-                         const std::string& methodDescriptor);
-    void invokeSpecial(const JavaClass* jc, const std::string& methodName,
-                       const std::string& methodDescriptor);
-    void invokeStatic(const JavaClass* jc, const std::string& methodName,
-                      const std::string& methodDescriptor);
-    void invokeVirtual(const std::string& methodName,
-                       const std::string& methodDescriptor);
+    void invokeByName(JavaClass* jc, const string& name,
+                      const string& descriptor);
+    void invokeInterface(const JavaClass* jc, const string& name,
+                         const string& descriptor);
+    void invokeSpecial(const JavaClass* jc, const string& name,
+                       const string& descriptor);
+    void invokeStatic(const JavaClass* jc, const string& name,
+                      const string& descriptor);
+    void invokeVirtual(const string& name, const string& descriptor);
 
 private:
-    JType* getStaticField(JavaClass* parsedJc, const std::string& fieldName,
-                          const std::string& fieldDescriptor);
-    void putStaticField(JavaClass* parsedJc, const std::string& fieldName,
-                        const std::string& fieldDescriptor, JType* value);
+    JType* getStaticVar(JavaClass* parsedJc, const string& fieldName,
+                        const string& fieldDescriptor);
+    void setStaticVar(JavaClass* parsedJc, const string& fieldName,
+                      const string& fieldDescriptor, JType* value);
 
     bool checkInstanceof(const JavaClass* jc, u2 index, JType* objectref);
 
     JObject* execNew(const JavaClass* jc, u2 index);
     JType* execByteCode(const JavaClass* jc, u1* code, u4 codeLength,
                         u2 exceptLen, ExceptionTable* exceptTab);
-    JType* execNativeMethod(const std::string& className,
-                            const std::string& methodName,
-                            const std::string& methodDescriptor);
+    JType* execNativeMethod(const string& className, const string& methodName,
+                            const string& methodDescriptor);
 
     void loadConstantPoolItem2Stack(const JavaClass* jc, u2 index);
 
@@ -79,8 +77,6 @@ void Interpreter::binaryArithmetic(CallableObjectType op) {
     auto* result = new ResultType;
     result->val = op(value1->val, value2->val);
     frames->top()->push(result);
-    delete value2;
-    delete value1;
 }
 
 template <typename ResultType, typename CallableObjectType>
@@ -96,7 +92,6 @@ void Interpreter::typeCast() const {
     auto* result = new Type2;
     result->val = value->val;
     frames->top()->push(result);
-    delete value;
 }
 
 #endif  // YVM_INTERPRETER_H

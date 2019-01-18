@@ -1,11 +1,11 @@
 #include <atomic>
-#include "Concurrent.hpp"
-#include "GC.h"
 #include "../runtime/JavaClass.h"
 #include "../runtime/JavaHeap.hpp"
 #include "../runtime/JavaType.h"
 #include "../runtime/MethodArea.h"
 #include "../vm/YVM.h"
+#include "Concurrent.hpp"
+#include "GC.h"
 
 using namespace std;
 
@@ -167,7 +167,7 @@ void ConcurrentGC::markAndSweep() {
 
     future<void> staticFieldsFuture = gcThreadPool.submit([this]() -> void {
         for (auto c : yrt.ma->classTable) {
-            for_each(c.second->sfield.cbegin(), c.second->sfield.cend(),
+            for_each(c.second->staticVars.cbegin(), c.second->staticVars.cend(),
                      [this](const pair<size_t, JType*>& offset) {
                          if (typeid(*offset.second) == typeid(JObject)) {
                              {

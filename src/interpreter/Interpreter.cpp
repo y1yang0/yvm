@@ -1099,17 +1099,17 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
             case op_getstatic: {
                 const u2 index = consumeU2(code, op);
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
-                JType *field = cloneValue(getStaticField(get<0>(symbolicRef),
-                                                         get<1>(symbolicRef),
-                                                         get<2>(symbolicRef)));
+                JType *field = cloneValue(getStaticVar(get<0>(symbolicRef),
+                                                       get<1>(symbolicRef),
+                                                       get<2>(symbolicRef)));
                 frames->top()->push(field);
             } break;
             case op_putstatic: {
                 u2 index = consumeU2(code, op);
                 JType *value = frames->top()->pop<JType>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
-                putStaticField(get<0>(symbolicRef), get<1>(symbolicRef),
-                               get<2>(symbolicRef), value);
+                setStaticVar(get<0>(symbolicRef), get<1>(symbolicRef),
+                             get<2>(symbolicRef), value);
             } break;
             case op_getfield: {
                 u2 index = consumeU2(code, op);
@@ -1253,7 +1253,6 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                     *get<0>(symbolicRef), count->val);
 
                 frames->top()->push(arrayref);
-
             } break;
             case op_arraylength: {
                 JArray *arrayref = frames->top()->pop<JArray>();
@@ -1450,51 +1449,18 @@ bool Interpreter::handleException(const JavaClass *jc, u2 exceptLen,
     return false;
 }
 
-JType *Interpreter::getStaticField(JavaClass *parsedJc, const string &fieldName,
-                                   const string &fieldDescriptor) {
+JType *Interpreter::getStaticVar(JavaClass *parsedJc, const string &fieldName,
+                                 const string &fieldDescriptor) {
     yrt.ma->linkClassIfAbsent(parsedJc->getClassName());
     yrt.ma->initClassIfAbsent(*this, parsedJc->getClassName());
-
-    FOR_EACH(i, parsedJc->raw.fieldsCount) {
-        if (IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {
-            const string &n =
-                parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
-            const string &d =
-                parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
-            if (n == fieldName && d == fieldDescriptor) {
-                return parsedJc->sfield.find(i)->second;
-            }
-        }
-    }
-    if (parsedJc->raw.superClass != 0) {
-        return getStaticField(
-            yrt.ma->findJavaClass(parsedJc->getSuperClassName()), fieldName,
-            fieldDescriptor);
-    }
-    return nullptr;
+    return parsedJc->getStaticVar(fieldName, fieldDescriptor);
 }
 
-void Interpreter::putStaticField(JavaClass *parsedJc, const string &fieldName,
-                                 const string &fieldDescriptor, JType *value) {
+void Interpreter::setStaticVar(JavaClass *parsedJc, const string &fieldName,
+                               const string &fieldDescriptor, JType *value) {
     yrt.ma->linkClassIfAbsent(parsedJc->getClassName());
     yrt.ma->initClassIfAbsent(*this, parsedJc->getClassName());
-
-    FOR_EACH(i, parsedJc->raw.fieldsCount) {
-        if (IS_FIELD_STATIC(parsedJc->raw.fields[i].accessFlags)) {
-            const string &n =
-                parsedJc->getString(parsedJc->raw.fields[i].nameIndex);
-            const string &d =
-                parsedJc->getString(parsedJc->raw.fields[i].descriptorIndex);
-            if (n == fieldName && d == fieldDescriptor) {
-                parsedJc->sfield.find(i)->second = value;
-                return;
-            }
-        }
-    }
-    if (parsedJc->raw.superClass != 0) {
-        putStaticField(yrt.ma->findJavaClass(parsedJc->getSuperClassName()),
-                       fieldName, fieldDescriptor, value);
-    }
+    parsedJc->setStaticVar(fieldName, fieldDescriptor, value);
 }
 
 JObject *Interpreter::execNew(const JavaClass *jc, u2 index) {
@@ -1653,11 +1619,11 @@ void Interpreter::pushMethodArguments(vector<int> &parameter,
 //--------------------------------------------------------------------------------
 // Invoke by given name, this method was be used internally
 //--------------------------------------------------------------------------------
-void Interpreter::invokeByName(JavaClass *jc, const string &methodName,
-                               const string &methodDescriptor) {
-    const int returnType = get<0>(peelMethodParameterAndType(methodDescriptor));
+void Interpreter::invokeByName(JavaClass *jc, const string &name,
+                               const string &descriptor) {
+    const int returnType = get<0>(peelMethodParameterAndType(descriptor));
 
-    MethodInfo *m = jc->findMethod(methodName, methodDescriptor);
+    MethodInfo *m = jc->findMethod(name, descriptor);
     CallSite csite = CallSite::makeCallSite(jc, m);
     if (!csite.isCallable()) {
         return;
@@ -1667,8 +1633,8 @@ void Interpreter::invokeByName(JavaClass *jc, const string &methodName,
 
     JType *returnValue{};
     if (IS_METHOD_NATIVE(m->accessFlags)) {
-        returnValue = cloneValue(
-            execNativeMethod(jc->getClassName(), methodName, methodDescriptor));
+        returnValue =
+            cloneValue(execNativeMethod(jc->getClassName(), name, descriptor));
     } else {
         returnValue =
             cloneValue(execByteCode(jc, csite.code, csite.codeLength,
@@ -1685,7 +1651,7 @@ void Interpreter::invokeByName(JavaClass *jc, const string &methodName,
         frames->top()->push(returnValue);
     }
     if (exception.hasUnhandledException()) {
-        exception.extendExceptionStackTrace(methodName);
+        exception.extendExceptionStackTrace(name);
         exception.printStackTrace();
     }
 
@@ -1698,21 +1664,20 @@ void Interpreter::invokeByName(JavaClass *jc, const string &methodName,
 //--------------------------------------------------------------------------------
 // Invoke interface method
 //--------------------------------------------------------------------------------
-void Interpreter::invokeInterface(const JavaClass *jc, const string &methodName,
-                                  const string &methodDescriptor) {
-    auto parameterAndReturnType = peelMethodParameterAndType(methodDescriptor);
+void Interpreter::invokeInterface(const JavaClass *jc, const string &name,
+                                  const string &descriptor) {
+    auto parameterAndReturnType = peelMethodParameterAndType(descriptor);
     const int returnType = get<0>(parameterAndReturnType);
     auto parameter = get<1>(parameterAndReturnType);
 
-    auto csite = findInstanceMethod(jc, methodName, methodDescriptor);
+    auto csite = findInstanceMethod(jc, name, descriptor);
     if (!csite.isCallable()) {
-        csite = findInstanceMethodOnSupers(jc, methodName, methodDescriptor);
+        csite = findInstanceMethodOnSupers(jc, name, descriptor);
         if (!csite.isCallable()) {
-            csite =
-                findMaximallySpecifiedMethod(jc, methodName, methodDescriptor);
+            csite = findMaximallySpecifiedMethod(jc, name, descriptor);
             if (!csite.isCallable()) {
-                throw runtime_error("can not find method " + methodName + " " +
-                                    methodDescriptor);
+                throw runtime_error("can not find method " + name + " " +
+                                    descriptor);
             }
         }
     }
@@ -1725,8 +1690,8 @@ void Interpreter::invokeInterface(const JavaClass *jc, const string &methodName,
 
     JType *returnValue{};
     if (IS_METHOD_NATIVE(csite.accessFlags)) {
-        returnValue = cloneValue(execNativeMethod(
-            csite.jc->getClassName(), methodName, methodDescriptor));
+        returnValue = cloneValue(
+            execNativeMethod(csite.jc->getClassName(), name, descriptor));
     } else {
         returnValue =
             cloneValue(execByteCode(csite.jc, csite.code, csite.codeLength,
@@ -1741,7 +1706,7 @@ void Interpreter::invokeInterface(const JavaClass *jc, const string &methodName,
         frames->top()->grow(1);
         frames->top()->push(returnValue);
         if (exception.hasUnhandledException()) {
-            exception.extendExceptionStackTrace(methodName);
+            exception.extendExceptionStackTrace(name);
         }
     }
 
@@ -1755,9 +1720,8 @@ void Interpreter::invokeInterface(const JavaClass *jc, const string &methodName,
 //--------------------------------------------------------------------------------
 // Invoke instance method; dispatch based on class
 //--------------------------------------------------------------------------------
-void Interpreter::invokeVirtual(const string &methodName,
-                                const string &methodDescriptor) {
-    auto parameterAndReturnType = peelMethodParameterAndType(methodDescriptor);
+void Interpreter::invokeVirtual(const string &name, const string &descriptor) {
+    auto parameterAndReturnType = peelMethodParameterAndType(descriptor);
     const int returnType = get<0>(parameterAndReturnType);
     auto parameter = get<1>(parameterAndReturnType);
 
@@ -1765,16 +1729,14 @@ void Interpreter::invokeVirtual(const string &methodName,
         (JObject *)frames->top()
             ->stackSlots[frames->top()->stackTop - parameter.size() - 1];
 
-    auto csite = findInstanceMethod(thisRef->jc, methodName, methodDescriptor);
+    auto csite = findInstanceMethod(thisRef->jc, name, descriptor);
     if (!csite.isCallable()) {
-        csite = findInstanceMethodOnSupers(thisRef->jc, methodName,
-                                           methodDescriptor);
+        csite = findInstanceMethodOnSupers(thisRef->jc, name, descriptor);
         if (!csite.isCallable()) {
-            csite = findMaximallySpecifiedMethod(thisRef->jc, methodName,
-                                                 methodDescriptor);
+            csite = findMaximallySpecifiedMethod(thisRef->jc, name, descriptor);
             if (!csite.isCallable()) {
-                throw runtime_error("can not find method " + methodName + " " +
-                                    methodDescriptor);
+                throw runtime_error("can not find method " + name + " " +
+                                    descriptor);
             }
         }
     }
@@ -1788,8 +1750,8 @@ void Interpreter::invokeVirtual(const string &methodName,
     JType *returnValue{};
     if (csite.isCallable()) {
         if (IS_METHOD_NATIVE(csite.accessFlags)) {
-            returnValue = cloneValue(execNativeMethod(
-                csite.jc->getClassName(), methodName, methodDescriptor));
+            returnValue = cloneValue(
+                execNativeMethod(csite.jc->getClassName(), name, descriptor));
         } else {
             returnValue =
                 cloneValue(execByteCode(csite.jc, csite.code, csite.codeLength,
@@ -1807,7 +1769,7 @@ void Interpreter::invokeVirtual(const string &methodName,
         frames->top()->grow(1);
         frames->top()->push(returnValue);
         if (exception.hasUnhandledException()) {
-            exception.extendExceptionStackTrace(methodName);
+            exception.extendExceptionStackTrace(name);
         }
     }
 
@@ -1821,23 +1783,22 @@ void Interpreter::invokeVirtual(const string &methodName,
 //  Invoke instance method; special handling for superclass, private,
 //  and instance initialization method invocations
 //--------------------------------------------------------------------------------
-void Interpreter::invokeSpecial(const JavaClass *jc, const string &methodName,
-                                const string &methodDescriptor) {
-    auto parameterAndReturnType = peelMethodParameterAndType(methodDescriptor);
+void Interpreter::invokeSpecial(const JavaClass *jc, const string &name,
+                                const string &descriptor) {
+    auto parameterAndReturnType = peelMethodParameterAndType(descriptor);
     const int returnType = get<0>(parameterAndReturnType);
     auto parameter = get<1>(parameterAndReturnType);
 
-    auto csite = findInstanceMethod(jc, methodName, methodDescriptor);
+    auto csite = findInstanceMethod(jc, name, descriptor);
     if (!csite.isCallable()) {
-        csite = findInstanceMethodOnSupers(jc, methodName, methodDescriptor);
+        csite = findInstanceMethodOnSupers(jc, name, descriptor);
         if (!csite.isCallable()) {
-            csite = findJavaLangObjectMethod(jc, methodName, methodDescriptor);
+            csite = findJavaLangObjectMethod(jc, name, descriptor);
             if (!csite.isCallable()) {
-                csite = findMaximallySpecifiedMethod(jc, methodName,
-                                                     methodDescriptor);
+                csite = findMaximallySpecifiedMethod(jc, name, descriptor);
                 if (!csite.isCallable()) {
-                    throw runtime_error("can not find method " + methodName +
-                                        " " + methodDescriptor);
+                    throw runtime_error("can not find method " + name + " " +
+                                        descriptor);
                 }
             }
         }
@@ -1850,8 +1811,8 @@ void Interpreter::invokeSpecial(const JavaClass *jc, const string &methodName,
     JType *returnValue{};
 
     if (IS_METHOD_NATIVE(csite.accessFlags)) {
-        returnValue = cloneValue(execNativeMethod(
-            csite.jc->getClassName(), methodName, methodDescriptor));
+        returnValue = cloneValue(
+            execNativeMethod(csite.jc->getClassName(), name, descriptor));
     } else {
         returnValue =
             cloneValue(execByteCode(csite.jc, csite.code, csite.codeLength,
@@ -1865,7 +1826,7 @@ void Interpreter::invokeSpecial(const JavaClass *jc, const string &methodName,
         frames->top()->grow(1);
         frames->top()->push(returnValue);
         if (exception.hasUnhandledException()) {
-            exception.extendExceptionStackTrace(methodName);
+            exception.extendExceptionStackTrace(name);
         }
     }
 
@@ -1876,8 +1837,8 @@ void Interpreter::invokeSpecial(const JavaClass *jc, const string &methodName,
     }
 }
 
-void Interpreter::invokeStatic(const JavaClass *jc, const string &methodName,
-                               const string &methodDescriptor) {
+void Interpreter::invokeStatic(const JavaClass *jc, const string &name,
+                               const string &descriptor) {
     // Get instance method name and descriptor from CONSTANT_Methodref
     // locating by index and get interface method parameter and return value
     // descriptor
@@ -1885,19 +1846,17 @@ void Interpreter::invokeStatic(const JavaClass *jc, const string &methodName,
     yrt.ma->initClassIfAbsent(*this,
                               const_cast<JavaClass *>(jc)->getClassName());
 
-    auto parameterAndReturnType = peelMethodParameterAndType(methodDescriptor);
+    auto parameterAndReturnType = peelMethodParameterAndType(descriptor);
     const int returnType = get<0>(parameterAndReturnType);
     auto parameter = get<1>(parameterAndReturnType);
 
-    auto csite = CallSite::makeCallSite(
-        jc, jc->findMethod(methodName, methodDescriptor));
+    auto csite = CallSite::makeCallSite(jc, jc->findMethod(name, descriptor));
     if (!csite.isCallable()) {
-        throw runtime_error("can not find method " + methodName + " " +
-                            methodDescriptor);
+        throw runtime_error("can not find method " + name + " " + descriptor);
     }
     assert(IS_METHOD_STATIC(csite.accessFlags) == true);
     assert(IS_METHOD_ABSTRACT(csite.accessFlags) == false);
-    assert("<init>" != methodName);
+    assert("<init>" != name);
 
     if (IS_METHOD_NATIVE(csite.accessFlags)) {
         csite.maxLocal = csite.maxStack = parameter.size();
@@ -1906,8 +1865,8 @@ void Interpreter::invokeStatic(const JavaClass *jc, const string &methodName,
     pushMethodArguments(parameter, false);
     JType *returnValue{};
     if (IS_METHOD_NATIVE(csite.accessFlags)) {
-        returnValue = cloneValue(execNativeMethod(
-            csite.jc->getClassName(), methodName, methodDescriptor));
+        returnValue = cloneValue(
+            execNativeMethod(csite.jc->getClassName(), name, descriptor));
     } else {
         returnValue =
             cloneValue(execByteCode(csite.jc, csite.code, csite.codeLength,
@@ -1922,7 +1881,7 @@ void Interpreter::invokeStatic(const JavaClass *jc, const string &methodName,
         frames->top()->grow(1);
         frames->top()->push(returnValue);
         if (exception.hasUnhandledException()) {
-            exception.extendExceptionStackTrace(methodName);
+            exception.extendExceptionStackTrace(name);
         }
     }
 

@@ -31,7 +31,7 @@
 //--------------------------------------------------------------------------------
 #define FOR_EACH(iter, var) for (decltype(var) iter = 0; iter < var; iter++)
 #define SHOULD_NOT_REACH_HERE                                     \
-    assert(true,                                                  \
+    assert(true &&                                                \
            "Program should not reach here, it's a vital logical " \
            "error\n");
 

@@ -1,7 +1,9 @@
 #include <cassert>
 #include <iostream>
 #include <vector>
+#include "../classfile/AccessFlag.h"
 #include "../misc/Debug.h"
+#include "../runtime/RuntimeEnv.h"
 #include "../vm/YVM.h"
 #include "JavaClass.h"
 #include "MethodArea.h"
@@ -18,7 +20,7 @@ JavaClass::JavaClass(const string& classFilePath) : reader(classFilePath) {
 }
 
 JavaClass::~JavaClass() {
-    for (auto& i : sfield) {
+    for (auto& i : staticVars) {
         delete i.second;
     }
 }
@@ -47,6 +49,42 @@ MethodInfo* JavaClass::findMethod(const string& methodName,
         if (mn == methodName && md == methodDescriptor) {
             return &raw.methods[i];
         }
+    }
+    return nullptr;
+}
+
+bool JavaClass::setStaticVar(const string& name, const string& descriptor,
+                             JType* value) {
+    FOR_EACH(i, raw.fieldsCount) {
+        if (IS_FIELD_STATIC(raw.fields[i].accessFlags)) {
+            auto n = getString(raw.fields[i].nameIndex);
+            auto d = getString(raw.fields[i].descriptorIndex);
+            if (n == name && d == descriptor) {
+                staticVars.find(i)->second = value;
+                return true;
+            }
+        }
+    }
+    if (raw.superClass != 0) {
+        return yrt.ma->findJavaClass(getSuperClassName())
+            ->setStaticVar(name, descriptor, value);
+    }
+    return false;
+}
+
+JType* JavaClass::getStaticVar(const string& name, const string& descriptor) {
+    FOR_EACH(i, raw.fieldsCount) {
+        if (IS_FIELD_STATIC(raw.fields[i].accessFlags)) {
+            auto n = getString(raw.fields[i].nameIndex);
+            auto d = getString(raw.fields[i].descriptorIndex);
+            if (n == name && d == descriptor) {
+                return staticVars.find(i)->second;
+            }
+        }
+    }
+    if (raw.superClass != 0) {
+        return yrt.ma->findJavaClass(getSuperClassName())
+            ->getStaticVar(name, descriptor);
     }
     return nullptr;
 }

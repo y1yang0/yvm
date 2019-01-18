@@ -99,7 +99,8 @@ void MethodArea::linkJavaClass(const string& jcName) {
                     }
                 }
 
-                javaClass->sfield.insert(make_pair(fieldOffset, fieldObject));
+                javaClass->staticVars.insert(
+                    make_pair(fieldOffset, fieldObject));
             }
         } else if (IS_FIELD_REF_ARRAY(descriptor)) {
             // Special handling for field whose type is array. We create a null
@@ -110,7 +111,7 @@ void MethodArea::linkJavaClass(const string& jcName) {
             if (IS_FIELD_STATIC(
                     javaClass->raw.fields[fieldOffset].accessFlags)) {
                 JArray* uninitializedArray = nullptr;
-                javaClass->sfield.insert(
+                javaClass->staticVars.insert(
                     make_pair(fieldOffset, uninitializedArray));
             }
         } else {
@@ -183,7 +184,8 @@ void MethodArea::linkJavaClass(const string& jcName) {
                     }
                 }
 
-                javaClass->sfield.insert(make_pair(fieldOffset, basicField));
+                javaClass->staticVars.insert(
+                    make_pair(fieldOffset, basicField));
             }
         }
     }

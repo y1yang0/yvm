@@ -74,8 +74,12 @@ public:
 
     forceinline u2 getAccessFlag() const { return raw.accessFlags; }
 
+public:
     MethodInfo* findMethod(const string& methodName,
                            const string& methodDescriptor) const;
+    bool setStaticVar(const string& name, const string& descriptor,
+                      JType* value);
+    JType* getStaticVar(const string& name, const string& descriptor);
 
 private:
     void parseClassFile();
@@ -95,7 +99,7 @@ private:
 private:
     ClassFile raw{};
     FileReader reader;
-    map<size_t, JType*> sfield;
+    map<size_t, JType*> staticVars;
 };
 
 #endif  // YVM_JAVACLASS_H
