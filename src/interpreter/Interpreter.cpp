@@ -7,6 +7,7 @@
 #include "CallSite.h"
 #include "Interpreter.hpp"
 #include "MethodResolve.h"
+#include "SymbolicRef.h"
 
 #include <cassert>
 #include <cmath>
@@ -1099,25 +1100,31 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
             case op_getstatic: {
                 const u2 index = consumeU2(code, op);
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
-                JType *field = cloneValue(getStaticVar(get<0>(symbolicRef),
-                                                       get<1>(symbolicRef),
-                                                       get<2>(symbolicRef)));
+                yrt.ma->linkClassIfAbsent(symbolicRef.jc->getClassName());
+                yrt.ma->initClassIfAbsent(*this,
+                                          symbolicRef.jc->getClassName());
+                JType *field = symbolicRef.jc->getStaticVar(
+                    symbolicRef.name, symbolicRef.descriptor);
                 frames->top()->push(field);
             } break;
             case op_putstatic: {
                 u2 index = consumeU2(code, op);
                 JType *value = frames->top()->pop<JType>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
-                setStaticVar(get<0>(symbolicRef), get<1>(symbolicRef),
-                             get<2>(symbolicRef), value);
+
+                yrt.ma->linkClassIfAbsent(symbolicRef.jc->getClassName());
+                yrt.ma->initClassIfAbsent(*this,
+                                          symbolicRef.jc->getClassName());
+                symbolicRef.jc->setStaticVar(symbolicRef.name,
+                                             symbolicRef.descriptor, value);
             } break;
             case op_getfield: {
                 u2 index = consumeU2(code, op);
                 JObject *objectref = frames->top()->pop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
                 JType *field = cloneValue(yrt.jheap->getFieldByName(
-                    get<0>(symbolicRef), get<1>(symbolicRef),
-                    get<2>(symbolicRef), objectref));
+                    symbolicRef.jc, symbolicRef.name, symbolicRef.descriptor,
+                    objectref));
                 frames->top()->push(field);
 
             } break;
@@ -1126,9 +1133,9 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 JType *value = frames->top()->pop<JType>();
                 JObject *objectref = frames->top()->pop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
-                yrt.jheap->putFieldByName(
-                    get<0>(symbolicRef), get<1>(symbolicRef),
-                    get<2>(symbolicRef), objectref, value);
+                yrt.jheap->putFieldByName(symbolicRef.jc, symbolicRef.name,
+                                          symbolicRef.descriptor, objectref,
+                                          value);
 
             } break;
             case op_invokevirtual: {
@@ -1138,15 +1145,14 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
 
                 auto symbolicRef = parseMethodSymbolicReference(jc, index);
 
-                if (get<1>(symbolicRef) == "<init>") {
+                if (symbolicRef.name == "<init>") {
                     runtime_error(
                         "invoking method should not be instance "
                         "initialization method\n");
                 }
                 if (!IS_SIGNATURE_POLYMORPHIC_METHOD(
-                        get<0>(symbolicRef)->getClassName(),
-                        get<1>(symbolicRef))) {
-                    invokeVirtual(get<1>(symbolicRef), get<2>(symbolicRef));
+                        symbolicRef.jc->getClassName(), symbolicRef.name)) {
+                    invokeVirtual(symbolicRef.name, symbolicRef.descriptor);
                 } else {
                     // TODO:TO BE IMPLEMENTED
                 }
@@ -1154,7 +1160,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
             } break;
             case op_invokespecial: {
                 const u2 index = consumeU2(code, op);
-                tuple<JavaClass *, string, string> symbolicRef;
+                SymbolicRef symbolicRef;
 
                 if (typeid(*jc->raw.constPoolInfo[index]) ==
                     typeid(CONSTANT_InterfaceMethodref)) {
@@ -1169,8 +1175,8 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
 
                 // If all of the following are true, let C be the direct
                 // superclass of the current class :
-                JavaClass *symbolicRefClass = get<0>(symbolicRef);
-                if ("<init>" != get<1>(symbolicRef)) {
+                JavaClass *symbolicRefClass = symbolicRef.jc;
+                if ("<init>" != symbolicRef.name) {
                     if (!IS_CLASS_INTERFACE(
                             symbolicRefClass->raw.accessFlags)) {
                         if (symbolicRefClass->getClassName() ==
@@ -1178,16 +1184,16 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                             if (IS_CLASS_SUPER(jc->raw.accessFlags)) {
                                 invokeSpecial(yrt.ma->findJavaClass(
                                                   jc->getSuperClassName()),
-                                              get<1>(symbolicRef),
-                                              get<2>(symbolicRef));
+                                              symbolicRef.name,
+                                              symbolicRef.descriptor);
                                 break;
                             }
                         }
                     }
                 }
                 // Otherwise let C be the symbolic reference class
-                invokeSpecial(get<0>(symbolicRef), get<1>(symbolicRef),
-                              get<2>(symbolicRef));
+                invokeSpecial(symbolicRef.jc, symbolicRef.name,
+                              symbolicRef.descriptor);
             } break;
             case op_invokestatic: {
                 // Invoke a class (static) method
@@ -1197,13 +1203,13 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                     typeid(CONSTANT_InterfaceMethodref)) {
                     auto symbolicRef =
                         parseInterfaceMethodSymbolicReference(jc, index);
-                    invokeStatic(get<0>(symbolicRef), get<1>(symbolicRef),
-                                 get<2>(symbolicRef));
+                    invokeStatic(symbolicRef.jc, symbolicRef.name,
+                                 symbolicRef.descriptor);
                 } else if (typeid(*jc->raw.constPoolInfo[index]) ==
                            typeid(CONSTANT_Methodref)) {
                     auto symbolicRef = parseMethodSymbolicReference(jc, index);
-                    invokeStatic(get<0>(symbolicRef), get<1>(symbolicRef),
-                                 get<2>(symbolicRef));
+                    invokeStatic(symbolicRef.jc, symbolicRef.name,
+                                 symbolicRef.descriptor);
                 } else {
                     SHOULD_NOT_REACH_HERE
                 }
@@ -1217,8 +1223,8 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                     typeid(CONSTANT_InterfaceMethodref)) {
                     auto symbolicRef =
                         parseInterfaceMethodSymbolicReference(jc, index);
-                    invokeInterface(get<0>(symbolicRef), get<1>(symbolicRef),
-                                    get<2>(symbolicRef));
+                    invokeInterface(symbolicRef.jc, symbolicRef.name,
+                                    symbolicRef.descriptor);
                 }
             } break;
             case op_invokedynamic: {
@@ -1249,8 +1255,8 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 if (count->val < 0) {
                     throw runtime_error("negative array size");
                 }
-                JArray *arrayref = yrt.jheap->createObjectArray(
-                    *get<0>(symbolicRef), count->val);
+                JArray *arrayref =
+                    yrt.jheap->createObjectArray(*symbolicRef.jc, count->val);
 
                 frames->top()->push(arrayref);
             } break;
@@ -1447,20 +1453,6 @@ bool Interpreter::handleException(const JavaClass *jc, u2 exceptLen,
     }
 
     return false;
-}
-
-JType *Interpreter::getStaticVar(JavaClass *parsedJc, const string &fieldName,
-                                 const string &fieldDescriptor) {
-    yrt.ma->linkClassIfAbsent(parsedJc->getClassName());
-    yrt.ma->initClassIfAbsent(*this, parsedJc->getClassName());
-    return parsedJc->getStaticVar(fieldName, fieldDescriptor);
-}
-
-void Interpreter::setStaticVar(JavaClass *parsedJc, const string &fieldName,
-                               const string &fieldDescriptor, JType *value) {
-    yrt.ma->linkClassIfAbsent(parsedJc->getClassName());
-    yrt.ma->initClassIfAbsent(*this, parsedJc->getClassName());
-    parsedJc->setStaticVar(fieldName, fieldDescriptor, value);
 }
 
 JObject *Interpreter::execNew(const JavaClass *jc, u2 index) {

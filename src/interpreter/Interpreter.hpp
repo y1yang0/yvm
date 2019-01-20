@@ -34,11 +34,6 @@ public:
     void invokeVirtual(const string& name, const string& descriptor);
 
 private:
-    JType* getStaticVar(JavaClass* parsedJc, const string& fieldName,
-                        const string& fieldDescriptor);
-    void setStaticVar(JavaClass* parsedJc, const string& fieldName,
-                      const string& fieldDescriptor, JType* value);
-
     bool checkInstanceof(const JavaClass* jc, u2 index, JType* objectref);
 
     JObject* execNew(const JavaClass* jc, u2 index);
