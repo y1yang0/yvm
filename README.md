@@ -1,4 +1,4 @@
- <p align="center"><img height="60%" width="80%" src="./public/moonight.png"></p>
+ <p align="center"><img height="60%" width="80%" src="./docs/moonight.png"></p>
 
 [中文](https://github.com/racaljk/yvm/blob/master/README.ZH.md) | [English](https://github.com/racaljk/yvm/blob/master/README.md)
 | [![Build Status](https://travis-ci.org/racaljk/yvm.svg?branch=master)](https://travis-ci.org/racaljk/yvm) | [![Codacy Badge](https://api.codacy.com/project/badge/Grade/233025ae523846109922307106d634ab)](https://www.codacy.com/app/racaljk/yvm?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=racaljk/yvm&amp;utm_campaign=Badge_Grade) | ![](https://img.shields.io/badge/compiler-MSVC2017-brightgreen.svg) | ![](https://img.shields.io/badge/compiler-gcc7.0-brightgreen.svg)
