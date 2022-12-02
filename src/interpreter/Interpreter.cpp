@@ -693,10 +693,10 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 binaryArithmetic<JLong>(modulus<>());
             } break;
             case op_frem: {
-                binaryArithmetic<JFloat>(std::fmod<float, float>);
+                fmodArithmetic<JFloat>();
             } break;
             case op_drem: {
-                binaryArithmetic<JFloat>(std::fmod<double, double>);
+                fmodArithmetic<JFloat>();
             } break;
             case op_ineg: {
                 unaryArithmetic<JInt>(negate<>());

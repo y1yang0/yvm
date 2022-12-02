@@ -69,5 +69,5 @@ void Slots::grow(int size) {
     }
     delete[] stackSlots;
     this->stackSlots = newStack;
-    (int)this->maxStack = maxStack + size;
+    this->maxStack = maxStack + size;
 }

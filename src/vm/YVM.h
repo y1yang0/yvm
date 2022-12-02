@@ -14,7 +14,7 @@ struct YVM {
     static bool linkClass(const std::string& name);
     static bool initClass(Interpreter& exec, const std::string& name);
     static void callMain(const std::string& name);
-    static void warmUp(const std::vector<std::string>& libPaths);
+    static void initialize(const std::string& libPath);
 
     class ExecutorThreadPool : public ThreadPool {
     public:

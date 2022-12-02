@@ -2,16 +2,10 @@
 #include "JavaClass.h"
 #include "MethodArea.h"
 
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/filesystem.hpp>
-
 using namespace std;
 
-MethodArea::MethodArea(const vector<string>& libPaths) {
-    for (const auto& path : libPaths) {
-        searchPaths.push_back(path);
-    }
+MethodArea::MethodArea(const string& path) {
+    searchPaths.push_back(path);
 }
 
 MethodArea::~MethodArea() {
@@ -64,6 +58,7 @@ void MethodArea::linkJavaClass(const string& jcName) {
     lock_guard<recursive_mutex> lockMA(maMutex);
 
     JavaClass* javaClass = findJavaClass(jcName);
+    assert(javaClass != NULL && "sanity check");
     FOR_EACH(fieldOffset, javaClass->raw.fieldsCount) {
         const string& descriptor = javaClass->getString(
             javaClass->raw.fields[fieldOffset].descriptorIndex);

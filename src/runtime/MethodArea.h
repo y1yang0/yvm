@@ -27,7 +27,7 @@ class MethodArea {
     friend class ConcurrentGC;
 
 public:
-    MethodArea(const vector<string>& libPaths);
+    MethodArea(const string& path);
     ~MethodArea();
 
     JavaClass* findJavaClass(const string& jcName);

@@ -3,7 +3,7 @@
 #include "MethodArea.h"
 #include "RuntimeEnv.h"
 
-RuntimeEnv yrt;
+RuntimeEnv yrt; // yvm runtime
 
 RuntimeEnv::RuntimeEnv():ma(nullptr) {
     jheap = new JavaHeap;

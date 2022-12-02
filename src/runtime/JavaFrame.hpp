@@ -59,7 +59,7 @@ private:
     JType **localSlots;
     JType **stackSlots;
     const int maxLocal;
-    const int maxStack;
+    int maxStack;
     int stackTop;
     Slots *next;
 };

@@ -933,6 +933,7 @@ TargetInfo* JavaClass::determineTargetType(u1 tag) {
         return t;
     }
     SHOULD_NOT_REACH_HERE
+    return nullptr;
 }
 
 Annotation JavaClass::readToAnnotationStructure() {
@@ -994,4 +995,5 @@ ElementValue* JavaClass::readToElementValueStructure() {
     }
 
     SHOULD_NOT_REACH_HERE
+    return nullptr;
 }

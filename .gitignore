@@ -43,3 +43,12 @@ src/yvm.vcxproj.user
 /test/ydk
 /src/.vs
 /cmake-build-debug-llvm-clang
+cmake_install.cmake
+build/**
+CMakeFiles/**
+CMakeCache.txt
+Makefile
+**.cmake
+Testing/**
+yvm
+.vscode

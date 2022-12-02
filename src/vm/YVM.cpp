@@ -107,10 +107,10 @@ void YVM::callMain(const std::string& name) {
     return;
 }
 
-// Warm up yvm. This function would register native methods into jvm before
+// Initialize yvm. This function would register native methods into jvm before
 // actual code execution, and also initialize MethodArea with given java runtime
 // paths, which is the core component of this jvm
-void YVM::warmUp(const std::vector<std::string>& libPaths) {
+void YVM::initialize(const std::string& libPath) {
     int p = sizeof nativeFunctionTable / sizeof nativeFunctionTable[0];
     for (int i = 0; i < p; i++) {
         registerNativeMethod(
@@ -120,5 +120,5 @@ void YVM::warmUp(const std::vector<std::string>& libPaths) {
                 const_cast<char*>(nativeFunctionTable[i][3])));
     }
 
-    yrt.ma = new MethodArea(libPaths);
+    yrt.ma = new MethodArea(libPath);
 }
