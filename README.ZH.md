@@ -1,11 +1,11 @@
 # YVM
-# 简介
+## 简介
 
 > [中文](./README.ZH.md) | [English](./README.md)
 
 YVM是用C++写的一个玩具Java虚拟机，现在支持Java大部分功能，以及一个基于标记清除算法的并发垃圾回收器。YVM的实现遵守[Java虚拟机规范 8](https://docs.oracle.com/javase/specs/jvms/se8/jvms8.pdf)。时间有限没有为所有组件补充测试，另外Java语言的特性并没有完全覆盖，但是目前足够让我开心了，就这样了。如果你发现了bug，或者感兴趣想参与，请直接开Issue反馈或者提Pull Request贡献代码，谢谢。
 
-# 构建和运行
+## 构建和运行
 ```bash
 # Note, C++14 is required at least.
 $ cd yvm
@@ -21,7 +21,7 @@ $ ./yvm --lib=/path/to/yvm/bytecode ydk.test.QuickSort
 0 1 1 1 1 1 4 4 4 5 6 7 7 9 9 9 12 74 96 98 8989 
 ```
 
-# 已实现特性
+## 已实现特性
 高级特性逐步支持中，可以开Issue提议或者直接PR。已实现的预言特性主要有下面这些：
 + Java基本算术运算，流程控制语句，面向对象。
 + [RTTI](./javaclass/ydk/test/InstanceofTest.java)
@@ -35,11 +35,11 @@ $ ./yvm --lib=/path/to/yvm/bytecode ydk.test.QuickSort
 
 示例Java小程序参见[here](javaclass/ydk/test/).
 
-# Hacking指南!
-## 1. 工作原理
+## 开发指南
+### 1. 工作原理
 1. `loadJavaClass("org.example.Foo")`
     - findJavaClass查找已加载的类
-    - 查找失败，则从--lib路径加载，加载后存放到MethodArea
+    - 查找失败，则从--lib路径加载，加载后存放到ClassSpace
 2. `linkJavaClass("org.example.Foo")`
     - 默认值初始化static字段
 3. `initJavaClass("org.example.Foo")`
@@ -51,7 +51,7 @@ $ ./yvm --lib=/path/to/yvm/bytecode ydk.test.QuickSort
         - 在模拟的栈上解释执行字节码
         - 如果遇到`invoke*`系列字节码，则递归调用`execByteCode`
 
-## 2. 代码结构
+### 2. 代码结构
 ```bash
 root@ubuntu:~/yvm/src$ tree .
 .
@@ -90,8 +90,8 @@ root@ubuntu:~/yvm/src$ tree .
 │   ├── JavaHeap.cpp        # 虚拟机堆，管理对象
 │   ├── JavaHeap.hpp
 │   ├── JavaType.h          # 虚拟机中的Java类表示
-│   ├── MethodArea.cpp      # 方法区，管理JavaClass
-│   ├── MethodArea.h
+│   ├── ClassSpace.cpp      # 方法区，管理JavaClass
+│   ├── ClassSpace.h
 │   ├── ObjectMonitor.cpp   # synchronized语义实现
 │   ├── ObjectMonitor.h
 │   ├── RuntimeEnv.cpp      # 运行时结构定义
@@ -103,5 +103,5 @@ root@ubuntu:~/yvm/src$ tree .
 ```
 Wiki和源码中有很多详细的开发文档，如果想探索关于`YVM`的更多内容，请移步浏览.
 
-# 开源协议
+## 开源协议
 所有代码基于[MIT](./LICENSE)协议

@@ -1,11 +1,11 @@
 # YVM
-# Introduction
+## Introduction
 
 > [中文](./README.ZH.md) | [English](./README.md)
 
 This is a toy Java virtual machine(JVM) that supports many of Java's language features, it also comes with an experimental `mark-sweep` garbage collector. The implementation of this JVM follows the [Java Virtual Machine Specification 8](https://docs.oracle.com/javase/specs/jvms/se8/jvms8.pdf). I don't have enough time to write unit tests for each component, and I don't implement the full Java language features, but as far as pleasing myself, I think it's enough. If you find any bugs, or you want to implement any missing features, you can create an issue or pull request, respectively.
 
-# Build and run
+## Build and Run
 ```bash
 # Note, C++14 is required at least.
 $ cd yvm
@@ -21,7 +21,7 @@ $ ./yvm --lib=/path/to/yvm/bytecode ydk.test.QuickSort
 0 1 1 1 1 1 4 4 4 5 6 7 7 9 9 9 12 74 96 98 8989 
 ```
 
-# Implemented features
+## Implemented Features
 Advanced language features will support later, you can also create PR to contribute your awesome code.
 Implemented features are as follows:
 + Java arithmetic, flow control, object-oriented programming(virtual method, inherit,etc.)
@@ -36,11 +36,11 @@ Implemented features are as follows:
 
 You can find some examples at [here](javaclass/ydk/test/).
 
-# Hacking it!
-## 1. How does it work
+## Hacking Guide
+### 1. How does it work
 1. `loadJavaClass("org.example.Foo")`
     - findJavaClass if present
-    - Otherwise, loadJavaClass from --lib, all classes is stored in MethodArea
+    - Otherwise, loadJavaClass from --lib, all classes is stored in ClassSpace
 2. `linkJavaClass("org.example.Foo")`
     - Initialize static fields with default value
 3. `initJavaClass("org.example.Foo")`
@@ -52,7 +52,7 @@ You can find some examples at [here](javaclass/ydk/test/).
         - Interprete every bytecode on simulated stack
         - Recursively call `execByteCodede` when performing `invoke*` bytecodes
 
-## 2. Code structure
+### 2. Code structure
 ```bash
 root@ubuntu:~/yvm/src$ tree .
 .
@@ -91,8 +91,8 @@ root@ubuntu:~/yvm/src$ tree .
 │   ├── JavaHeap.cpp        # Java heap, where objects are located
 │   ├── JavaHeap.hpp
 │   ├── JavaType.h          # Java type definitions
-│   ├── MethodArea.cpp      # Store JavaClass
-│   ├── MethodArea.h
+│   ├── ClassSpace.cpp      # Store JavaClass
+│   ├── ClassSpace.h
 │   ├── ObjectMonitor.cpp   # synchronized(){} block implementation
 │   ├── ObjectMonitor.h
 │   ├── RuntimeEnv.cpp      # Runtime structures
@@ -104,5 +104,5 @@ root@ubuntu:~/yvm/src$ tree .
 ```
 See its wiki for more development details.
 
-# License
+## License
 Code licensed under the MIT License.

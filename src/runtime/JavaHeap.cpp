@@ -1,3 +1,26 @@
+// MIT License
+//
+// Copyright (c) 2017 Yi Yang <kelthuzadx@qq.com>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+
 #include "../classfile/AccessFlag.h"
 #include "JavaClass.h"
 #include "JavaHeap.hpp"
@@ -16,7 +39,7 @@ void JavaHeap::createSuperFields(const JavaClass& javaClass,
 
     if (javaClass.raw.superClass != 0) {
         const JavaClass* superClass =
-            yrt.ma->findJavaClass(javaClass.getSuperClassName());
+            runtime.cs->findJavaClass(javaClass.getSuperClassName());
         FOR_EACH(i, superClass->raw.fieldsCount) {
             // Note that we have already created static field variables when the
             // javaClass is linked into jvm (YVM::linkClass()) so we ignore all
@@ -194,7 +217,7 @@ JType* JavaHeap::getFieldByNameImpl(const JavaClass* desireLookup,
     if (currentLookup->raw.superClass != 0) {
         return getFieldByNameImpl(
             desireLookup,
-            yrt.ma->findJavaClass(currentLookup->getSuperClassName()), name,
+            runtime.cs->findJavaClass(currentLookup->getSuperClassName()), name,
             descriptor, object, offset + howManyNonStaticFields);
     }
     return nullptr;
@@ -223,7 +246,7 @@ void JavaHeap::putFieldByNameImpl(const JavaClass* desireLookup,
     if (currentLookup->raw.superClass != 0) {
         putFieldByNameImpl(
             desireLookup,
-            yrt.ma->findJavaClass(currentLookup->getSuperClassName()), name,
+            runtime.cs->findJavaClass(currentLookup->getSuperClassName()), name,
             descriptor, object, value, offset + howManyNonStaticFields);
     }
 }

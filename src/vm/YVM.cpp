@@ -1,13 +1,37 @@
+// MIT License
+//
+// Copyright (c) 2017 Yi Yang <kelthuzadx@qq.com>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+
+#include "YVM.h"
+
 #include "../gc/GC.h"
 #include "../misc/Debug.h"
 #include "../misc/NativeMethod.h"
 #include "../misc/Option.h"
 #include "../misc/Utils.h"
+#include "../runtime/ClassSpace.h"
 #include "../runtime/JavaClass.h"
 #include "../runtime/JavaHeap.hpp"
-#include "../runtime/MethodArea.h"
 #include "../runtime/RuntimeEnv.h"
-#include "YVM.h"
 
 YVM::ExecutorThreadPool YVM::executor;
 
@@ -43,38 +67,8 @@ YVM::YVM() {
 #endif
 }
 
-// Load given class into jvm
-bool YVM::loadClass(const std::string& name) {
-    return yrt.ma->loadJavaClass(name);
-}
-
-// link given class into jvm. A linkage exception would be occurred if given
-// class not existed before linking
-bool YVM::linkClass(const std::string& name) {
-    if (!yrt.ma->findJavaClass(name)) {
-        // It's not an logical endurable error, so we throw and linkage
-        // exception to denote it;
-        throw std::runtime_error(
-            "LinkageException: Class haven't been loaded into YVM yet!");
-    }
-    yrt.ma->linkJavaClass(name);
-    return true;
-}
-
-// Initialize given class.
-bool YVM::initClass(Interpreter& exec, const std::string& name) {
-    if (!yrt.ma->findJavaClass(name)) {
-        // It's not an logical endurable error, so we throw and linkage
-        // exception to denote it;
-        throw std::runtime_error(
-            "InitializationException: Class haven't been loaded into YVM yet!");
-    }
-    yrt.ma->initClassIfAbsent(exec, name);
-    return true;
-}
-
 // Call java's "public static void main(String...)" method in the newly created
-// main thread. It also responsible for releasing reousrces and terminating
+// main thread. It is also responsible for releasing resources and terminating
 // virtual machine after main method executing accomplished
 void YVM::callMain(const std::string& name) {
     executor.initialize(1);
@@ -84,11 +78,11 @@ void YVM::callMain(const std::string& name) {
         std::cout << "[Main Executing Thread] ID:" << std::this_thread::get_id()
                   << "\n";
 #endif
-        auto* jc = yrt.ma->loadClassIfAbsent(name);
-        yrt.ma->linkClassIfAbsent(name);
+        auto* jc = runtime.cs->loadClassIfAbsent(name);
+        runtime.cs->linkClassIfAbsent(name);
         // For each execution thread, we have a code execution engine
         Interpreter exec;
-        yrt.ma->initClassIfAbsent(exec, name);
+        runtime.cs->initClassIfAbsent(exec, name);
         exec.invokeByName(jc, "main", "([Ljava/lang/String;)V");
     });
 
@@ -101,14 +95,11 @@ void YVM::callMain(const std::string& name) {
 
     // Close garbage collection. This is optional since operation system would
     // release all resources when process exited
-    yrt.gc->terminateGC();
-
-    // Terminate virtual machine normally
-    return;
+    runtime.gc->terminateGC();
 }
 
 // Initialize yvm. This function would register native methods into jvm before
-// actual code execution, and also initialize MethodArea with given java runtime
+// actual code execution, and also initialize ClassSpace with given java runtime
 // paths, which is the core component of this jvm
 void YVM::initialize(const std::string& libPath) {
     int p = sizeof nativeFunctionTable / sizeof nativeFunctionTable[0];
@@ -120,5 +111,5 @@ void YVM::initialize(const std::string& libPath) {
                 const_cast<char*>(nativeFunctionTable[i][3])));
     }
 
-    yrt.ma = new MethodArea(libPath);
+    runtime.cs = new ClassSpace(libPath);
 }

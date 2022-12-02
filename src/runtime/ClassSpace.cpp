@@ -1,20 +1,44 @@
+// MIT License
+//
+// Copyright (c) 2017 Yi Yang <kelthuzadx@qq.com>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+
+#include "ClassSpace.h"
+
 #include "../classfile/AccessFlag.h"
 #include "JavaClass.h"
-#include "MethodArea.h"
 
 using namespace std;
 
-MethodArea::MethodArea(const string& path) {
+ClassSpace::ClassSpace(const string& path) {
     searchPaths.push_back(path);
 }
 
-MethodArea::~MethodArea() {
+ClassSpace::~ClassSpace() {
     for (auto& x : classTable) {
         delete x.second;
     }
 }
 
-JavaClass* MethodArea::findJavaClass(const string& jcName) {
+JavaClass* ClassSpace::findJavaClass(const string& jcName) {
     lock_guard<recursive_mutex> lockMA(maMutex);
 
     const auto pos = classTable.find(jcName);
@@ -24,7 +48,7 @@ JavaClass* MethodArea::findJavaClass(const string& jcName) {
     return nullptr;
 }
 
-bool MethodArea::loadJavaClass(const string& jcName) {
+bool ClassSpace::loadJavaClass(const string& jcName) {
     lock_guard<recursive_mutex> lockMA(maMutex);
 
     auto path = parseNameToPath(jcName);
@@ -54,7 +78,7 @@ bool MethodArea::loadJavaClass(const string& jcName) {
     return false;
 }
 
-void MethodArea::linkJavaClass(const string& jcName) {
+void ClassSpace::linkJavaClass(const string& jcName) {
     lock_guard<recursive_mutex> lockMA(maMutex);
 
     JavaClass* javaClass = findJavaClass(jcName);
@@ -82,13 +106,13 @@ void MethodArea::linkJavaClass(const string& jcName) {
                                           ->constantValueIndex])
                                     ->stringIndex);
                             size_t strLen = constantStr.length();
-                            fieldObject = yrt.jheap->createObject(
+                            fieldObject = runtime.heap->createObject(
                                 *loadClassIfAbsent("java/lang/String"));
-                            fieldObject = yrt.jheap->createObject(
+                            fieldObject = runtime.heap->createObject(
                                 *loadClassIfAbsent("java/lang/String"));
-                            yrt.jheap->putFieldByOffset(
+                            runtime.heap->putFieldByOffset(
                                 *fieldObject, 0,
-                                yrt.jheap->createCharArray(constantStr,
+                                runtime.heap->createCharArray(constantStr,
                                                            strLen));
                         }
                     }
@@ -187,7 +211,7 @@ void MethodArea::linkJavaClass(const string& jcName) {
     linkedClasses.insert(javaClass->getClassName());
 }
 
-void MethodArea::initJavaClass(Interpreter& exec, const string& jcName) {
+void ClassSpace::initJavaClass(Interpreter& exec, const string& jcName) {
     lock_guard<recursive_mutex> lockMA(maMutex);
     initedClasses.insert(jcName);
     auto* jc = findJavaClass(jcName);
@@ -196,7 +220,7 @@ void MethodArea::initJavaClass(Interpreter& exec, const string& jcName) {
     }
 }
 
-JavaClass* MethodArea::loadClassIfAbsent(const string& jcName) {
+JavaClass* ClassSpace::loadClassIfAbsent(const string& jcName) {
     lock_guard<recursive_mutex> lockMA(maMutex);
 
     JavaClass* jc = findJavaClass(jcName);
@@ -207,7 +231,7 @@ JavaClass* MethodArea::loadClassIfAbsent(const string& jcName) {
     return findJavaClass(jcName);
 }
 
-void MethodArea::linkClassIfAbsent(const string& jcName) {
+void ClassSpace::linkClassIfAbsent(const string& jcName) {
     lock_guard<recursive_mutex> lockMA(maMutex);
 
     bool linked = false;
@@ -221,7 +245,7 @@ void MethodArea::linkClassIfAbsent(const string& jcName) {
     }
 }
 
-void MethodArea::initClassIfAbsent(Interpreter& exec, const string& jcName) {
+void ClassSpace::initClassIfAbsent(Interpreter& exec, const string& jcName) {
     lock_guard<recursive_mutex> lockMA(maMutex);
 
     bool inited = false;
@@ -235,7 +259,7 @@ void MethodArea::initClassIfAbsent(Interpreter& exec, const string& jcName) {
     }
 }
 
-bool MethodArea::removeJavaClass(const string& jcName) {
+bool ClassSpace::removeJavaClass(const string& jcName) {
     lock_guard<recursive_mutex> lockMA(maMutex);
 
     auto pos = classTable.find(jcName);
@@ -246,7 +270,7 @@ bool MethodArea::removeJavaClass(const string& jcName) {
     return false;
 }
 
-const string MethodArea::parseNameToPath(const string& name) {
+const string ClassSpace::parseNameToPath(const string& name) {
     // convert java.util.ArrayList to /jdk/xxx/java/util/ArrayList.class
 
     for (auto path : this->searchPaths) {

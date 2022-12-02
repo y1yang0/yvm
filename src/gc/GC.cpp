@@ -1,11 +1,36 @@
+// MIT License
+//
+// Copyright (c) 2017 Yi Yang <kelthuzadx@qq.com>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+
+#include "GC.h"
+
 #include <atomic>
+
+#include "../runtime/ClassSpace.h"
 #include "../runtime/JavaClass.h"
 #include "../runtime/JavaHeap.hpp"
 #include "../runtime/JavaType.h"
-#include "../runtime/MethodArea.h"
 #include "../vm/YVM.h"
 #include "Concurrent.hpp"
-#include "GC.h"
 
 using namespace std;
 
@@ -79,7 +104,7 @@ void ConcurrentGC::mark(JType* ref) {
             lock_guard<SpinLock> lock(objSpin);
             objectBitmap.insert(dynamic_cast<JObject*>(ref)->offset);
         }
-        auto fields = yrt.jheap->getFields(dynamic_cast<JObject*>(ref));
+        auto fields = runtime.heap->getFields(dynamic_cast<JObject*>(ref));
         for (size_t i = 0; i < fields.size(); i++) {
             mark(fields[i]);
         }
@@ -88,7 +113,7 @@ void ConcurrentGC::mark(JType* ref) {
             lock_guard<SpinLock> lock(arrSpin);
             arrayBitmap.insert(dynamic_cast<JArray*>(ref)->offset);
         }
-        auto items = yrt.jheap->getElements(dynamic_cast<JArray*>(ref));
+        auto items = runtime.heap->getElements(dynamic_cast<JArray*>(ref));
 
         for (size_t i = 0; i < items.first; i++) {
             mark(items.second[i]);
@@ -100,13 +125,13 @@ void ConcurrentGC::mark(JType* ref) {
 
 void ConcurrentGC::sweep() {
     future<void> objectFuture = gcThreadPool.submit([this]() -> void {
-        for (auto pos = yrt.jheap->objectContainer.data.begin();
-             pos != yrt.jheap->objectContainer.data.end();) {
+        for (auto pos = runtime.heap->objectContainer.data.begin();
+             pos != runtime.heap->objectContainer.data.end();) {
             // If we can not find active object in object bitmap then clear it
             // Notice that here we don't need to lock objectBitmap since it must
             // be marked before sweeping
             if (objectBitmap.find(pos->first) == objectBitmap.cend()) {
-                yrt.jheap->objectContainer.data.erase(pos++);
+                runtime.heap->objectContainer.data.erase(pos++);
             } else {
                 ++pos;
             }
@@ -114,15 +139,15 @@ void ConcurrentGC::sweep() {
     });
 
     future<void> arrayFuture = gcThreadPool.submit([this]() -> void {
-        for (auto pos = yrt.jheap->arrayContainer.data.begin();
-             pos != yrt.jheap->arrayContainer.data.end();) {
+        for (auto pos = runtime.heap->arrayContainer.data.begin();
+             pos != runtime.heap->arrayContainer.data.end();) {
             // DITTO
             if (arrayBitmap.find(pos->first) == arrayBitmap.cend()) {
                 for (size_t i = 0; i < pos->second.first; i++) {
                     delete pos->second.second[i];
                 }
                 delete[] pos->second.second;
-                yrt.jheap->arrayContainer.data.erase(pos++);
+                runtime.heap->arrayContainer.data.erase(pos++);
             } else {
                 ++pos;
             }
@@ -131,11 +156,11 @@ void ConcurrentGC::sweep() {
 
     future<void> monitorFuture = gcThreadPool.submit([this]() -> void {
         // DITTO
-        for (auto pos = yrt.jheap->monitorContainer.data.begin();
-             pos != yrt.jheap->monitorContainer.data.end();) {
+        for (auto pos = runtime.heap->monitorContainer.data.begin();
+             pos != runtime.heap->monitorContainer.data.end();) {
             if (objectBitmap.find(pos->first) == objectBitmap.cend() ||
                 arrayBitmap.find(pos->first) == arrayBitmap.cend()) {
-                yrt.jheap->monitorContainer.data.erase(pos++);
+                runtime.heap->monitorContainer.data.erase(pos++);
             } else {
                 ++pos;
             }
@@ -166,7 +191,7 @@ void ConcurrentGC::markAndSweep() {
     }
 
     future<void> staticFieldsFuture = gcThreadPool.submit([this]() -> void {
-        for (auto c : yrt.ma->classTable) {
+        for (auto c : runtime.cs->classTable) {
             for_each(c.second->staticVars.cbegin(), c.second->staticVars.cend(),
                      [this](const pair<size_t, JType*>& offset) {
                          if (typeid(*offset.second) == typeid(JObject)) {

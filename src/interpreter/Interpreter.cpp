@@ -1,3 +1,26 @@
+// MIT License
+//
+// Copyright (c) 2017 Yi Yang <kelthuzadx@qq.com>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+
 #include "../classfile/AccessFlag.h"
 #include "../classfile/ClassFile.h"
 #include "../misc/Debug.h"
@@ -34,15 +57,16 @@ JType *Interpreter::execNativeMethod(const string &className,
     nativeMethod.append(methodName);
     nativeMethod.append(".");
     nativeMethod.append(methodDescriptor);
-    if (yrt.nativeMethods.find(nativeMethod) != yrt.nativeMethods.end()) {
-        return ((*yrt.nativeMethods.find(nativeMethod)).second)(
-            &yrt, frames->top()->localSlots, frames->top()->maxLocal);
+    if (runtime.nativeMethods.find(nativeMethod) !=
+        runtime.nativeMethods.end()) {
+        return ((*runtime.nativeMethods.find(nativeMethod)).second)(
+            &runtime, frames->top()->localSlots, frames->top()->maxLocal);
     }
 
     GC_SAFE_POINT
-    if (yrt.gc->shallGC()) {
-        yrt.gc->stopTheWorld();
-        yrt.gc->gc(frames, GCPolicy::GC_MARK_AND_SWEEP);
+    if (runtime.gc->shallGC()) {
+        runtime.gc->stopTheWorld();
+        runtime.gc->gc(frames, GCPolicy::GC_MARK_AND_SWEEP);
     }
     return nullptr;
 }
@@ -60,7 +84,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
             }
             if (!hasInheritanceRelationship(
                     throwobj->jc,
-                    yrt.ma->loadClassIfAbsent("java/lang/Throwable"))) {
+                    runtime.cs->loadClassIfAbsent("java/lang/Throwable"))) {
                 throw runtime_error("it's not a throwable object");
             }
 
@@ -260,7 +284,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                     throw runtime_error("nullpointerexception");
                 }
                 auto *elem = dynamic_cast<JInt *>(
-                    yrt.jheap->getElement(*arrref, index->val));
+                    runtime.heap->getElement(*arrref, index->val));
                 frames->top()->push(elem);
             } break;
             case op_laload: {
@@ -270,7 +294,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                     throw runtime_error("nullpointerexception");
                 }
                 auto *elem = dynamic_cast<JLong *>(
-                    yrt.jheap->getElement(*arrref, index->val));
+                    runtime.heap->getElement(*arrref, index->val));
                 frames->top()->push(elem);
             } break;
             case op_faload: {
@@ -280,7 +304,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                     throw runtime_error("nullpointerexception");
                 }
                 auto *elem = dynamic_cast<JFloat *>(
-                    yrt.jheap->getElement(*arrref, index->val));
+                    runtime.heap->getElement(*arrref, index->val));
                 frames->top()->push(elem);
             } break;
             case op_daload: {
@@ -290,7 +314,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                     throw runtime_error("nullpointerexception");
                 }
                 auto *elem = dynamic_cast<JDouble *>(
-                    yrt.jheap->getElement(*arrref, index->val));
+                    runtime.heap->getElement(*arrref, index->val));
                 frames->top()->push(elem);
             } break;
             case op_aaload: {
@@ -300,7 +324,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                     throw runtime_error("nullpointerexception");
                 }
                 auto *elem = dynamic_cast<JRef *>(
-                    yrt.jheap->getElement(*arrref, index->val));
+                    runtime.heap->getElement(*arrref, index->val));
                 frames->top()->push(elem);
             } break;
             case op_istore: {
@@ -393,7 +417,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 if (index->val > arrref->length || index->val < 0) {
                     throw runtime_error("array index out of bounds");
                 }
-                yrt.jheap->putElement(*arrref, index->val, value);
+                runtime.heap->putElement(*arrref, index->val, value);
 
             } break;
             case op_lastore: {
@@ -406,7 +430,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 if (index->val > arrref->length || index->val < 0) {
                     throw runtime_error("array index out of bounds");
                 }
-                yrt.jheap->putElement(*arrref, index->val, value);
+                runtime.heap->putElement(*arrref, index->val, value);
 
             } break;
             case op_fastore: {
@@ -419,7 +443,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 if (index->val > arrref->length || index->val < 0) {
                     throw runtime_error("array index out of bounds");
                 }
-                yrt.jheap->putElement(*arrref, index->val, value);
+                runtime.heap->putElement(*arrref, index->val, value);
 
             } break;
             case op_dastore: {
@@ -432,7 +456,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 if (index->val > arrref->length || index->val < 0) {
                     throw runtime_error("array index out of bounds");
                 }
-                yrt.jheap->putElement(*arrref, index->val, value);
+                runtime.heap->putElement(*arrref, index->val, value);
 
             } break;
             case op_aastore: {
@@ -445,7 +469,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 if (index->val > arrref->length || index->val < 0) {
                     throw runtime_error("array index out of bounds");
                 }
-                yrt.jheap->putElement(*arrref, index->val, value);
+                runtime.heap->putElement(*arrref, index->val, value);
 
             } break;
             case op_bastore: {
@@ -460,7 +484,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 if (index->val > arrref->length || index->val < 0) {
                     throw runtime_error("array index out of bounds");
                 }
-                yrt.jheap->putElement(*arrref, index->val, value);
+                runtime.heap->putElement(*arrref, index->val, value);
 
             } break;
             case op_sastore:
@@ -476,7 +500,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 if (index->val > arrref->length || index->val < 0) {
                     throw runtime_error("array index out of bounds");
                 }
-                yrt.jheap->putElement(*arrref, index->val, value);
+                runtime.heap->putElement(*arrref, index->val, value);
 
             } break;
             case op_pop: {
@@ -1100,8 +1124,8 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
             case op_getstatic: {
                 const u2 index = consumeU2(code, op);
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
-                yrt.ma->linkClassIfAbsent(symbolicRef.jc->getClassName());
-                yrt.ma->initClassIfAbsent(*this,
+                runtime.cs->linkClassIfAbsent(symbolicRef.jc->getClassName());
+                runtime.cs->initClassIfAbsent(*this,
                                           symbolicRef.jc->getClassName());
                 JType *field = symbolicRef.jc->getStaticVar(
                     symbolicRef.name, symbolicRef.descriptor);
@@ -1112,8 +1136,8 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 JType *value = frames->top()->pop<JType>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
 
-                yrt.ma->linkClassIfAbsent(symbolicRef.jc->getClassName());
-                yrt.ma->initClassIfAbsent(*this,
+                runtime.cs->linkClassIfAbsent(symbolicRef.jc->getClassName());
+                runtime.cs->initClassIfAbsent(*this,
                                           symbolicRef.jc->getClassName());
                 symbolicRef.jc->setStaticVar(symbolicRef.name,
                                              symbolicRef.descriptor, value);
@@ -1122,7 +1146,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 u2 index = consumeU2(code, op);
                 JObject *objectref = frames->top()->pop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
-                JType *field = cloneValue(yrt.jheap->getFieldByName(
+                JType *field = cloneValue(runtime.heap->getFieldByName(
                     symbolicRef.jc, symbolicRef.name, symbolicRef.descriptor,
                     objectref));
                 frames->top()->push(field);
@@ -1133,7 +1157,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 JType *value = frames->top()->pop<JType>();
                 JObject *objectref = frames->top()->pop<JObject>();
                 auto symbolicRef = parseFieldSymbolicReference(jc, index);
-                yrt.jheap->putFieldByName(symbolicRef.jc, symbolicRef.name,
+                runtime.heap->putFieldByName(symbolicRef.jc, symbolicRef.name,
                                           symbolicRef.descriptor, objectref,
                                           value);
 
@@ -1182,7 +1206,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                         if (symbolicRefClass->getClassName() ==
                             jc->getSuperClassName()) {
                             if (IS_CLASS_SUPER(jc->raw.accessFlags)) {
-                                invokeSpecial(yrt.ma->findJavaClass(
+                                invokeSpecial(runtime.cs->findJavaClass(
                                                   jc->getSuperClassName()),
                                               symbolicRef.name,
                                               symbolicRef.descriptor);
@@ -1242,7 +1266,8 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 if (count->val < 0) {
                     throw runtime_error("negative array size");
                 }
-                JArray *arrayref = yrt.jheap->createPODArray(atype, count->val);
+                JArray *arrayref =
+                    runtime.heap->createPODArray(atype, count->val);
 
                 frames->top()->push(arrayref);
 
@@ -1255,8 +1280,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 if (count->val < 0) {
                     throw runtime_error("negative array size");
                 }
-                JArray *arrayref =
-                    yrt.jheap->createObjectArray(*symbolicRef.jc, count->val);
+                JArray *arrayref = runtime.heap->createObjectArray(*symbolicRef.jc, count->val);
 
                 frames->top()->push(arrayref);
             } break;
@@ -1278,7 +1302,7 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 }
                 if (!hasInheritanceRelationship(
                         throwobj->jc,
-                        yrt.ma->loadClassIfAbsent("java/lang/Throwable"))) {
+                        runtime.cs->loadClassIfAbsent("java/lang/Throwable"))) {
                     throw runtime_error("it's not a throwable object");
                 }
 
@@ -1315,11 +1339,11 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                     throw runtime_error("null pointer");
                 }
 
-                if (!yrt.jheap->hasMonitor(ref)) {
+                if (!runtime.heap->hasMonitor(ref)) {
                     dynamic_cast<JObject *>(ref)->offset =
-                        yrt.jheap->createMonitor();
+                        runtime.heap->createMonitor();
                 }
-                yrt.jheap->findMonitor(ref)->enter(this_thread::get_id());
+                runtime.heap->findMonitor(ref)->enter(this_thread::get_id());
             } break;
             case op_monitorexit: {
                 JType *ref = frames->top()->pop<JType>();
@@ -1327,11 +1351,11 @@ JType *Interpreter::execByteCode(const JavaClass *jc, u1 *code, u4 codeLength,
                 if (ref == nullptr) {
                     throw runtime_error("null pointer");
                 }
-                if (!yrt.jheap->hasMonitor(ref)) {
+                if (!runtime.heap->hasMonitor(ref)) {
                     dynamic_cast<JObject *>(ref)->offset =
-                        yrt.jheap->createMonitor();
+                        runtime.heap->createMonitor();
                 }
-                yrt.jheap->findMonitor(ref)->exit();
+                runtime.heap->findMonitor(ref)->exit();
 
             } break;
             case op_wide: {
@@ -1403,13 +1427,13 @@ void Interpreter::loadConstantPoolItem2Stack(const JavaClass *jc, u2 index) {
         auto val = jc->getString(
             dynamic_cast<CONSTANT_String *>(jc->raw.constPoolInfo[index])
                 ->stringIndex);
-        JObject *str = yrt.jheap->createObject(
-            *yrt.ma->loadClassIfAbsent("java/lang/String"));
-        JArray *value = yrt.jheap->createCharArray(val, val.length());
+        JObject *str = runtime.heap->createObject(
+            *runtime.cs->loadClassIfAbsent("java/lang/String"));
+        JArray *value = runtime.heap->createCharArray(val, val.length());
         // Put string  into str's field; according the source file of
         // java.lang.Object, we know that its first field was used to store
         // chars
-        yrt.jheap->putFieldByOffset(*str, 0, value);
+        runtime.heap->putFieldByOffset(*str, 0, value);
         frames->top()->push(str);
     } else if (typeid(*jc->raw.constPoolInfo[index]) ==
                typeid(CONSTANT_Class)) {
@@ -1437,8 +1461,8 @@ bool Interpreter::handleException(const JavaClass *jc, u2 exceptLen,
                               ->nameIndex);
 
         if (hasInheritanceRelationship(
-                yrt.ma->findJavaClass(objectref->jc->getClassName()),
-                yrt.ma->findJavaClass(catchTypeName)) &&
+                runtime.cs->findJavaClass(objectref->jc->getClassName()),
+                runtime.cs->findJavaClass(catchTypeName)) &&
             exceptTab[i].startPC <= op && op < exceptTab[i].endPC) {
             // start<=op<end
             // If we found a proper exception handler, set current pc as
@@ -1456,8 +1480,8 @@ bool Interpreter::handleException(const JavaClass *jc, u2 exceptLen,
 }
 
 JObject *Interpreter::execNew(const JavaClass *jc, u2 index) {
-    yrt.ma->linkClassIfAbsent(const_cast<JavaClass *>(jc)->getClassName());
-    yrt.ma->initClassIfAbsent(*this,
+    runtime.cs->linkClassIfAbsent(const_cast<JavaClass *>(jc)->getClassName());
+    runtime.cs->initClassIfAbsent(*this,
                               const_cast<JavaClass *>(jc)->getClassName());
 
     if (typeid(*jc->raw.constPoolInfo[index]) != typeid(CONSTANT_Class)) {
@@ -1468,8 +1492,8 @@ JObject *Interpreter::execNew(const JavaClass *jc, u2 index) {
     string className = jc->getString(
         dynamic_cast<CONSTANT_Class *>(jc->raw.constPoolInfo[index])
             ->nameIndex);
-    JavaClass *newClass = yrt.ma->loadClassIfAbsent(className);
-    return yrt.jheap->createObject(*newClass);
+    JavaClass *newClass = runtime.cs->loadClassIfAbsent(className);
+    return runtime.heap->createObject(*newClass);
 }
 
 bool Interpreter::checkInstanceof(const JavaClass *jc, u2 index,
@@ -1489,7 +1513,7 @@ bool Interpreter::checkInstanceof(const JavaClass *jc, u2 index,
         tType = TYPE_ARRAY;
     } else {
         if (IS_CLASS_INTERFACE(
-                yrt.ma->findJavaClass(TclassName)->raw.accessFlags)) {
+                runtime.cs->findJavaClass(TclassName)->raw.accessFlags)) {
             tType = TYPE_INTERFACE;
         } else {
             tType = TYPE_CLASS;
@@ -1501,10 +1525,12 @@ bool Interpreter::checkInstanceof(const JavaClass *jc, u2 index,
                 dynamic_cast<JObject *>(objectref)->jc->raw.accessFlags)) {
             // If it's an ordinary class
             if (tType == TYPE_CLASS) {
-                if (yrt.ma->findJavaClass(dynamic_cast<JObject *>(objectref)
+                if (runtime.cs
+                            ->findJavaClass(dynamic_cast<JObject *>(objectref)
                                               ->jc->getClassName())
                             ->getClassName() == TclassName ||
-                    yrt.ma->findJavaClass(dynamic_cast<JObject *>(objectref)
+                    runtime.cs
+                            ->findJavaClass(dynamic_cast<JObject *>(objectref)
                                               ->jc->getSuperClassName())
                             ->getClassName() == TclassName) {
                     return true;
@@ -1549,8 +1575,7 @@ bool Interpreter::checkInstanceof(const JavaClass *jc, u2 index,
                 return true;
             }
         } else if (tType == TYPE_INTERFACE) {
-            auto *firstComponent = dynamic_cast<JObject *>(
-                yrt.jheap->getElement(*dynamic_cast<JArray *>(objectref), 0));
+            auto *firstComponent = dynamic_cast<JObject *>(runtime.heap->getElement(*dynamic_cast<JArray *>(objectref), 0));
             auto &&interfaceIdxs = firstComponent->jc->getInterfacesIndex();
             FOR_EACH(i, interfaceIdxs.size()) {
                 if (firstComponent->jc->getString(
@@ -1648,9 +1673,9 @@ void Interpreter::invokeByName(JavaClass *jc, const string &name,
     }
 
     GC_SAFE_POINT
-    if (yrt.gc->shallGC()) {
-        yrt.gc->stopTheWorld();
-        yrt.gc->gc(frames, GCPolicy::GC_MARK_AND_SWEEP);
+    if (runtime.gc->shallGC()) {
+        runtime.gc->stopTheWorld();
+        runtime.gc->gc(frames, GCPolicy::GC_MARK_AND_SWEEP);
     }
 }
 //--------------------------------------------------------------------------------
@@ -1703,9 +1728,9 @@ void Interpreter::invokeInterface(const JavaClass *jc, const string &name,
     }
 
     GC_SAFE_POINT
-    if (yrt.gc->shallGC()) {
-        yrt.gc->stopTheWorld();
-        yrt.gc->gc(frames, GCPolicy::GC_MARK_AND_SWEEP);
+    if (runtime.gc->shallGC()) {
+        runtime.gc->stopTheWorld();
+        runtime.gc->gc(frames, GCPolicy::GC_MARK_AND_SWEEP);
     }
 }
 
@@ -1766,9 +1791,9 @@ void Interpreter::invokeVirtual(const string &name, const string &descriptor) {
     }
 
     GC_SAFE_POINT
-    if (yrt.gc->shallGC()) {
-        yrt.gc->stopTheWorld();
-        yrt.gc->gc(frames, GCPolicy::GC_MARK_AND_SWEEP);
+    if (runtime.gc->shallGC()) {
+        runtime.gc->stopTheWorld();
+        runtime.gc->gc(frames, GCPolicy::GC_MARK_AND_SWEEP);
     }
 }
 //--------------------------------------------------------------------------------
@@ -1823,9 +1848,9 @@ void Interpreter::invokeSpecial(const JavaClass *jc, const string &name,
     }
 
     GC_SAFE_POINT
-    if (yrt.gc->shallGC()) {
-        yrt.gc->stopTheWorld();
-        yrt.gc->gc(frames, GCPolicy::GC_MARK_AND_SWEEP);
+    if (runtime.gc->shallGC()) {
+        runtime.gc->stopTheWorld();
+        runtime.gc->gc(frames, GCPolicy::GC_MARK_AND_SWEEP);
     }
 }
 
@@ -1834,8 +1859,8 @@ void Interpreter::invokeStatic(const JavaClass *jc, const string &name,
     // Get instance method name and descriptor from CONSTANT_Methodref
     // locating by index and get interface method parameter and return value
     // descriptor
-    yrt.ma->linkClassIfAbsent(const_cast<JavaClass *>(jc)->getClassName());
-    yrt.ma->initClassIfAbsent(*this,
+    runtime.cs->linkClassIfAbsent(const_cast<JavaClass *>(jc)->getClassName());
+    runtime.cs->initClassIfAbsent(*this,
                               const_cast<JavaClass *>(jc)->getClassName());
 
     auto parameterAndReturnType = peelMethodParameterAndType(descriptor);
@@ -1878,8 +1903,8 @@ void Interpreter::invokeStatic(const JavaClass *jc, const string &name,
     }
 
     GC_SAFE_POINT
-    if (yrt.gc->shallGC()) {
-        yrt.gc->stopTheWorld();
-        yrt.gc->gc(frames, GCPolicy::GC_MARK_AND_SWEEP);
+    if (runtime.gc->shallGC()) {
+        runtime.gc->stopTheWorld();
+        runtime.gc->gc(frames, GCPolicy::GC_MARK_AND_SWEEP);
     }
 }

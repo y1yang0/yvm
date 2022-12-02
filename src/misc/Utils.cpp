@@ -1,3 +1,26 @@
+// MIT License
+//
+// Copyright (c) 2017 Yi Yang <kelthuzadx@qq.com>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+
 #include "../runtime/JavaClass.h"
 #include "../runtime/RuntimeEnv.h"
 #include "Utils.h"
@@ -8,11 +31,11 @@ std::string javastring2stdtring(JObject* objectref) {
     }
 
     JArray* chararr = dynamic_cast<JArray*>(
-        yrt.jheap->getFieldByName(objectref->jc, "value", "[C", objectref));
+        runtime.heap->getFieldByName(objectref->jc, "value", "[C", objectref));
 
     std::string str;
     for (int i = 0; i < chararr->length; i++) {
-        JInt* ch = dynamic_cast<JInt*>(yrt.jheap->getElement(*chararr, i));
+        JInt* ch = dynamic_cast<JInt*>(runtime.heap->getElement(*chararr, i));
         str += (char)ch->val;
     }
     return str;
@@ -63,7 +86,7 @@ bool hasInheritanceRelationship(const JavaClass* source,
     }
     if (source->hasSuperClass()) {
         return hasInheritanceRelationship(
-            yrt.ma->loadClassIfAbsent(source->getSuperClassName()), super);
+            runtime.cs->loadClassIfAbsent(source->getSuperClassName()), super);
     }
     return false;
 }
@@ -76,7 +99,7 @@ void registerNativeMethod(const char* className, const char* name,
     methodName.append(name);
     methodName.append(".");
     methodName.append(descriptor);
-    yrt.nativeMethods.insert(std::make_pair(methodName, func));
+    runtime.nativeMethods.insert(std::make_pair(methodName, func));
 }
 
 JType* determineBasicType(const std::string& type) {

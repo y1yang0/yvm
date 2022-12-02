@@ -52,3 +52,4 @@ Makefile
 Testing/**
 yvm
 .vscode
+yvm.cbp

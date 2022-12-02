@@ -6,11 +6,15 @@ if(UNIX)
     set(CMAKE_EXE_LINKER_FLAGS "-lpthread")
 endif()
 
-set(SOURCE_FILES src/vm/Main.cpp src/runtime/MethodArea.cpp src/runtime/JavaFrame.hpp src/runtime/JavaFrame.cpp src/classfile/ClassFile.h src/classfile/AccessFlag.h src/runtime/RuntimeEnv.cpp src/misc/NativeMethod.h
-        src/interpreter/Interpreter.cpp src/interpreter/SymbolicRef.cpp src/misc/Debug.cpp src/runtime/JavaClass.cpp src/runtime/JavaHeap.cpp src/runtime/JavaHeap.hpp src/interpreter/Interpreter.hpp src/interpreter/MethodResolve.cpp
-        src/misc/NativeMethod.cpp src/vm/YVM.cpp src/misc/Utils.h src/misc/Utils.cpp src/runtime/JavaException.h src/runtime/JavaException.cpp src/runtime/ObjectMonitor.h
-        src/runtime/ObjectMonitor.cpp src/gc/GC.h src/gc/GC.cpp src/misc/Option.h src/gc/Concurrent.hpp src/gc/Concurrent.cpp src/interpreter/Internal.h src/interpreter/CallSite.cpp)
-add_executable(yvm ${SOURCE_FILES})
-if(UNIX)
-    target_link_libraries(yvm pthread)
-endif()
+# Compile and link together
+file(GLOB_RECURSE YVM_SRC src/**.cpp)
+add_executable(yvm ${YVM_SRC})
+
+enable_testing()
+file(GLOB test_file_namea ${PROJECT_SOURCE_DIR}/javaclass/ydk/test/*.java)
+
+# Create unit tests
+foreach(each_file ${test_file_namea})
+    string(REGEX REPLACE ".*/(.*)\\.java" "\\1" curated_name ${each_file})
+    add_test(NAME example_${curated_name} COMMAND yvm --lib=${PROJECT_SOURCE_DIR}/bytecode "ydk.test.${curated_name}")
+endforeach(each_file ${test_file_namea})
